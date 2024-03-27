@@ -1,17 +1,25 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { FirebaseOptions, initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
 
-const firebaseConfig = {
+
+
+
+const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.FIREBASE_APIKEY,
-  authDomain: process.env.FIREBASE_AUTHDOMAIN,
+  authDomain: process.env.FBASE_AUTH_DOMAIN,
   projectId: "dosth-ac312",
   storageBucket: "dosth-ac312.appspot.com",
-  messagingSenderId: process.env.MESSAGE_SENDERID,
-  appId: process.env.FIREBASE_APPID,
+  messagingSenderId: process.env.FBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FBASE_APP_ID,
   measurementId: "G-D7EP7G8YWY"
 };
 
 // Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+
+export const auth = getAuth(app);
+export default app;
