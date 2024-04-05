@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { auth } from "../lib/firebaseConfig";
 
@@ -9,17 +9,19 @@ function Page() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
 
+  const router = useRouter();
   const handleSubmit = () => {
-   
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
-        console.log("suceesss");
+        console.log("sucess");
         const user = userCredential.user;
+        console.log(user.uid);
+        router.push("/interests");
       })
       .catch((error) => {
         setError(error);
       });
-  
+
     console.log(error);
 
     console.log("Login with:", { email, password });
@@ -50,12 +52,13 @@ function Page() {
           className="rounded-xl border-2 border-primary p-2 text-black focus:border-blue-500 focus:outline-none focus:ring-blue-500"
           placeholder="Password"
         />
-          <button
-              type="submit"
-              className="bg-blue-500 px-4 py-2 text-black " onClick={()=>handleSubmit()}
-            >
-              Sign in
-            </button>
+        <button
+          type="submit"
+          className="bg-blue-500 px-4 py-2 text-black "
+          onClick={() => handleSubmit()}
+        >
+          Sign in
+        </button>
       </div>
     </main>
   );
