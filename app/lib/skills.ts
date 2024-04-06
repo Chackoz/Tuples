@@ -20,3 +20,8 @@ export const skills = [
   "🎮 Game Development",
   "🔒 Cybersecurity"
 ];
+
+export const getRandomSkills = (numSkills: number) => {
+  const shuffledSkills = skills.sort(() => Math.random() - 0.5);
+  return shuffledSkills.slice(0, numSkills);
+};

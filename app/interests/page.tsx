@@ -1,15 +1,16 @@
 "use client";
 import React, { useEffect, useRef, useState, KeyboardEventHandler } from "react";
 import Pill from "../components/ui/Pill";
-import { skills } from "../lib/skills";
+import { skills, getRandomSkills } from "../lib/skills";
 
 const Interests = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set());
-
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionRef = useRef<(HTMLLIElement | HTMLElement)[]>([]);
 
   useEffect(() => {
     const fetchSkills = () => {
@@ -22,6 +23,7 @@ const Interests = () => {
       setSuggestions(matchingSkills);
     };
     fetchSkills();
+    console.log(suggestionRef.current[selectedSuggestion]?.outerText);
   }, [searchTerm]);
 
   const handleSelectUser = (skill: string) => {
@@ -52,14 +54,43 @@ const Interests = () => {
     ) {
       const lastSkill = selectedSkills[selectedSkills.length - 1];
       handleRemoveSkill(lastSkill);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedSuggestion((prev) => Math.min(prev + 1, suggestions.length - 1));
+      console.log("Selected Suggestion No is : ", selectedSuggestion);
+      console.log(
+        "Selected Suggestion is :",
+        suggestionRef.current[selectedSuggestion]?.outerText
+      );
+      suggestionRef.current[selectedSuggestion]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedSuggestion((prev) => Math.max(prev - 1, 0));
+      console.log("Selected Suggestion No is : ", selectedSuggestion);
+      console.log(
+        "Selected Suggestion is :",
+        suggestionRef.current[selectedSuggestion]?.outerText
+      );
+      suggestionRef.current[selectedSuggestion]?.focus();
+    } else if (e.key === "Enter") {
+      console.log("Enter was hit");
+      const skill: string | undefined =
+        suggestionRef.current[selectedSuggestion]?.outerText;
+      handleSelectUser(skill || "");
+      setSelectedSuggestion(0);
     }
   };
 
   return (
-    <div className="relative flex h-screen flex-col items-center justify-center">
+    <div className="relative flex h-screen flex-col items-center justify-center ">
       <div className="flex h-fit w-1/2 flex-wrap items-center gap-2 rounded-xl border-2  border-[#ccc] px-3 py-2">
         {selectedSkills.map((skill, index) => (
-          <Pill key={index} text={skill} onClick={() => handleRemoveSkill(skill)} />
+          <Pill
+            key={index}
+            text={skill}
+            type={"delete"}
+            onClick={() => handleRemoveSkill(skill)}
+          />
         ))}
         <div className="text-black">
           <input
@@ -68,7 +99,7 @@ const Interests = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`${selectedSkills.length > 0 ? "" : "Search for your interests"}`}
+            placeholder={`${selectedSkills.length > 0 ? "" : "Type or Select from below"}`}
             onKeyDown={handleKeyDown}
           />
           {suggestions.length > 0 && (
@@ -77,7 +108,12 @@ const Interests = () => {
                 (skill: string, index: number) =>
                   !selectedSkillSet.has(skill) && (
                     <li
-                      className=" flex cursor-pointer items-center gap-3 border-b-2 border-[#ccc] px-2 py-3 text-black hover:bg-[#ccc]"
+                      ref={(el: HTMLLIElement | null) => {
+                        if (el) {
+                          suggestionRef.current[index] = el;
+                        }
+                      }}
+                      className={`flex cursor-pointer items-center gap-3 border-b-2 border-[#ccc] px-2 py-3 text-black hover:bg-[#ccc] ${selectedSuggestion === index ? "bg-[#ccc]" : ""}`}
                       key={index}
                       onClick={() => {
                         handleSelectUser(skill);
@@ -92,7 +128,23 @@ const Interests = () => {
         </div>
       </div>
       {/*Suggestions Fixed*/}
-      <div className="h-60 bg-emerald-500"></div>
+
+      <div className="flex max-h-72 w-1/2 flex-wrap gap-4 px-8 py-4">
+        {skills
+          .slice(0, 10)
+          .map(
+            (skill, index) =>
+              !selectedSkills.includes(skill) && (
+                <Pill
+                  key={index}
+                  type={"add"}
+                  text={skill}
+                  onClick={() => handleSelectUser(skill)}
+                />
+              )
+          )}
+      </div>
+
       <div className="text-md flex cursor-pointer  items-center justify-center rounded-full bg-blue-500 px-5 py-2 text-white">
         Confirm
       </div>
