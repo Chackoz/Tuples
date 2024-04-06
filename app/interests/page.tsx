@@ -56,36 +56,45 @@ const Interests = () => {
   };
 
   return (
-    <div className="user-search-container">
-      <div className="user-search-input">
+    <div className="relative flex h-screen flex-col items-center justify-center">
+      <div className="flex h-fit w-1/2 flex-wrap items-center gap-2 rounded-xl border-2  border-[#ccc] px-3 py-2">
         {selectedSkills.map((skill, index) => (
           <Pill key={index} text={skill} onClick={() => handleRemoveSkill(skill)} />
         ))}
         <div className="text-black">
           <input
+            className="outline-none"
             ref={inputRef}
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search for your interests"
+            placeholder={`${selectedSkills.length > 0 ? "" : "Search for your interests"}`}
             onKeyDown={handleKeyDown}
           />
-          <ul className="suggestions-list text-black">
-            {suggestions.map(
-              (skill: string, index: number) =>
-                !selectedSkillSet.has(skill) && (
-                  <li
-                    key={index}
-                    onClick={() => {
-                      handleSelectUser(skill);
-                    }}
-                  >
-                    <span>{skill}</span>
-                  </li>
-                )
-            )}
-          </ul>
+          {suggestions.length > 0 && (
+            <ul className=" absolute m-0 max-h-80 list-none overflow-y-scroll border-2  border-[#ccc] bg-white p-0 text-black">
+              {suggestions.map(
+                (skill: string, index: number) =>
+                  !selectedSkillSet.has(skill) && (
+                    <li
+                      className=" flex cursor-pointer items-center gap-3 border-b-2 border-[#ccc] px-2 py-3 text-black hover:bg-[#ccc]"
+                      key={index}
+                      onClick={() => {
+                        handleSelectUser(skill);
+                      }}
+                    >
+                      <span>{skill}</span>
+                    </li>
+                  )
+              )}
+            </ul>
+          )}
         </div>
+      </div>
+      {/*Suggestions Fixed*/}
+      <div className="h-60 bg-emerald-500"></div>
+      <div className="text-md flex cursor-pointer  items-center justify-center rounded-full bg-blue-500 px-5 py-2 text-white">
+        Confirm
       </div>
     </div>
   );
