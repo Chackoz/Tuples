@@ -1,7 +1,17 @@
 "use client";
-import React, { useEffect, useRef, useState, KeyboardEventHandler } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  KeyboardEventHandler,
+  useContext
+} from "react";
+import { useRouter } from "next/navigation";
 import Pill from "../components/ui/Pill";
-import { skills, getRandomSkills } from "../lib/skills";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { db } from "../lib/firebaseConfig";
+import { skills } from "../lib/skills";
+import AuthContext from "../context/AuthContext";
 
 const Interests = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,9 +19,15 @@ const Interests = () => {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set());
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+
+  const { currentUser } = useContext(AuthContext);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionRef = useRef<(HTMLLIElement | HTMLElement)[]>([]);
   const scrollableContainer = useRef<HTMLUListElement | null>();
+
+  const router = useRouter();
+
   useEffect(() => {
     const fetchSkills = () => {
       if (searchTerm.trim() === "") {
@@ -23,9 +39,17 @@ const Interests = () => {
       setSuggestions(matchingSkills);
     };
     fetchSkills();
+    currentUser && console.log("Current User ID is ", (currentUser as any).uid);
+
+    const cookieValue = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("userId"))
+      ?.split("=")[1];
+
+    console.log("cookie is", cookieValue);
   }, [searchTerm]);
 
-  const handleSelectUser = (skill: string) => {
+  const handleSelectSkill = (skill: string) => {
     setSelectedSkills([...selectedSkills, skill]);
     setSelectedSkillSet(new Set([...selectedSkillSet, skill]));
     setSearchTerm("");
@@ -78,8 +102,22 @@ const Interests = () => {
     ) {
       const skill: string | undefined =
         suggestionRef.current[selectedSuggestion]?.outerText;
-      handleSelectUser(skill || "");
+      handleSelectSkill(skill || "");
       setSelectedSuggestion(0);
+    }
+  };
+
+  const handleClick = async () => {
+    try {
+      const userRef = doc(db, "users", (currentUser as any).uid);
+      console.log("userRef is ", userRef);
+      await updateDoc(userRef, {
+        interests: selectedSkills
+      });
+      console.log("Document written with ID: ", userRef.id);
+      router.push("/profile");
+    } catch (error) {
+      console.error("Error adding document: ", error);
     }
   };
 
@@ -125,7 +163,7 @@ const Interests = () => {
                       className={`flex cursor-pointer items-center gap-3 border-b-2 border-[#ccc] px-2 py-3 text-black hover:bg-[#ccc] ${selectedSuggestion === index ? "bg-[#ccc]" : ""}`}
                       key={index}
                       onClick={() => {
-                        handleSelectUser(skill);
+                        handleSelectSkill(skill);
                       }}
                     >
                       <span>{skill}</span>
@@ -148,13 +186,16 @@ const Interests = () => {
                   key={index}
                   type={"add"}
                   text={skill}
-                  onClick={() => handleSelectUser(skill)}
+                  onClick={() => handleSelectSkill(skill)}
                 />
               )
           )}
       </div>
 
-      <div className="text-md flex cursor-pointer  items-center justify-center rounded-full bg-blue-500 px-5 py-2 text-white">
+      <div
+        onClick={handleClick}
+        className="text-md flex cursor-pointer  items-center justify-center rounded-full bg-blue-500 px-5 py-2 text-white"
+      >
         Confirm
       </div>
     </div>
