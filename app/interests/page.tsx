@@ -11,7 +11,7 @@ const Interests = () => {
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionRef = useRef<(HTMLLIElement | HTMLElement)[]>([]);
-
+  const scrollableContainer = useRef<HTMLUListElement | null>();
   useEffect(() => {
     const fetchSkills = () => {
       if (searchTerm.trim() === "") {
@@ -23,7 +23,6 @@ const Interests = () => {
       setSuggestions(matchingSkills);
     };
     fetchSkills();
-    console.log(suggestionRef.current[selectedSuggestion]?.outerText);
   }, [searchTerm]);
 
   const handleSelectUser = (skill: string) => {
@@ -54,26 +53,29 @@ const Interests = () => {
     ) {
       const lastSkill = selectedSkills[selectedSkills.length - 1];
       handleRemoveSkill(lastSkill);
-    } else if (e.key === "ArrowDown") {
+    } else if (e.key === "ArrowDown" && suggestions.length > 0) {
       e.preventDefault();
-      setSelectedSuggestion((prev) => Math.min(prev + 1, suggestions.length - 1));
+      setSelectedSuggestion((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
       console.log("Selected Suggestion No is : ", selectedSuggestion);
       console.log(
         "Selected Suggestion is :",
         suggestionRef.current[selectedSuggestion]?.outerText
       );
       suggestionRef.current[selectedSuggestion]?.focus();
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" && suggestions?.length > 0) {
       e.preventDefault();
-      setSelectedSuggestion((prev) => Math.max(prev - 1, 0));
+      setSelectedSuggestion((prev) => (prev > 0 ? prev - 1 : 0));
       console.log("Selected Suggestion No is : ", selectedSuggestion);
       console.log(
         "Selected Suggestion is :",
         suggestionRef.current[selectedSuggestion]?.outerText
       );
       suggestionRef.current[selectedSuggestion]?.focus();
-    } else if (e.key === "Enter") {
-      console.log("Enter was hit");
+    } else if (
+      e.key === "Enter" &&
+      selectedSuggestion >= 0 &&
+      selectedSuggestion < suggestions.length
+    ) {
       const skill: string | undefined =
         suggestionRef.current[selectedSuggestion]?.outerText;
       handleSelectUser(skill || "");
@@ -103,7 +105,14 @@ const Interests = () => {
             onKeyDown={handleKeyDown}
           />
           {suggestions.length > 0 && (
-            <ul className=" absolute m-0 max-h-80 list-none overflow-y-scroll border-2  border-[#ccc] bg-white p-0 text-black">
+            <ul
+              ref={(el) => {
+                if (el) {
+                  scrollableContainer.current = el;
+                }
+              }}
+              className=" absolute m-0 max-h-80 list-none overflow-y-scroll border-2  border-[#ccc] bg-white p-0 text-black"
+            >
               {suggestions.map(
                 (skill: string, index: number) =>
                   !selectedSkillSet.has(skill) && (
