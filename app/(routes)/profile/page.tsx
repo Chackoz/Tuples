@@ -1,8 +1,8 @@
 "use client";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useContext, useEffect, useState } from "react";
-import { db } from "../lib/firebaseConfig";
-import AuthContext from "../context/AuthContext";
+import { db } from "../../lib/firebaseConfig";
+import AuthContext from "../../context/AuthContext";
 
 interface User {
   name: string;

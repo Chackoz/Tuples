@@ -30,3 +30,21 @@ export async function POST(req: NextRequest, response: NextResponse) {
     return NextResponse.json({ error });
   }
 }
+
+// try {
+//   await fetch('/api/send', {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//     },
+//     body: JSON.stringify({
+//       name: name,
+//       email: email,
+//       password:password
+//     }),
+//   }).then(() => {
+//     console.log(email,password,name)
+//   });
+// } catch (error) {
+//   console.error("Error sending email:", error);
+// }

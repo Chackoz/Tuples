@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { auth, db } from "../lib/firebaseConfig";
-import { poppins } from "../lib/fonts";
+import { auth, db } from "../../lib/firebaseConfig";
+import { poppins } from "../../lib/fonts";
 import { useRouter } from "next/navigation";
 
 function Page() {
@@ -17,7 +17,6 @@ function Page() {
   const [firsttry, setfirsttry] = useState(true);
   const [next, setNext] = useState(false);
   const [firebaseError, setfirebaseError] = useState("");
-
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -51,23 +50,6 @@ function Page() {
           );
           const user = userCredential.user;
           await addData(name, user.uid);
-          // try {
-          //   await fetch('/api/send', {
-          //     method: 'POST',
-          //     headers: {
-          //       'Content-Type': 'application/json',
-          //     },
-          //     body: JSON.stringify({
-          //       name: name,
-          //       email: email,
-          //       password:password
-          //     }),
-          //   }).then(() => {
-          //     console.log(email,password,name)
-          //   });
-          // } catch (error) {
-          //   console.error("Error sending email:", error);
-          // }
           addCookie(user.uid);
           router.push("/interests");
         } catch (error) {

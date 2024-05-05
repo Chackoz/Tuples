@@ -7,8 +7,8 @@ import {
   getAuth,
   signInWithEmailAndPassword
 } from "firebase/auth";
-import { auth, db } from "../lib/firebaseConfig";
-import { poppins } from "../lib/fonts";
+import { auth, db } from "../../lib/firebaseConfig";
+import { poppins } from "../../lib/fonts";
 
 import { useRouter } from "next/navigation";
 
@@ -22,13 +22,16 @@ function Login() {
   const handleSubmit = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-
       router.push("/profile");
     } catch (error) {
-      if (error instanceof FirebaseError) {
-        setFirebaseError(error.message);
+      const firebaseError = error as FirebaseError;
+      const errorMessage = firebaseError.message;
+      const match = errorMessage.match(/\(([^)]+)\)/);
+      if (match) {
+        setFirebaseError(match[1]);
+        console.log(match[1]);
       } else {
-        console.error("Unexpected error occurred:", error);
+        console.log("Error message format not recognized");
       }
     }
   };
@@ -38,13 +41,13 @@ function Login() {
       <div className="flex h-[600px] w-[400px] flex-col justify-between rounded-3xl bg-white  p-10 shadow-md">
         <div className="">
           <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Welcome Back,</h1>
-          {/* { (
+          {firebaseError && (
             <h2
               className={`${poppins.className} pt-4  text-xl  tracking-tighter text-red-500`}
             >
-              Use valid college email id.
+              {firebaseError}
             </h2>
-          )} */}
+          )}
           <h2 className={`${poppins.className} py-4 pt-8 text-xl  tracking-tighter`}>
             Email
           </h2>

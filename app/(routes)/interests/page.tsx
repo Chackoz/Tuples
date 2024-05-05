@@ -7,11 +7,11 @@ import React, {
   useContext
 } from "react";
 import { useRouter } from "next/navigation";
-import Pill from "../components/ui/Pill";
+import Pill from "../../components/ui/Pill";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from "../lib/firebaseConfig";
-import { skills } from "../lib/skills";
-import AuthContext from "../context/AuthContext";
+import { db } from "../../lib/firebaseConfig";
+import { skills } from "../../lib/skills";
+import AuthContext from "../../context/AuthContext";
 
 const Interests = () => {
   const [searchTerm, setSearchTerm] = useState("");
