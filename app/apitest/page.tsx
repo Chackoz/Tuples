@@ -12,7 +12,7 @@ function page() {
 
         body: JSON.stringify({
           name: "name",
-          email: "adiadithyakrishnan@gmail.com",
+          email: "cirus.labs@gmail.com",
           password: "password"
         })
       }).then(() => {});

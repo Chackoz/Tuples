@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, response: NextResponse) {
   try {
     const data = await resend.emails.send({
       from: "Tuples <onboarding@resend.dev>",
-      to: ["adithyakrishnan.b21cs1108@mbcet.ac.in"],
+      to: ["adiadithyakrishnan@gmail.com"],
       subject: "Onboarding Tuple",
       react: EmailTemplate({
         name: name,
