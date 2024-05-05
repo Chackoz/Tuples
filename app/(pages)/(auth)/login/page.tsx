@@ -7,8 +7,8 @@ import {
   getAuth,
   signInWithEmailAndPassword
 } from "firebase/auth";
-import { auth, db } from "../../lib/firebaseConfig";
-import { poppins } from "../../lib/fonts";
+import { auth, db } from "../../../lib/firebaseConfig";
+import { poppins } from "../../../lib/fonts";
 
 import { useRouter } from "next/navigation";
 

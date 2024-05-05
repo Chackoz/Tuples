@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { auth, db } from "../../lib/firebaseConfig";
-import { poppins } from "../../lib/fonts";
+import { auth, db } from "../../../lib/firebaseConfig";
+import { poppins } from "../../../lib/fonts";
 import { useRouter } from "next/navigation";
 
 function Page() {
