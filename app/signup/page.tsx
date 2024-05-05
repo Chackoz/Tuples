@@ -5,7 +5,6 @@ import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import { auth, db } from "../lib/firebaseConfig";
 import { poppins } from "../lib/fonts";
-import { generatePassword } from "../utils/generatePassword";
 import { useRouter } from "next/navigation";
 
 function Page() {
@@ -109,7 +108,7 @@ function Page() {
             <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Sign Up</h1>
             {!isValidEmail && !firsttry && (
               <h2
-                className={`${poppins.className} py-4  text-xl  tracking-tighter text-red-500`}
+                className={`${poppins.className} pt-4  text-xl  tracking-tighter text-red-500`}
               >
                 Use valid college email id.
               </h2>
@@ -148,14 +147,14 @@ function Page() {
             <h1 className={` ${poppins.className}  pt-5 text-3xl`}>{name}</h1>
             {error && !firebaseError && (
               <h2
-                className={`${poppins.className} py-2  text-xl  tracking-tighter text-red-500`}
+                className={`${poppins.className} pt-2  text-xl  tracking-tighter text-red-500`}
               >
                 Passwords don&apos;t Match
               </h2>
             )}
             {firebaseError && (
               <h2
-                className={`${poppins.className} py-2  text-xl  tracking-tighter text-red-500`}
+                className={`${poppins.className} pt-2  text-xl  tracking-tighter text-red-500`}
               >
                 {firebaseError}
               </h2>
