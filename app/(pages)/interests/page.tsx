@@ -5,7 +5,6 @@ import Pill from "../../components/ui/Pill";
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebaseConfig";
 import { skills } from "../../lib/skills";
-import useUserStore from "@/app/store/userStore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const Interests: React.FC = () => {
@@ -15,7 +14,7 @@ const Interests: React.FC = () => {
   const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set());
   const [selectedSuggestion, setSelectedSuggestion] = useState<number>(0);
 
-  const { currentUser, fetchUserInfo } = useUserStore();
+  const [currentUser, fetchUserInfo] = useState("");
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionRef = useRef<(HTMLLIElement | null)[]>([]);
