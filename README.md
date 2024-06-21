@@ -1,6 +1,6 @@
 # Tuples
 
-## A Community for Jobless Btech Students
+#### A Community for Jobless Btech Students
 
 ### Why Tuples?
 
@@ -15,5 +15,5 @@ Tuples started as our S6 mini project with a simple goal — S6 Mini project... 
 
 Join us at Tuples, where we blend tech innovation with a touch of fun to make a real difference in the lives of Btech students!
 
-# NB
-work in progress
+
+## work in progress
