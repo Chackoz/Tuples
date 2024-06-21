@@ -45,9 +45,7 @@ function Page() {
     try {
       const userInterests = user.interests
         .map((interest) => {
-          if (interest === "🎨 UI/UX Design") return "UI/UX Design";
-          if (interest === "🖥️ Backend Development") return "Backend Development";
-          if (interest === "🌐 Full Stack Development") return "Full Stack Development";
+         
           return interest;
         })
         .join(", ");

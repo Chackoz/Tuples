@@ -6,6 +6,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebaseConfig";
 import { skills } from "../../lib/skills";
 import { onAuthStateChanged } from "firebase/auth";
+import NavBar from "@/app/components/NavBar";
 
 const Interests: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -109,8 +110,11 @@ const Interests: React.FC = () => {
   };
 
   return (
-    <div className="relative flex h-screen flex-col items-center justify-center">
-      <div className="flex h-fit w-1/2 flex-wrap items-center gap-2 rounded-xl border-2 border-[#ccc] px-3 py-2">
+    <div className="relative flex h-screen flex-col items-center justify-between bg-[#ebebeb]">
+     <NavBar/>
+      <div className="w-[60vw] flex flex-col justify-center items-center mx-auto">
+      <h1 className="text-[1.5vw] p-5  text-start w-full">Choose Your Interests</h1>
+      <div className="flex h-fit w-[90%] flex-wrap items-center gap-2 rounded-xl border-2 border-[#ccc] px-3 py-2">
         {selectedSkills.map((skill, index) => (
           <Pill
             key={index}
@@ -121,7 +125,7 @@ const Interests: React.FC = () => {
         ))}
         <div className="text-black">
           <input
-            className="outline-none"
+            className="outline-none bg-[#ebebeb] p-2 "
             ref={inputRef}
             type="text"
             value={searchTerm}
@@ -156,7 +160,7 @@ const Interests: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex max-h-72 w-1/2 flex-wrap gap-4 px-8 py-4">
+      <div className="flex max-h-72 w-[80%] flex-wrap gap-4 px-8 py-4">
         {skills
           .slice(0, 10)
           .map(
@@ -178,6 +182,8 @@ const Interests: React.FC = () => {
       >
         Confirm
       </div>
+      </div>
+      <div> </div>
     </div>
   );
 };

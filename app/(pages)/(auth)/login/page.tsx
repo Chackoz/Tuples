@@ -26,7 +26,7 @@ function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
+
       // Fetch user data from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
@@ -50,8 +50,8 @@ function Login() {
   };
 
   return (
-    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#f0f6ff]">
-      <div className="flex h-[600px] w-[400px] flex-col justify-between rounded-3xl bg-white  p-10 shadow-md">
+    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb]">
+      <div className="flex h-[600px] w-[500px] flex-col justify-between rounded-sm bg-white  p-10 shadow-md">
         <div className="">
           <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Welcome Back,</h1>
           {firebaseError && (
@@ -72,7 +72,7 @@ function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border-2 border-transparent  bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+            className="w-[90%] rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
             placeholder="johndoe@mbcet.ac.in"
           />
           <h2 className={`${poppins.className} py-4 pt-8 text-xl  tracking-tighter`}>
@@ -86,12 +86,12 @@ function Login() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-xl border-2 border-transparent  bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+            className="w-[90%] rounded-xl border-2  border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
             placeholder=""
           />
           <button
             onClick={() => handleSubmit()}
-            className={`${poppins.className} my-4 w-fit rounded-3xl bg-[#2727e6] px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+            className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
           >
             Sign In -&gt;
           </button>

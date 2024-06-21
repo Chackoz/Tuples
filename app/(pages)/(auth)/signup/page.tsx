@@ -83,10 +83,10 @@ function Page() {
   };
 
   return (
-    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#f0f6ff] ">
+    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] ">
       {!next && (
-        <div className="flex h-[600px] w-[400px] flex-col justify-between rounded-3xl bg-white  p-10 shadow-md">
-          <div className="">
+        <div className="flex h-[600px] w-[500px] flex-col justify-between rounded-sm bg-white  p-10 shadow-md">
+          <div className="w-full">
             <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Sign Up</h1>
             {!isValidEmail && !firsttry && (
               <h2
@@ -106,19 +106,25 @@ function Page() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl border-2 border-transparent  bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="rounded-xl border-2 border-transparent w-[90%] mx-auto bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
               placeholder="johndoe@mbcet.ac.in"
             />
 
             <button
               onClick={() => handleSubmit()}
-              className={`${poppins.className} my-4 w-fit rounded-3xl bg-[#2727e6] px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+              className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
             >
               Sign Up -&gt;
             </button>
           </div>
           <div>
-            By continuing, you agree to our terms and conditions and privacy policy.
+            By continuing, you agree to our terms and conditions and privacy policy. <br/>
+            <button
+          onClick={() => router.push("/login")}
+          className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary  text-center w-full p-2`}
+        >
+          Sign In Instead
+        </button>
           </div>
         </div>
       )}
