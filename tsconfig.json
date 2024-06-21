@@ -29,7 +29,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/components/ui/Pill.jsx",
-    "app/context/AuthContext.js"
+    "app/context/AuthContext.ts"
   ],
   "exclude": ["node_modules"]
 }
