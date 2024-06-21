@@ -103,7 +103,7 @@ const Interests: React.FC = () => {
     try {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { interests: selectedSkills });
-      router.push("/profile");
+      router.push("/home");
     } catch (error) {
       console.error("Error updating document: ", error);
     }
