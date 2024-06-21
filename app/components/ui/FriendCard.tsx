@@ -1,19 +1,37 @@
-import Image from "next/image";
 import React from "react";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { db } from "../../lib/firebaseConfig";
 
-function FriendCard({ friend }: { friend: { name: string, interests: string[] } }) {
+function FriendCard({ friend, currentUserId }: { friend: { name: string, interests: string[] }, currentUserId: string }) {
+  const addFriend = async () => {
+    if (!currentUserId) {
+      alert("User ID is missing. Please log in again.");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", currentUserId);
+      await updateDoc(userRef, {
+        friends: arrayUnion(friend.name)
+      });
+      alert(`${friend.name} added to your friends list!`);
+    } catch (error) {
+      console.error("Error adding friend:", error);
+      alert(`Failed to add friend: ${(error as Error).message}`);
+    }
+  };
+
   return (
     <div className="flex h-fit w-[90%] rounded-2xl bg-[#eeeeee] p-4">
-      {/* <Image
-        src="/logo.png"
-        alt="logo"
-        width={200}
-        height={200}
-        className="m-1 w-[20%] rounded-2xl object-fill flex-shrink-0"
-      /> */}
       <div className="my-auto flex h-full w-full flex-col justify-center p-2">
         <h1 className="text-[1vw]">{friend.name}</h1>
         <h2 className="text-[0.6vw]">Interests: {friend.interests.join(", ")}</h2>
+        <button 
+          onClick={addFriend} 
+          className="mt-2 bg-blue-500 text-white px-2 py-1 rounded text-[0.8vw] hover:bg-blue-600"
+        >
+          Add Friend
+        </button>
       </div>
     </div>
   );
