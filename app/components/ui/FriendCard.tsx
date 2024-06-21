@@ -7,9 +7,17 @@ interface Friend {
   interests: string[];
 }
 
-
-
-function FriendCard({ friend, currentUserId, onAddFriend }: { friend: Friend; currentUserId: string; onAddFriend: () => void }) {
+function FriendCard({
+  friend,
+  currentUserId,
+  showAddButton,
+  onAddFriend
+}: {
+  friend: Friend;
+  currentUserId: string;
+  showAddButton: boolean;
+  onAddFriend: () => void;
+}) {
   const addFriend = async () => {
     if (!currentUserId) {
       alert("User ID is missing. Please log in again.");
@@ -34,12 +42,14 @@ function FriendCard({ friend, currentUserId, onAddFriend }: { friend: Friend; cu
       <div className="my-auto flex h-full w-full flex-col justify-center p-2">
         <h1 className="text-[1vw]">{friend.name}</h1>
         <h2 className="text-[0.6vw]">Interests: {friend.interests.join(", ")}</h2>
-        <button 
-          onClick={addFriend} 
-          className="mt-2 bg-blue-500 text-white px-2 py-1 rounded text-[0.8vw] hover:bg-blue-600"
-        >
-          Add Friend
-        </button>
+        {showAddButton && (
+          <button
+            onClick={addFriend}
+            className="mt-2 rounded-lg bg-blue-500 p-2 text-white"
+          >
+            Add Friend
+          </button>
+        )}
       </div>
     </div>
   );

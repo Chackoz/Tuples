@@ -1,18 +1,13 @@
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import { jakartasmall } from "../utils/fonts";
-import {
-  RiArrowRightCircleFill,
-  RiSettings2Line,
-  RiAddLine
-} from "react-icons/ri";
+import { RiArrowRightCircleFill, RiSettings2Line, RiAddLine } from "react-icons/ri";
 import CommunityBox from "./ui/CommunityBox";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
 import CreateCommunityModal from "./ui/CreateCommunityModal";
 import CreateJoinCommunityModal from "./ui/CreateCommunityModal";
-
 
 interface User {
   name: string;
@@ -26,7 +21,15 @@ interface Community {
   members: string[];
 }
 
-function Dashboard({ user }: { user: User }) {
+function Dashboard({
+  user,
+  currentView,
+  setCurrentView
+}: {
+  user: User;
+  currentView: "explore" | "friends";
+  setCurrentView: (view: "explore" | "friends") => void;
+}) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
 
@@ -42,7 +45,7 @@ function Dashboard({ user }: { user: User }) {
     const communitiesRef = collection(db, "communities");
     const q = query(communitiesRef, where("members", "array-contains", user.name));
     const querySnapshot = await getDocs(q);
-    const userCommunities = querySnapshot.docs.map(doc => ({
+    const userCommunities = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data()
     })) as Community[];
@@ -51,11 +54,25 @@ function Dashboard({ user }: { user: User }) {
 
   return (
     <div className={`${jakartasmall.className} min-h-[80vh] w-[30vw] px-5`}>
-      <div className="flex items-start justify-between w-full">
-        <div className={`${jakartasmall.className} flex flex-col items-start justify-start text-start gap-4 py-5 text-[1vw]`}>
-          <a href="/home" className="text-blue-600">Home</a>
+      <div className="flex w-full items-start justify-between">
+        <div
+          className={`${jakartasmall.className} flex flex-col items-start justify-start gap-4 py-5 text-start text-[1vw]`}
+        >
+          <a
+            href="#"
+            onClick={() => setCurrentView("explore")}
+            className={currentView === "explore" ? "text-blue-600" : ""}
+          >
+            Home
+          </a>
           <a href="/profile">Profile</a>
-          <a href="/friends">Friends</a>
+          <a
+            href="#"
+            onClick={() => setCurrentView("friends")}
+            className={currentView === "friends" ? "text-blue-600" : ""}
+          >
+            Friends
+          </a>
           <h2>Communities</h2>
           <h2>Projects</h2>
         </div>
@@ -76,7 +93,9 @@ function Dashboard({ user }: { user: User }) {
       </div>
       <div className="flex w-full items-center justify-between py-5">
         <div className="flex flex-col items-center justify-center gap-0 leading-none">
-          <h1 className="w-full text-start text-[1.5vw] text-blue-600">{user?.friends?.length || 0}</h1>
+          <h1 className="w-full text-start text-[1.5vw] text-blue-600">
+            {user?.friends?.length || 0}
+          </h1>
           <h2 className="text-[1.2vw] text-gray-500">Friends</h2>
         </div>
         <button className="flex h-fit w-[200px] items-center justify-between bg-blue-500 px-4 py-2 text-start text-[1vw] text-white">
@@ -84,16 +103,16 @@ function Dashboard({ user }: { user: User }) {
         </button>
       </div>
       <div className="my-5 w-full gap-4 rounded-lg bg-white p-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h1 className="text-[1vw]">Your Communities</h1>
-          <button 
+          <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-500 text-white px-2 py-1 rounded text-[0.8vw] hover:bg-blue-600 flex items-center"
+            className="flex items-center rounded bg-blue-500 px-2 py-1 text-[0.8vw] text-white hover:bg-blue-600"
           >
             <RiAddLine className="mr-1" /> Create or Join
           </button>
         </div>
-        <div className="flex gap-2 py-4 flex-wrap">
+        <div className="flex flex-wrap gap-2 py-4">
           {communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           ))}
@@ -108,8 +127,8 @@ function Dashboard({ user }: { user: User }) {
         </div>
       </div>
       {showModal && (
-        <CreateJoinCommunityModal 
-          onClose={() => setShowModal(false)} 
+        <CreateJoinCommunityModal
+          onClose={() => setShowModal(false)}
           onCreateOrJoin={fetchUserCommunities}
           user={user}
         />
