@@ -1,14 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, collection, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  updateDoc,
+  arrayUnion
+} from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import axios from "axios";
 import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import { jakartasmall } from "@/app/utils/fonts";
-import FriendCard from "@/app/components/ui/FriendCard";
-
 
 interface User {
   name: string;
@@ -22,8 +27,7 @@ interface Friend {
 }
 
 
-
-function Home() {
+function page() {
   const [user, setUser] = useState<User | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -60,10 +64,16 @@ function Home() {
       console.log("Response", response.data);
       const { similar_users } = response.data;
 
-      if (Array.isArray(similar_users) && similar_users.every(user => Array.isArray(user) && typeof user[0] === 'string' && Array.isArray(user[1]))) {
+      if (
+        Array.isArray(similar_users) &&
+        similar_users.every(
+          (user) =>
+            Array.isArray(user) && typeof user[0] === "string" && Array.isArray(user[1])
+        )
+      ) {
         const formattedFriends = similar_users
           .map(([name, interests]) => ({ name, interests }))
-          .filter(friend => friend.name !== user.name);
+          .filter((friend) => friend.name !== user.name);
         setFriends(formattedFriends);
       } else {
         console.error("Invalid similar_users structure:", similar_users);
@@ -80,12 +90,12 @@ function Home() {
       const usersRef = collection(db, "users");
       const usersSnapshot = await getDocs(usersRef);
       const allUsers = usersSnapshot.docs
-        .map(doc => ({ name: doc.data().name, interests: doc.data().interests }))
-        .filter(user => user.name !== currentUserName);
-      
+        .map((doc) => ({ name: doc.data().name, interests: doc.data().interests }))
+        .filter((user) => user.name !== currentUserName);
+
       const shuffled = allUsers.sort(() => 0.5 - Math.random());
       const randomUsers = shuffled.slice(0, 5);
-      
+
       setFriends(randomUsers);
     } catch (error) {
       console.error("Error fetching random users:", error);
@@ -107,38 +117,7 @@ function Home() {
     }
   }, []);
 
-  const handleAddFriend = () => {
-    // Refresh user data after adding a friend
-    if (currentUserId) {
-      getUserById(currentUserId);
-    }
-  };
-
-  return (
-    <div className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className}`}>
-      <NavBar />
-      <div className="flex w-full justify-between p-10">
-        {user && <Dashboard user={user} />}
-        <div className="w-[40vw] rounded-lg bg-white p-5">
-          <h1 className="text-[2vw]"> Explore</h1>
-          {/* Add explore content here */}
-        </div>
-        <div className="w-[20vw] rounded-lg overflow-y-scroll h-[80vh] bg-white p-5">
-          <h1 className="text-[2vw] p-5">Add Friends</h1>
-          <div className="w-full flex flex-col justify-center items-center gap-4">
-            {friends.map((friend, index) => (
-              <FriendCard 
-                key={index} 
-                friend={friend} 
-                currentUserId={currentUserId} 
-                onAddFriend={handleAddFriend}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div></div>;
 }
 
-export default Home;
+export default page;

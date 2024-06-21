@@ -2,7 +2,14 @@ import React from "react";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 
-function FriendCard({ friend, currentUserId }: { friend: { name: string, interests: string[] }, currentUserId: string }) {
+interface Friend {
+  name: string;
+  interests: string[];
+}
+
+
+
+function FriendCard({ friend, currentUserId, onAddFriend }: { friend: Friend; currentUserId: string; onAddFriend: () => void }) {
   const addFriend = async () => {
     if (!currentUserId) {
       alert("User ID is missing. Please log in again.");
@@ -15,6 +22,7 @@ function FriendCard({ friend, currentUserId }: { friend: { name: string, interes
         friends: arrayUnion(friend.name)
       });
       alert(`${friend.name} added to your friends list!`);
+      onAddFriend();
     } catch (error) {
       console.error("Error adding friend:", error);
       alert(`Failed to add friend: ${(error as Error).message}`);

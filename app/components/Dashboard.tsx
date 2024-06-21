@@ -55,7 +55,7 @@ function Dashboard({ user }: { user: User }) {
         <div className={`${jakartasmall.className} flex flex-col items-start justify-start text-start gap-4 py-5 text-[1vw]`}>
           <a href="/home" className="text-blue-600">Home</a>
           <a href="/profile">Profile</a>
-          <h2>Friends</h2>
+          <a href="/friends">Friends</a>
           <h2>Communities</h2>
           <h2>Projects</h2>
         </div>
