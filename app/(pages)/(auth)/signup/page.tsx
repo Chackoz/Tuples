@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/
 import { auth, db } from "../../../lib/firebaseConfig";
 import { poppins } from "../../../lib/fonts";
 import { useRouter } from "next/navigation";
+import Interests from "../../interests/page";
 
 function Page() {
   const [name, setName] = useState("");
@@ -88,7 +89,8 @@ function Page() {
       await setDoc(userRef, {
         name,
         userId,
-        friends: [], // Initialize empty friends array
+        Interests:[""],
+        friends: [""], // Initialize empty friends array
         emailVerified: false // Add this field to track email verification status
       });
       console.log("User data written with ID: ", userRef.id);
