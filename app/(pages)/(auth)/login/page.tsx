@@ -134,7 +134,7 @@ function Login() {
         <div className="flex h-[300px] w-[400px] flex-col justify-center items-center rounded-3xl bg-white p-10 shadow-md">
           <h1 className={`${poppins.className} text-3xl text-center mb-4`}>Email Not Verified</h1>
           <p className={`${poppins.className} text-xl text-center mb-6`}>
-            We've sent a new verification email. Please check your inbox and click the verification link to complete your registration.
+            We&apos;ve sent a new verification email. Please check your inbox and click the verification link to complete your registration.
           </p>
           <button
             onClick={() => setVerificationSent(false)}
