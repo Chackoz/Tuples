@@ -26,23 +26,23 @@ function Dashboard({
   user,
   currentView,
   setCurrentView,
-  state,setstate
+  state,
+  setstate
 }: {
   user: User;
   currentView: string;
   setCurrentView: (view: string) => void;
-  state:boolean;
-  setstate:(view: boolean) => void;
+  state: boolean;
+  setstate: (view: boolean) => void;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
-  
 
   useEffect(() => {
     if (user) {
       fetchUserCommunities();
     }
-  }, [user,currentView,state]);
+  }, [user, currentView, state]);
 
   const fetchUserCommunities = async () => {
     if (!user) return;
@@ -55,8 +55,6 @@ function Dashboard({
       ...doc.data()
     })) as Community[];
     setCommunities(userCommunities);
-    
-   
   };
 
   const toggleFriendsView = () => {
@@ -84,10 +82,18 @@ function Dashboard({
           >
             Chat
           </Link>
-          <Link href="#" onClick={() => setCurrentView("Communities")}>
+          <Link
+            href="#"
+            onClick={() => setCurrentView("Communities")}
+            className={currentView === "Communities" ? "text-blue-600" : ""}
+          >
             Communities
           </Link>
-          <Link href="#" onClick={() => setCurrentView("Projects")}>
+          <Link
+            href="#"
+            onClick={() => setCurrentView("Projects")}
+            className={currentView === "Projects" ? "text-blue-600" : ""}
+          >
             Projects
           </Link>
         </nav>
@@ -105,7 +111,7 @@ function Dashboard({
       <div className="flex w-full items-center justify-between py-5">
         <div className="flex flex-col items-center justify-center gap-0 leading-none">
           <h1 className="w-full text-start text-2xl text-blue-600">
-            {user?.friends?.length -1|| 0}
+            {user?.friends?.length - 1 || 0}
           </h1>
           <h2 className="text-lg text-gray-500">Friends</h2>
         </div>
@@ -127,7 +133,7 @@ function Dashboard({
             <RiAddLine className="mr-1" /> Create or Join
           </button>
         </div>
-        <div className="flex flex-wrap gap-2 py-4 overflow-auto">
+        <div className="flex flex-wrap gap-2 overflow-auto py-4">
           {communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           ))}
