@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -19,6 +17,8 @@ import Dashboard from "@/app/components/Dashboard";
 import { jakartasmall } from "@/app/utils/fonts";
 import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile"; // Import the new Profile component
+import Communities from "@/app/components/Communities";
+import FriendsList from "@/app/components/FriendsList";
 
 interface User {
   name: string;
@@ -47,6 +47,7 @@ function Home() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentView, setCurrentView] = useState<string>("Explore");
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
+  const [state, setstate] = useState(false);
 
   const getUserById = async (userId: string) => {
     try {
@@ -150,6 +151,7 @@ function Home() {
   useEffect(() => {
     if (user) {
       fetchUserFriends(user.friends);
+      fetchSimilarUsers(user);
     }
   }, [user, currentView]);
 
@@ -177,7 +179,7 @@ function Home() {
     if (currentView === "Communities") {
       fetchAllCommunities();
     }
-  }, [currentView]);
+  }, [currentView,state]);
 
   const handleRemoveFriend = async (friendName: string) => {
     if (!currentUserId || !user) {
@@ -235,6 +237,8 @@ function Home() {
       );
 
       console.log(`Joined community: ${communityId}`);
+      setCurrentView("Communities");
+      setstate(!state);
     } catch (error) {
       console.error("Error joining community:", error);
       alert(`Failed to join community: ${(error as Error).message}`);
@@ -249,58 +253,42 @@ function Home() {
       <div className="flex w-full justify-between p-10">
         {user && (
           <Dashboard
+            state={state}
+            setstate={setstate}
             user={user}
             currentView={currentView}
             setCurrentView={setCurrentView}
           />
         )}
-        <div className="w-[40vw] rounded-lg bg-white p-5">
+        <div className="w-[40vw] overflow-y-auto rounded-lg bg-white p-5">
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
+          {currentView === "Profile" && user &&   <Profile userId={currentUserId} />}
+        
           {currentView === "Communities" && (
-            <div className="flex flex-col gap-4">
-              {allCommunities.map((community) => (
-                <div key={community.id} className="flex items-center justify-between border p-4 rounded">
-                  <div>
-                    <h2 className="text-lg font-semibold">{community.name}</h2>
-                    <p className="text-sm text-gray-600">Creator: {community.creator}</p>
-                    <p className="text-sm text-gray-600">Members: {community.members.length}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {community.tags.map((tag, index) => (
-                        <span key={index} className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {!community.members.includes(user?.name || "") && (
-                    <button
-                      onClick={() => handleJoinCommunity(community.id)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-                    >
-                      Join
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {currentView === "Profile" && (
-            <Profile userId={currentUserId} />
+            <Communities
+              allCommunities={allCommunities}
+              user={user!}
+              setAllCommunities={setAllCommunities}
+              setstate={setstate}
+              state={state}
+            />
           )}
         </div>
-        <div className="h-[80vh] w-[23vw] overflow-y-scroll rounded-lg bg-white p-5">
-          {currentView !== "Friends" && (<h1 className="pb-5 text-2xl ">Add Friends</h1>)}
-          {currentView === "Friends" && (<h1 className="pb-5 text-2xl ">My Friends</h1>)}
+        <div className="h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
+          {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
+          {currentView === "Friends" && <h1 className="pb-5 text-2xl ">My Friends</h1>}
           <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
-          {currentView === "Friends" && (
+          {currentView === "Friends" && myFriends.length > 1 && (
             <div className="flex w-full flex-col items-center justify-center gap-4 ">
-           {friends.map((friend, index) => (
+              {myFriends.map((friend, index) => (
                 <FriendCard
                   key={friend.id || index}
                   friend={friend}
                   currentUserId={currentUserId}
                   onAddFriend={handleAddFriend}
-                  onRemoveFriend={() => handleRemoveFriend(friend.name)} showAddButton={false}                />
+                  onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                  showAddButton={false}
+                />
               ))}
             </div>
           )}
@@ -312,7 +300,9 @@ function Home() {
                   friend={friend}
                   currentUserId={currentUserId}
                   onAddFriend={handleAddFriend}
-                  onRemoveFriend={() => handleRemoveFriend(friend.name)} showAddButton={true}                />
+                  onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                  showAddButton={true}
+                />
               ))}
             </div>
           )}

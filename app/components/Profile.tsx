@@ -1,3 +1,5 @@
+// components/Profile.tsx
+
 import React, { useState, useEffect, useRef, KeyboardEventHandler } from 'react';
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from '../lib/firebaseConfig';
@@ -111,10 +113,10 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-md">
-      <h2 className="text-2xl font-bold mb-4">User Profile</h2>
-      <div className="mb-4">
-        <p><strong>Name:</strong> {user.name}</p>
-        <p><strong>User ID:</strong> {user.userId}</p>
+     
+      <div className="mb-4 w-[40%] flex flex-col justify-between items-stretch">
+        <p className='flex justify-between'><strong>Name:</strong> <span className='w-[50%]'>{user.name}</span></p>
+        <p className='flex justify-between'><strong>User ID:</strong> <span className='w-[50%]'>{user.userId}</span></p>
       </div>
       <div className="mb-4">
         <h3 className="text-xl font-semibold mb-2">Interests</h3>
@@ -158,21 +160,21 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
             )}
             <button
               onClick={handleSaveInterests}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mx-2"
             >
               Save Interests
             </button>
           </div>
         ) : (
           <div>
-            <div className="flex flex-wrap gap-2 mb-4">
+           {user.interests && user.interests.length > 0 ? ( <div className="flex flex-wrap gap-2 mb-4">
               {user.interests.map((interest, index) => (
                 <Pill key={index} text={interest} type="view" onClick={undefined} />
               ))}
-            </div>
+            </div>): <p className='py-2'>No interests added yet.</p>}
             <button
               onClick={handleEditInterests}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 m-2"
             >
               Edit Interests
             </button>

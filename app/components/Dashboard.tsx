@@ -25,20 +25,24 @@ interface Community {
 function Dashboard({
   user,
   currentView,
-  setCurrentView
+  setCurrentView,
+  state,setstate
 }: {
   user: User;
   currentView: string;
   setCurrentView: (view: string) => void;
+  state:boolean;
+  setstate:(view: boolean) => void;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
+  
 
   useEffect(() => {
     if (user) {
       fetchUserCommunities();
     }
-  }, [user]);
+  }, [user,currentView,state]);
 
   const fetchUserCommunities = async () => {
     if (!user) return;
@@ -51,6 +55,8 @@ function Dashboard({
       ...doc.data()
     })) as Community[];
     setCommunities(userCommunities);
+    
+   
   };
 
   const toggleFriendsView = () => {
@@ -99,7 +105,7 @@ function Dashboard({
       <div className="flex w-full items-center justify-between py-5">
         <div className="flex flex-col items-center justify-center gap-0 leading-none">
           <h1 className="w-full text-start text-2xl text-blue-600">
-            {user?.friends?.length || 0}
+            {user?.friends?.length -1|| 0}
           </h1>
           <h2 className="text-lg text-gray-500">Friends</h2>
         </div>
@@ -113,7 +119,7 @@ function Dashboard({
       </div>
       <div className="my-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Your Communities</h1>
+          <h1 className="text-lg font-semibold">My Communities</h1>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
@@ -121,14 +127,14 @@ function Dashboard({
             <RiAddLine className="mr-1" /> Create or Join
           </button>
         </div>
-        <div className="flex flex-wrap gap-2 py-4">
+        <div className="flex flex-wrap gap-2 py-4 overflow-auto">
           {communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           ))}
         </div>
       </div>
       <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
-        <h1 className="mb-4 text-lg font-semibold">Your Projects</h1>
+        <h1 className="mb-4 text-lg font-semibold">MyProjects</h1>
         <div className="flex flex-wrap gap-2 py-4">
           <CommunityBox />
           <CommunityBox />
@@ -140,6 +146,8 @@ function Dashboard({
           onClose={() => setShowModal(false)}
           onCreateOrJoin={fetchUserCommunities}
           user={user}
+          state={state}
+          setstate={setstate}
         />
       )}
     </div>

@@ -6,9 +6,11 @@ interface CreateJoinCommunityModalProps {
   onClose: () => void;
   onCreateOrJoin: () => void;
   user: { name: string };
+  state:boolean;
+  setstate:(view: boolean) => void;
 }
 
-function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user }: CreateJoinCommunityModalProps) {
+function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstate}: CreateJoinCommunityModalProps) {
   const [communityName, setCommunityName] = useState('');
   const [isCreating, setIsCreating] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
@@ -41,6 +43,8 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user }: CreateJoinC
       }
       onCreateOrJoin();
       onClose();
+      setstate(!state);
+      
     } catch (error) {
       console.error("Error creating/joining community:", error);
       alert(`Error ${isCreating ? 'creating' : 'joining'} community. Please try again.`);
