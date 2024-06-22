@@ -1,12 +1,12 @@
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import { jakartasmall } from "../utils/fonts";
-import { RiArrowRightCircleFill, RiSettings2Line, RiAddLine } from "react-icons/ri";
+import { RiArrowRightCircleFill, RiAddLine } from "react-icons/ri";
 import CommunityBox from "./ui/CommunityBox";
-
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
-import CreateCommunityModal from "./ui/CreateCommunityModal";
+
+import Link from "next/link";
 import CreateJoinCommunityModal from "./ui/CreateCommunityModal";
 
 interface User {
@@ -19,6 +19,7 @@ interface Community {
   name: string;
   creator: string;
   members: string[];
+  tags: string[];
 }
 
 function Dashboard({
@@ -27,8 +28,8 @@ function Dashboard({
   setCurrentView
 }: {
   user: User;
-  currentView: "explore" | "friends";
-  setCurrentView: (view: "explore" | "friends") => void;
+  currentView: string;
+  setCurrentView: (view: string) => void;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -52,62 +53,70 @@ function Dashboard({
     setCommunities(userCommunities);
   };
 
+  const toggleFriendsView = () => {
+    setCurrentView(currentView === "Friends" ? "Explore" : "Friends");
+  };
+
   return (
-    <div className={`${jakartasmall.className} min-h-[80vh] w-[30vw] px-5`}>
+    <div className={`${jakartasmall.className} w-[26vw] px-5`}>
       <div className="flex w-full items-start justify-between">
-        <div
-          className={`${jakartasmall.className} flex flex-col items-start justify-start gap-4 py-5 text-start text-[1vw]`}
-        >
-          <a
+        <nav className="flex flex-col items-start justify-start gap-4 py-5 text-start text-base">
+          <Link
             href="#"
-            onClick={() => setCurrentView("explore")}
-            className={currentView === "explore" ? "text-blue-600" : ""}
+            onClick={() => setCurrentView("Explore")}
+            className={currentView === "Explore" ? "text-blue-600" : ""}
           >
             Home
-          </a>
-          <a href="/profile">Profile</a>
-          <a
+          </Link>
+          <Link href="#" onClick={() => setCurrentView("Profile")}>
+            Profile
+          </Link>
+          <Link
             href="#"
-            onClick={() => setCurrentView("friends")}
-            className={currentView === "friends" ? "text-blue-600" : ""}
+            onClick={() => setCurrentView("Chat")}
+            className={currentView === "Chat" ? "text-blue-600" : ""}
           >
-            Friends
-          </a>
-          <h2>Communities</h2>
-          <h2>Projects</h2>
-        </div>
-        <div className="flex h-fit w-fit flex-col items-center justify-center rounded-lg bg-gray-100 p-2">
-          <div className="flex w-full items-center justify-between">
-            <h1 className="w-full py-2 text-start">Profile</h1>
-            <RiSettings2Line className="h-[20px] w-[20px]" />
-          </div>
+            Chat
+          </Link>
+          <Link href="#" onClick={() => setCurrentView("Communities")}>
+            Communities
+          </Link>
+          <Link href="#" onClick={() => setCurrentView("Projects")}>
+            Projects
+          </Link>
+        </nav>
+        <div className="flex h-52 w-52 flex-col items-center justify-center gap-4 rounded-lg bg-gray-100 p-2">
           <Image
             src="/logo.png"
             alt="logo"
             width={100}
             height={100}
-            className="m-1 w-[60%] rounded-2xl object-fill"
+            className="m-1 w-3/5 rounded-2xl object-fill"
           />
-          <h1 className="text-[1.5vw]">{user?.name || "Username"}</h1>
+          <h1 className="text-xl">{user?.name || "Username"}</h1>
         </div>
       </div>
       <div className="flex w-full items-center justify-between py-5">
         <div className="flex flex-col items-center justify-center gap-0 leading-none">
-          <h1 className="w-full text-start text-[1.5vw] text-blue-600">
+          <h1 className="w-full text-start text-2xl text-blue-600">
             {user?.friends?.length || 0}
           </h1>
-          <h2 className="text-[1.2vw] text-gray-500">Friends</h2>
+          <h2 className="text-lg text-gray-500">Friends</h2>
         </div>
-        <button className="flex h-fit w-[200px] items-center justify-between bg-blue-500 px-4 py-2 text-start text-[1vw] text-white">
-          See Friends <RiArrowRightCircleFill />
+        <button
+          onClick={toggleFriendsView}
+          className="flex h-fit w-[200px] items-center justify-between bg-blue-500 px-4 py-2 text-start text-base text-white transition-colors hover:bg-blue-600"
+        >
+          {currentView === "Friends" ? "Back to Home" : "See Friends"}{" "}
+          <RiArrowRightCircleFill />
         </button>
       </div>
-      <div className="my-5 w-full gap-4 rounded-lg bg-white p-4">
+      <div className="my-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-[1vw]">Your Communities</h1>
+          <h1 className="text-lg font-semibold">Your Communities</h1>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center rounded bg-blue-500 px-2 py-1 text-[0.8vw] text-white hover:bg-blue-600"
+            className="flex items-center rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
           >
             <RiAddLine className="mr-1" /> Create or Join
           </button>
@@ -118,9 +127,9 @@ function Dashboard({
           ))}
         </div>
       </div>
-      <div className="my-5 w-full gap-4 rounded-lg bg-white p-4">
-        <h1 className="text-[1vw]">Your Projects</h1>
-        <div className="flex gap-2 py-4">
+      <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
+        <h1 className="mb-4 text-lg font-semibold">Your Projects</h1>
+        <div className="flex flex-wrap gap-2 py-4">
           <CommunityBox />
           <CommunityBox />
           <CommunityBox />

@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -7,6 +9,7 @@ import {
   collection,
   getDocs,
   updateDoc,
+  arrayRemove,
   arrayUnion
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
@@ -15,6 +18,7 @@ import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import { jakartasmall } from "@/app/utils/fonts";
 import FriendCard from "@/app/components/ui/FriendCard";
+import Profile from "@/app/components/Profile"; // Import the new Profile component
 
 interface User {
   name: string;
@@ -28,13 +32,21 @@ interface Friend {
   interests: string[];
 }
 
+interface Community {
+  id: string;
+  name: string;
+  creator: string;
+  members: string[];
+  tags: string[];
+}
+
 function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [myfriends, setmyFriends] = useState<Friend[]>([]);
+  const [myFriends, setMyFriends] = useState<Friend[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [currentView, setCurrentView] = useState<"explore" | "friends">("explore");
-  const [showMyFriends, setShowMyFriends] = useState(false);
+  const [currentView, setCurrentView] = useState<string>("Explore");
+  const [allCommunities, setAllCommunities] = useState<Community[]>([]);
 
   const getUserById = async (userId: string) => {
     try {
@@ -44,11 +56,7 @@ function Home() {
         const userData = userSnapshot.data() as User;
         console.log("User fetched", userData);
         setUser(userData);
-        if (showMyFriends) {
-          fetchUserFriends(userData.friends);
-        } else {
-          fetchSimilarUsers(userData);
-        }
+        fetchSimilarUsers(userData);
         return userData;
       } else {
         console.log("Document does not exist!");
@@ -81,19 +89,21 @@ function Home() {
       ) {
         const formattedFriends = similar_users
           .map(([name, interests]) => ({ name, interests }))
-          .filter((friend) => friend.name !== user.name);
+          .filter(
+            (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
+          );
         setFriends(formattedFriends);
       } else {
         console.error("Invalid similar_users structure:", similar_users);
-        await fetchRandomUsers(user.name);
+        await fetchRandomUsers(user);
       }
     } catch (error) {
       console.error("Error fetching similar users:", error);
-      await fetchRandomUsers(user.name);
+      await fetchRandomUsers(user);
     }
   };
 
-  const fetchRandomUsers = async (currentUserName: string) => {
+  const fetchRandomUsers = async (user: User) => {
     try {
       const usersRef = collection(db, "users");
       const usersSnapshot = await getDocs(usersRef);
@@ -103,7 +113,7 @@ function Home() {
           name: doc.data().name,
           interests: doc.data().interests
         }))
-        .filter((user) => user.name !== currentUserName);
+        .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
 
       const shuffled = allUsers.sort(() => 0.5 - Math.random());
       const randomUsers = shuffled.slice(0, 5);
@@ -114,11 +124,10 @@ function Home() {
     }
   };
 
-  const fetchUserFriends = async (friendIds: string[]) => {
+  const fetchUserFriends = async (friendNames: string[]) => {
     try {
-      if (user) {
-        setmyFriends(user.friends.map((friend) => ({ name: friend, interests: [] })));
-      }
+      const friendsData = friendNames.map((name) => ({ name, interests: [] }));
+      setMyFriends(friendsData);
     } catch (error) {
       console.error("Error fetching user friends:", error);
     }
@@ -132,35 +141,17 @@ function Home() {
 
     if (cookieValue) {
       setCurrentUserId(cookieValue);
-      getUserById(cookieValue).then((userData) => {
-        if (userData) {
-          fetchSimilarUsers(userData);
-        }
-      });
+      getUserById(cookieValue);
     } else {
       console.error("User ID not found in cookie");
     }
-  }, [currentUserId]);
+  }, []);
 
   useEffect(() => {
-    const cookieValue = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userId"))
-      ?.split("=")?.[1];
-
-    if (cookieValue) {
-      setCurrentUserId(cookieValue);
-      getUserById(cookieValue).then((userData) => {
-        if (userData) {
-          if (currentView === "friends") {
-            fetchUserFriends(userData.friends);
-          }
-        }
-      });
-    } else {
-      console.error("User ID not found in cookie");
+    if (user) {
+      fetchUserFriends(user.friends);
     }
-  }, [currentView]);
+  }, [user, currentView]);
 
   const handleAddFriend = () => {
     if (currentUserId) {
@@ -168,8 +159,86 @@ function Home() {
     }
   };
 
-  const toggleFriendsView = () => {
-    setShowMyFriends(!showMyFriends);
+  const fetchAllCommunities = async () => {
+    try {
+      const communitiesRef = collection(db, "communities");
+      const querySnapshot = await getDocs(communitiesRef);
+      const communitiesData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Community[];
+      setAllCommunities(communitiesData);
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === "Communities") {
+      fetchAllCommunities();
+    }
+  }, [currentView]);
+
+  const handleRemoveFriend = async (friendName: string) => {
+    if (!currentUserId || !user) {
+      alert("User ID is missing. Please log in again.");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", currentUserId);
+      await updateDoc(userRef, {
+        friends: arrayRemove(friendName)
+      });
+
+      // Update local state
+      setUser((prevUser) => {
+        if (prevUser) {
+          return {
+            ...prevUser,
+            friends: prevUser.friends.filter((friend) => friend !== friendName)
+          };
+        }
+        return prevUser;
+      });
+
+      setMyFriends((prevFriends) =>
+        prevFriends.filter((friend) => friend.name !== friendName)
+      );
+
+      console.log(`${friendName} removed from your friends list!`);
+    } catch (error) {
+      console.error("Error removing friend:", error);
+      alert(`Failed to remove friend: ${(error as Error).message}`);
+    }
+  };
+
+  const handleJoinCommunity = async (communityId: string) => {
+    if (!currentUserId || !user) {
+      alert("User ID is missing. Please log in again.");
+      return;
+    }
+
+    try {
+      const communityRef = doc(db, "communities", communityId);
+      await updateDoc(communityRef, {
+        members: arrayUnion(user.name)
+      });
+
+      // Update local state
+      setAllCommunities((prevCommunities) =>
+        prevCommunities.map((community) =>
+          community.id === communityId
+            ? { ...community, members: [...community.members, user.name] }
+            : community
+        )
+      );
+
+      console.log(`Joined community: ${communityId}`);
+    } catch (error) {
+      console.error("Error joining community:", error);
+      alert(`Failed to join community: ${(error as Error).message}`);
+    }
   };
 
   return (
@@ -186,38 +255,67 @@ function Home() {
           />
         )}
         <div className="w-[40vw] rounded-lg bg-white p-5">
-          <h1 className="mb-5 text-[2vw]">
-            {currentView === "explore" ? "Explore" : "Friends"}
-          </h1>
-          {currentView !== "explore" ? (
-            <div className="grid grid-cols-2 gap-4">
-              {myfriends.map((friend, index) => (
+          <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
+          {currentView === "Communities" && (
+            <div className="flex flex-col gap-4">
+              {allCommunities.map((community) => (
+                <div key={community.id} className="flex items-center justify-between border p-4 rounded">
+                  <div>
+                    <h2 className="text-lg font-semibold">{community.name}</h2>
+                    <p className="text-sm text-gray-600">Creator: {community.creator}</p>
+                    <p className="text-sm text-gray-600">Members: {community.members.length}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {community.tags.map((tag, index) => (
+                        <span key={index} className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {!community.members.includes(user?.name || "") && (
+                    <button
+                      onClick={() => handleJoinCommunity(community.id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Join
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {currentView === "Profile" && (
+            <Profile userId={currentUserId} />
+          )}
+        </div>
+        <div className="h-[80vh] w-[23vw] overflow-y-scroll rounded-lg bg-white p-5">
+          {currentView !== "Friends" && (<h1 className="pb-5 text-2xl ">Add Friends</h1>)}
+          {currentView === "Friends" && (<h1 className="pb-5 text-2xl ">My Friends</h1>)}
+          <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
+          {currentView === "Friends" && (
+            <div className="flex w-full flex-col items-center justify-center gap-4 ">
+           {friends.map((friend, index) => (
                 <FriendCard
                   key={friend.id || index}
                   friend={friend}
                   currentUserId={currentUserId}
                   onAddFriend={handleAddFriend}
-                  showAddButton={false}
-                />
+                  onRemoveFriend={() => handleRemoveFriend(friend.name)} showAddButton={false}                />
               ))}
             </div>
-          ) : (
-            <div></div>
           )}
-        </div>
-        <div className="h-[80vh] w-[20vw] overflow-y-scroll rounded-lg bg-white p-5">
-          <h1 className="p-5 text-[2vw]">Add Friends</h1>
-          <div className="flex w-full flex-col items-center justify-center gap-4">
-            {friends.map((friend, index) => (
-              <FriendCard
-                key={friend.id || index}
-                friend={friend}
-                currentUserId={currentUserId}
-                onAddFriend={handleAddFriend}
-                showAddButton={true}
-              />
-            ))}
-          </div>
+          {currentView !== "Friends" && (
+            <div className="flex w-full flex-col items-center justify-center gap-4 ">
+              {friends.map((friend, index) => (
+                <FriendCard
+                  key={friend.id || index}
+                  friend={friend}
+                  currentUserId={currentUserId}
+                  onAddFriend={handleAddFriend}
+                  onRemoveFriend={() => handleRemoveFriend(friend.name)} showAddButton={true}                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

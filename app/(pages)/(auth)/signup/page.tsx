@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth, db } from "../../../lib/firebaseConfig";
 import { poppins } from "../../../lib/fonts";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,8 @@ function Page() {
   const [firsttry, setfirsttry] = useState(true);
   const [next, setNext] = useState(false);
   const [firebaseError, setfirebaseError] = useState("");
+  const [userId, setUserId] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -31,6 +33,12 @@ function Page() {
       const capitalizedExtractedName =
         extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
       setName(capitalizedExtractedName);
+
+      const userIdMatch = email.match(/\.(.*?)@/);
+      if (userIdMatch) {
+        setUserId(userIdMatch[1]);
+      }
+
       setNext(true);
     }
   };
@@ -49,9 +57,16 @@ function Page() {
             password
           );
           const user = userCredential.user;
+
+          // Send email verification
+          await sendEmailVerification(user);
+          setVerificationSent(true);
+
           await addData(name, user.uid);
           addCookie(user.uid);
-          router.push("/interests");
+
+          // Instead of redirecting, we'll show a message to check email
+          // router.push("/interests");
         } catch (error) {
           const firebaseError = error as FirebaseError;
           const errorMessage = firebaseError.message;
@@ -70,8 +85,13 @@ function Page() {
   const addData = async (name: string, id: string) => {
     try {
       const userRef = doc(db, "users", id);
-      await setDoc(userRef, { name });
-      console.log("Name written with ID: ", userRef.id);
+      await setDoc(userRef, {
+        name,
+        userId,
+        friends: [], // Initialize empty friends array
+        emailVerified: false // Add this field to track email verification status
+      });
+      console.log("User data written with ID: ", userRef.id);
     } catch (e) {
       console.error("Error adding document: ", e);
     }
@@ -106,7 +126,7 @@ function Page() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl border-2 border-transparent w-[90%] mx-auto bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="mx-auto w-[90%] rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
               placeholder="johndoe@mbcet.ac.in"
             />
 
@@ -118,17 +138,18 @@ function Page() {
             </button>
           </div>
           <div>
-            By continuing, you agree to our terms and conditions and privacy policy. <br/>
+            By continuing, you agree to our terms and conditions and privacy policy.{" "}
+            <br />
             <button
-          onClick={() => router.push("/login")}
-          className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary  text-center w-full p-2`}
-        >
-          Sign In Instead
-        </button>
+              onClick={() => router.push("/login")}
+              className={`${poppins.className} w-full p-2 text-center text-xl  text-gray-600 underline hover:text-primary`}
+            >
+              Sign In Instead
+            </button>
           </div>
         </div>
       )}
-      {next && (
+      {next && !verificationSent && (
         <div className="flex h-[600px] w-[400px] flex-col justify-between rounded-3xl bg-white  p-10 shadow-md">
           <div className="">
             <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Hello ,</h1>
@@ -188,6 +209,23 @@ function Page() {
             className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary `}
           >
             Go Back
+          </button>
+        </div>
+      )}
+      {verificationSent && (
+        <div className="flex h-[300px] w-[400px] flex-col items-center justify-center rounded-3xl bg-white p-10 shadow-md">
+          <h1 className={`${poppins.className} mb-4 text-center text-3xl`}>
+            Verification Email Sent
+          </h1>
+          <p className={`${poppins.className} mb-6 text-center text-xl`}>
+            Please check your email and click on the verification link to complete your
+            registration.
+          </p>
+          <button
+            onClick={() => router.push("/login")}
+            className={`${poppins.className} w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+          >
+            Go to Login
           </button>
         </div>
       )}
