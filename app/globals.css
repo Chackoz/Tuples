@@ -46,3 +46,40 @@
   background-color: #ccc;
 }
 
+
+/* Define CSS variables for scrollbar colors */
+:root {
+  --scrollbar-bg: #121212;
+  --scrollbar-thumb: #f8f8f8;
+  --scrollbar-thumb-hover: #ececec;
+}
+
+:root {
+  --scrollbar-bg: #f0f0f0; /* Light mode background */
+  --scrollbar-thumb: #a0a0a0; /* Light mode thumb */
+  --scrollbar-thumb-hover: #909090; /* Light mode thumb hover */
+}
+
+.dark {
+  --scrollbar-bg: #121212; /* Dark mode background */
+  --scrollbar-thumb: #f8f8f8; /* Dark mode thumb */
+  --scrollbar-thumb-hover: #ececec; /* Dark mode thumb hover */
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-bg);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}

@@ -250,7 +250,7 @@ function Home() {
 
   return (
     <div
-      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className}`}
+      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
     >
       <NavBar />
       <div className="flex w-full justify-between p-10">
@@ -263,7 +263,7 @@ function Home() {
             setCurrentView={setCurrentView}
           />
         )}
-        <div className={` ${currentView === "Chat" ? 'w-[70%]' : 'w-[40vw]'} overflow-y-auto rounded-lg bg-white p-5`}>
+        <div className={` ${currentView === "Chat" ? 'w-[70%]' : 'w-[40vw]'} overflow-y-auto custom-scrollbar rounded-lg bg-white p-5`}>
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
           {currentView === "Chat" && (
             <ChatWindow
@@ -284,7 +284,7 @@ function Home() {
         </div>
        {
         currentView !== "Chat" && 
-        <div className="h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
+        <div className="h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5 custom-scrollbar">
         {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
         {currentView === "Friends" && <h1 className="pb-5 text-2xl ">My Friends</h1>}
         <div className="flex w-full flex-col items-center justify-center gap-4 "></div>

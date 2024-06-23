@@ -70,7 +70,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   };
 
   return (
-    <div className="flex h-[70vh]">
+    <div className="flex h-[70vh] ">
       <div className="w-1/3 border-r">
         <h2 className="text-xl font-bold p-4">Chats</h2>
         {chats.map((chat) => (
@@ -91,7 +91,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
         ))}
       </div>
       <div className="w-2/3 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar" >
           {messages.map((message) => (
             <div
               key={message.id}
