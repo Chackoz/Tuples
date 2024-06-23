@@ -349,7 +349,9 @@ function Home() {
               state={state}
             />
           )}
-         {isLoading ? (
+         {currentView==="Explore" && (
+          <>
+          {isLoading ? (
                 // Skeleton loading state
                 Array(3).fill(null).map((_, index) => (
                   <div key={index} className="mb-8 rounded-lg bg-gray-100 p-4 animate-pulse">
@@ -370,7 +372,7 @@ function Home() {
                     </div>
                   </div>
                 ))
-              )}
+              )}</>)}
         </div>
         {currentView !== "Chat" && (
           <div className="custom-scrollbar h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
