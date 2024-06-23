@@ -16,7 +16,7 @@ import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import { jakartasmall } from "@/app/utils/fonts";
 import FriendCard from "@/app/components/ui/FriendCard";
-import Profile from "@/app/components/Profile"; // Import the new Profile component
+import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import FriendsList from "@/app/components/FriendsList";
 import ChatWindow from "@/app/components/ui/ChatWindow";
@@ -41,6 +41,12 @@ interface Community {
   tags: string[];
 }
 
+interface Insight {
+  title: string;
+  description: string;
+  challenge: string;
+}
+
 function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -48,8 +54,11 @@ function Home() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentView, setCurrentView] = useState<string>("Explore");
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [state, setstate] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
   const getUserById = async (userId: string) => {
     try {
       const userRef = doc(db, "users", userId);
@@ -59,7 +68,8 @@ function Home() {
         console.log("User fetched", userData);
         setUser(userData);
         fetchSimilarUsers(userData);
-        console.log("User Data is ",userData);
+
+        console.log("User Data is ", userData);
         return userData;
       } else {
         console.log("Document does not exist!");
@@ -106,6 +116,58 @@ function Home() {
     }
   };
 
+  const generateInsights = async (interests: string[]) => {
+    setIsLoading(true);
+    const API_KEY = process.env.GEMINI_API_KEY;
+    const API_URL =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+  
+    try {
+      const prompt = `Okay, here's the real deal. Forget boring, serious insights.  Based on these WILD interests of ${interests.join(", ")}, generate 7 ridiculously funny yet oddly profound observations about life. Think of them as fortune cookie wisdom on a sugar rush.  also if like the interest array has lot of tech and something like anime equal distribution to all fields , make it like daily chllanges or tasks to do.
+  
+      Here's how to dish it up:
+  
+      1. A catchy title (bonus points for puns, because let's face it, they're hilarious)
+      2. A brief description that's equal parts hilarious and thought-provoking (think shower thought with a punchline)
+      3. A challenge or action item mostly like a project to work, but make it FUN, not some boring self-improvement nonsense
+  
+      Format the response as a series of insights, separated by dashes (--):
+  
+      Title: [Insight Title]
+      Description: [Insight Description]
+      Challenge: [Related Challenge]
+      
+      ---
+  
+      Let's get weird!    
+      `;
+  
+      const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
+        contents: [{ parts: [{ text: prompt }] }]
+      });
+  
+      const generatedText = response.data.candidates[0].content.parts[0].text;
+  
+      // Parse the generated text into insight data
+      const insightEntries = generatedText
+        .split("---")
+        .filter((entry: string) => entry.trim() !== "");
+      const insightsData = insightEntries.map((entry: string) => {
+        const lines = entry.trim().split("\n");
+        return {
+          title: lines[0].replace("Title: ", ""),
+          description: lines[1].replace("Description: ", ""),
+          challenge: lines[2]?.replace("Challenge: ", "")
+        };
+      });
+      setIsLoading(false);
+      setInsights(insightsData);
+      
+    } catch (error) {
+      console.error("Error generating insights:", error);
+    }
+  };
+
   const fetchRandomUsers = async (user: User) => {
     try {
       const usersRef = collection(db, "users");
@@ -143,7 +205,7 @@ function Home() {
       ?.split("=")?.[1];
 
     if (cookieValue) {
-      console.log("User ID found in cookie:", cookieValue)
+      console.log("User ID found in cookie:", cookieValue);
       setCurrentUserId(cookieValue);
       getUserById(cookieValue);
     } else {
@@ -155,6 +217,7 @@ function Home() {
     if (user) {
       fetchUserFriends(user.friends);
       fetchSimilarUsers(user);
+      generateInsights(user.interests);
     }
   }, [user, currentView]);
 
@@ -182,7 +245,7 @@ function Home() {
     if (currentView === "Communities") {
       fetchAllCommunities();
     }
-  }, [currentView,state]);
+  }, [currentView, state]);
 
   const handleRemoveFriend = async (friendName: string) => {
     if (!currentUserId || !user) {
@@ -263,15 +326,12 @@ function Home() {
             setCurrentView={setCurrentView}
           />
         )}
-        <div className={` ${currentView === "Chat" ? 'w-[70%]' : 'w-[40vw]'} overflow-y-auto custom-scrollbar rounded-lg bg-white p-5`}>
+        <div
+          className={` ${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} h-[80vh] custom-scrollbar overflow-y-auto rounded-lg bg-white p-5`}
+        >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && (
-            <ChatWindow
-        currentUserId={currentUserId}
-      />
-)}
-          {currentView === "Profile" && user &&   <Profile userId={currentUserId} />}
-        
+          {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
+          {currentView === "Profile" && user && <Profile userId={currentUserId} />}
           {currentView === "Communities" && (
             <Communities
               allCommunities={allCommunities}
@@ -281,44 +341,64 @@ function Home() {
               state={state}
             />
           )}
+         {isLoading ? (
+                // Skeleton loading state
+                Array(3).fill(null).map((_, index) => (
+                  <div key={index} className="mb-8 rounded-lg bg-gray-100 p-4 animate-pulse">
+                    <div className="h-6 w-3/4 bg-gray-300 mb-2 rounded"></div>
+                    <div className="h-4 w-full bg-gray-300 mb-4 rounded"></div>
+                    <div className="h-4 w-full bg-gray-300 mb-2 rounded"></div>
+                    <div className="h-4 w-3/4 bg-gray-300 rounded"></div>
+                  </div>
+                ))
+              ) : (
+                insights.map((insight, index) => (
+                  <div key={index} className="mb-8 rounded-lg bg-gray-100 p-4">
+                    <h3 className="mb-2 text-xl font-semibold">{insight.title.replaceAll("**","")}</h3>
+                    <p className="mb-4">{insight.description.replaceAll("**","")}</p>
+                    <div className="rounded bg-blue-100 p-3">
+                      <h4 className="mb-1 font-semibold">Challenge:</h4>
+                      <p>{insight.challenge.replaceAll("**","")}</p>
+                    </div>
+                  </div>
+                ))
+              )}
         </div>
-       {
-        currentView !== "Chat" && 
-        <div className="h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5 custom-scrollbar">
-        {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
-        {currentView === "Friends" && <h1 className="pb-5 text-2xl ">My Friends</h1>}
-        <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
-        {currentView === "Friends" && myFriends.length > 1 && (
-          <div className="flex w-full flex-col items-center justify-center gap-4 ">
-            {myFriends.map((friend, index) => (
-              <FriendCard
-                key={friend.id || index}
-                friend={friend}
-                currentUserId={currentUserId}
-                onAddFriend={handleAddFriend}
-                onRemoveFriend={() => handleRemoveFriend(friend.name)}
-                showAddButton={false}
-              />
-            ))}
+        {currentView !== "Chat" && (
+          <div className="custom-scrollbar h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
+            {currentView !== "Friends" && <h1 className="pb-5 text-2xl">Add Friends</h1>}
+            {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
+            <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
+            {currentView === "Friends" && myFriends.length > 1 && (
+              <div className="flex w-full flex-col items-center justify-center gap-4 ">
+                {myFriends.map((friend, index) => (
+                  <FriendCard
+                    key={friend.id || index}
+                    friend={friend}
+                    currentUserId={currentUserId}
+                    onAddFriend={handleAddFriend}
+                    onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                    showAddButton={false}
+                  />
+                ))}
+              </div>
+            )}
+            {currentView !== "Friends" && (
+              <div className="flex w-full flex-col items-center justify-center gap-4 ">
+                {friends.map((friend, index) => (
+                  <FriendCard
+                    key={friend.id || index}
+                    friend={friend}
+                    currentUserId={currentUserId}
+                    onAddFriend={handleAddFriend}
+                    onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                    showAddButton={true}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
-            
-        {currentView !== "Friends" && (
-          <div className="flex w-full flex-col items-center justify-center gap-4 ">
-            {friends.map((friend, index) => (
-              <FriendCard
-                key={friend.id || index}
-                friend={friend}
-                currentUserId={currentUserId}
-                onAddFriend={handleAddFriend}
-                onRemoveFriend={() => handleRemoveFriend(friend.name)}
-                showAddButton={true}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-       }
       </div>
     </div>
   );
