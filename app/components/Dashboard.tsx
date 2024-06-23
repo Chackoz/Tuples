@@ -72,7 +72,7 @@ function Dashboard({
           >
             Home
           </Link>
-          <Link href="#" onClick={() => setCurrentView("Profile")}>
+          <Link href="#" onClick={() => setCurrentView("Profile")} className={currentView === "Profile" ? "text-blue-600" : ""}>
             Profile
           </Link>
           <Link

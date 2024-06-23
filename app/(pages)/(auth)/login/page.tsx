@@ -15,7 +15,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firebaseError, setFirebaseError] = useState("");
-  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(true);
 
   const addCookie = (id: string) => {
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -65,14 +65,14 @@ function Login() {
   };
 
   const updateEmailVerificationStatus = async (userId: string) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, {
-        emailVerified: true
-      });
-    } catch (error) {
-      console.error("Error updating email verification status:", error);
-    }
+    // try {
+    //   const userRef = doc(db, "users", userId);
+    //   await updateDoc(userRef, {
+    //     emailVerified: true
+    //   });
+    // } catch (error) {
+    //   console.error("Error updating email verification status:", error);
+    // }
   };
 
   return (
