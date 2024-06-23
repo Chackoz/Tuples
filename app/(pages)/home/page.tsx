@@ -58,6 +58,7 @@ function Home() {
   const [state, setstate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
 
   const getUserById = async (userId: string) => {
     try {
@@ -117,37 +118,46 @@ function Home() {
   };
 
   const generateInsights = async (interests: string[]) => {
+    const currentTime = Date.now();
+    if (currentTime - lastApiCallTime < 60000) {
+      console.log("API call skipped to respect rate limit.");
+      return;
+    }
+
+    setLastApiCallTime(currentTime);
     setIsLoading(true);
     const API_KEY = process.env.GEMINI_API_KEY;
     const API_URL =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-  
+
     try {
-      const prompt = `Okay, here's the real deal. Forget boring, serious insights.  Based on these WILD interests of ${interests.join(", ")}, generate 7 ridiculously funny yet oddly profound observations about life. Think of them as fortune cookie wisdom on a sugar rush.  also if like the interest array has lot of tech and something like anime equal distribution to all fields , make it like daily chllanges or tasks to do.
-  
+      const prompt = `Okay, here's the real deal. Forget boring, serious insights. Based on these WILD interests of ${interests.join(
+        ", "
+      )}, generate 7 ridiculously funny yet oddly profound observations about life. Think of them as fortune cookie wisdom on a sugar rush. also if like the interest array has lot of tech and something like anime equal distribution to all fields, make it like daily challenges or tasks to do.
+
       Here's how to dish it up:
-  
+
       1. A catchy title (bonus points for puns, because let's face it, they're hilarious)
       2. A brief description that's equal parts hilarious and thought-provoking (think shower thought with a punchline)
       3. A challenge or action item mostly like a project to work, but make it FUN, not some boring self-improvement nonsense
-  
+
       Format the response as a series of insights, separated by dashes (--):
-  
+
       Title: [Insight Title]
       Description: [Insight Description]
       Challenge: [Related Challenge]
-      
+
       ---
-  
-      Let's get weird!    
+
+      Let's get weird!
       `;
-  
+
       const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
         contents: [{ parts: [{ text: prompt }] }]
       });
-  
+
       const generatedText = response.data.candidates[0].content.parts[0].text;
-  
+
       // Parse the generated text into insight data
       const insightEntries = generatedText
         .split("---")
@@ -162,12 +172,10 @@ function Home() {
       });
       setIsLoading(false);
       setInsights(insightsData);
-      
     } catch (error) {
       console.error("Error generating insights:", error);
     }
   };
-
   const fetchRandomUsers = async (user: User) => {
     try {
       const usersRef = collection(db, "users");
