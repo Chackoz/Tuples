@@ -15,7 +15,7 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firebaseError, setFirebaseError] = useState("");
-  const [verificationSent, setVerificationSent] = useState(true);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const addCookie = (id: string) => {
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -27,11 +27,11 @@ function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        await sendEmailVerification(user);
-        setVerificationSent(true);
-        return;
-      }
+      // if (!user.emailVerified) {
+      //   await sendEmailVerification(user);
+      //   setVerificationSent(true);
+      //   return;
+      // }
 
       // Fetch user data from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
