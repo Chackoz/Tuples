@@ -19,6 +19,7 @@ import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile"; // Import the new Profile component
 import Communities from "@/app/components/Communities";
 import FriendsList from "@/app/components/FriendsList";
+import ChatWindow from "@/app/components/ui/ChatWindow";
 
 interface User {
   name: string;
@@ -48,7 +49,7 @@ function Home() {
   const [currentView, setCurrentView] = useState<string>("Explore");
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
   const [state, setstate] = useState(false);
-
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const getUserById = async (userId: string) => {
     try {
       const userRef = doc(db, "users", userId);
@@ -58,6 +59,7 @@ function Home() {
         console.log("User fetched", userData);
         setUser(userData);
         fetchSimilarUsers(userData);
+        console.log("User Data is ",userData);
         return userData;
       } else {
         console.log("Document does not exist!");
@@ -141,6 +143,7 @@ function Home() {
       ?.split("=")?.[1];
 
     if (cookieValue) {
+      console.log("User ID found in cookie:", cookieValue)
       setCurrentUserId(cookieValue);
       getUserById(cookieValue);
     } else {
@@ -260,8 +263,13 @@ function Home() {
             setCurrentView={setCurrentView}
           />
         )}
-        <div className="w-[40vw] overflow-y-auto rounded-lg bg-white p-5">
+        <div className={` ${currentView === "Chat" ? 'w-[70%]' : 'w-[40vw]'} overflow-y-auto rounded-lg bg-white p-5`}>
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
+          {currentView === "Chat" && (
+            <ChatWindow
+        currentUserId={currentUserId}
+      />
+)}
           {currentView === "Profile" && user &&   <Profile userId={currentUserId} />}
         
           {currentView === "Communities" && (
@@ -274,39 +282,43 @@ function Home() {
             />
           )}
         </div>
+       {
+        currentView !== "Chat" && 
         <div className="h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
-          {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
-          {currentView === "Friends" && <h1 className="pb-5 text-2xl ">My Friends</h1>}
-          <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
-          {currentView === "Friends" && myFriends.length > 1 && (
-            <div className="flex w-full flex-col items-center justify-center gap-4 ">
-              {myFriends.map((friend, index) => (
-                <FriendCard
-                  key={friend.id || index}
-                  friend={friend}
-                  currentUserId={currentUserId}
-                  onAddFriend={handleAddFriend}
-                  onRemoveFriend={() => handleRemoveFriend(friend.name)}
-                  showAddButton={false}
-                />
-              ))}
-            </div>
-          )}
-          {currentView !== "Friends" && (
-            <div className="flex w-full flex-col items-center justify-center gap-4 ">
-              {friends.map((friend, index) => (
-                <FriendCard
-                  key={friend.id || index}
-                  friend={friend}
-                  currentUserId={currentUserId}
-                  onAddFriend={handleAddFriend}
-                  onRemoveFriend={() => handleRemoveFriend(friend.name)}
-                  showAddButton={true}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
+        {currentView === "Friends" && <h1 className="pb-5 text-2xl ">My Friends</h1>}
+        <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
+        {currentView === "Friends" && myFriends.length > 1 && (
+          <div className="flex w-full flex-col items-center justify-center gap-4 ">
+            {myFriends.map((friend, index) => (
+              <FriendCard
+                key={friend.id || index}
+                friend={friend}
+                currentUserId={currentUserId}
+                onAddFriend={handleAddFriend}
+                onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                showAddButton={false}
+              />
+            ))}
+          </div>
+        )}
+            
+        {currentView !== "Friends" && (
+          <div className="flex w-full flex-col items-center justify-center gap-4 ">
+            {friends.map((friend, index) => (
+              <FriendCard
+                key={friend.id || index}
+                friend={friend}
+                currentUserId={currentUserId}
+                onAddFriend={handleAddFriend}
+                onRemoveFriend={() => handleRemoveFriend(friend.name)}
+                showAddButton={true}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+       }
       </div>
     </div>
   );
