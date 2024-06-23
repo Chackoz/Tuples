@@ -70,7 +70,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-[70vh]">
       <div className="w-1/3 border-r">
         <h2 className="text-xl font-bold p-4">Chats</h2>
         {chats.map((chat) => (
