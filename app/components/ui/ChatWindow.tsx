@@ -187,13 +187,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
 
   return (
     <div className="flex h-[70vh] ">
-      <div className="w-1/3 border-r">
+      <div className="w-1/3 border-r overflow-y-auto custom-scrollbar rounded-lg">
         <h2 className="p-4 text-xl font-bold">Chats</h2>
         {chats.map((chat) => (
           <div
             key={chat.id}
             onClick={() => setSelectedChatId(chat.id)}
-            className={`cursor-pointer p-4 hover:bg-gray-100 ${selectedChatId === chat.id ? "bg-blue-100" : ""}`}
+            className={`cursor-pointer p-4 hover:bg-gray-100 rounded-lg ${selectedChatId === chat.id ? "bg-blue-100"  : ""}`}
           >
             <div className="font-semibold">
               {chat.name
@@ -212,7 +212,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
         ))}
       </div>
       <div className="flex w-2/3 flex-col">
-        <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-4">
+        <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-4 custom-scrollbar ">
           {messages.length > 0
             ? messages.map((message) => (
                 <div
