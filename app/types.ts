@@ -13,11 +13,11 @@ export interface Friend {
   interests: string[];
   userId?:string;
 }
-
-export interface Community {
+interface Community {
   id: string;
   name: string;
   creator: string;
   members: string[];
   tags: string[];
+  privateCommunity: boolean;
 }

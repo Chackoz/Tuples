@@ -10,6 +10,7 @@ import { User } from '../types';
     creator: string;
     members: string[];
     tags: string[];
+    privateCommunity?:boolean;
   }
   
 
@@ -20,6 +21,7 @@ interface CommunitiesProps {
   setstate: React.Dispatch<React.SetStateAction<boolean>>;
   state: boolean;
   currentUserId:string;
+ 
 }
 
 const Communities: React.FC<CommunitiesProps> = ({ allCommunities, user, setAllCommunities, setstate, state ,currentUserId}) => {

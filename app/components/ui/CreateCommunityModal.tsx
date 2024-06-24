@@ -10,9 +10,10 @@ interface CreateJoinCommunityModalProps {
   state:boolean;
   setstate:(view: boolean) => void;
   currentUserId:string;
+  privateCommunity:boolean;
 }
 
-function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstate,currentUserId}: CreateJoinCommunityModalProps) {
+function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstate,currentUserId ,privateCommunity}: CreateJoinCommunityModalProps) {
   const [communityName, setCommunityName] = useState('');
   const [isCreating, setIsCreating] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
@@ -29,6 +30,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
           creator: user?.name,
           members: [user.name],
           tags: tags,
+          privateCommunity:priv
 
         });
 
@@ -38,6 +40,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
           participants: [currentUserId],
           creator  : user.name,
           name : communityName,
+        
         });
 
       } else {
@@ -73,6 +76,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
+  const [priv, setpriv] = useState(false)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -131,6 +135,19 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
               {isCreating ? 'Create New' : 'Join Existing'}
             </label>
           </div>
+          {isCreating&&
+           <div className="flex justify-between items-center mb-4">
+           <label className="flex items-center">
+             <input
+               type="checkbox"
+               checked={priv}
+               onChange={() =>setpriv(true)}
+               className="mr-2"
+             />
+             Private Community
+           </label>
+         </div>}
+          
           <div className="flex justify-end">
             <button
               type="button"

@@ -159,6 +159,7 @@ function Dashboard({
           state={state}
           setstate={setstate}
           currentUserId={currentUserId}
+          privateCommunity={false}
         />
       )}
     </div>

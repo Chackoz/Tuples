@@ -47,6 +47,7 @@ interface Community {
   creator: string;
   members: string[];
   tags: string[];
+  privateCommunity?: boolean;
 }
 
 interface Insight {
@@ -243,18 +244,20 @@ function Home() {
       console.error("Error fetching user friends:", error);
     }
   }, []);
-
   const fetchAllCommunities = useCallback(async () => {
     try {
-      const communitiesRef = collection(db, "communities");
-      const querySnapshot = await getDocs(communitiesRef);
+      const communitiesRef = collection(db, 'communities');
+      const q = query(communitiesRef, where('privateCommunity', '!=', true));
+      const querySnapshot = await getDocs(q); // Ensure you pass the correct query `q` here
+  
       const communitiesData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data()
       })) as Community[];
+  
       setAllCommunities(communitiesData);
     } catch (error) {
-      console.error("Error fetching communities:", error);
+      console.error('Error fetching communities:', error);
     }
   }, []);
 
@@ -424,6 +427,7 @@ function Home() {
               setstate={setstate}
               state={state}
               currentUserId={currentUserId}
+              
             />
           )}
           {currentView === "Explore" && (
