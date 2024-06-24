@@ -27,11 +27,11 @@ function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // if (!user.emailVerified) {
-      //   await sendEmailVerification(user);
-      //   setVerificationSent(true);
-      //   return;
-      // }
+      if (!user.emailVerified) {
+        await sendEmailVerification(user);
+        setVerificationSent(true);
+        return;
+      }
 
       // Fetch user data from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -65,14 +65,14 @@ function Login() {
   };
 
   const updateEmailVerificationStatus = async (userId: string) => {
-    // try {
-    //   const userRef = doc(db, "users", userId);
-    //   await updateDoc(userRef, {
-    //     emailVerified: true
-    //   });
-    // } catch (error) {
-    //   console.error("Error updating email verification status:", error);
-    // }
+    try {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        emailVerified: true
+      });
+    } catch (error) {
+      console.error("Error updating email verification status:", error);
+    }
   };
 
   return (
