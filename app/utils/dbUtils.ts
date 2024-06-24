@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, getDocs, updateDoc, arrayRemove, arrayUnion } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, updateDoc, arrayRemove, arrayUnion, query, where } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
 
 
@@ -56,7 +56,9 @@ export const fetchAllCommunities = async (): Promise<Community[]> => {
 
 export const handleJoinCommunity = async (
   communityId: string,
+  communityName: string,
   userName: string,
+  userId: string,
   setAllCommunities: React.Dispatch<React.SetStateAction<Community[]>>,
   setstate: React.Dispatch<React.SetStateAction<boolean>>,
   state: boolean
@@ -66,7 +68,8 @@ export const handleJoinCommunity = async (
     await updateDoc(communityRef, {
       members: arrayUnion(userName)
     });
-
+    alert( `User ${userId} joined community ${communityName} successfully!`);
+    
     setAllCommunities(prevCommunities =>
       prevCommunities.map(community =>
         community.id === communityId
@@ -74,6 +77,20 @@ export const handleJoinCommunity = async (
           : community
       )
     );
+
+    const chatQuery = query(collection(db, "chats"), where("name", "==", communityName));
+    const chatQuerySnapshot = await getDocs(chatQuery);
+    const chatDoc = chatQuerySnapshot.docs[0];
+
+    if (chatDoc) {
+      const chatRef = doc(db, "chats", chatDoc.id);
+      await updateDoc(chatRef, {
+        participants: arrayUnion(userId), 
+      });
+    } else {
+      console.error("No chat document found for community", communityId);
+    }
+
 
     setstate(!state);
   } catch (error) {
