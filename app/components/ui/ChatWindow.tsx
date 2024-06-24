@@ -224,7 +224,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                   >
                     {message.content}
                   </div>
-                  {(((chats.find(chat => chat.id === selectedChatId)?.participants?.length ?? 0)>1)) && (
+                  {(((chats.find(chat => chat.id === selectedChatId)?.participants?.length ?? 0)>2)) && (
                     <div className="mt-1 flex flex-col text-xs text-gray-500">
                       {message.senderName}
                     </div>
