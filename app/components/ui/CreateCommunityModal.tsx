@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { addDoc, collection, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/app/lib/firebaseConfig';
+import { User } from '@/app/types';
 
 interface CreateJoinCommunityModalProps {
   onClose: () => void;
   onCreateOrJoin: () => void;
-  user: { name: string,id : string };
+  user: User;
   state:boolean;
   setstate:(view: boolean) => void;
 }
@@ -24,7 +25,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
       if (isCreating) {
         await addDoc(collection(db, 'communities'), {
           name: communityName,
-          creator: user.id,
+          creator: user?.name,
           members: [user.name],
           tags: tags,
 
@@ -33,8 +34,8 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
         await addDoc(collection(db, 'chats'), {
           createdAt : new Date(),
           type: "community",
-          participants: [user.id],
-          creator  : user.id,
+          participants: [user.userId],
+          creator  : user.name,
           name : communityName,
         });
 
@@ -57,7 +58,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
       
     } catch (error) {
       console.error("Error creating/joining community:", error);
-      alert(`Error ${isCreating ? 'creating' : 'joining'} community. Please try again.`);
+      alert(`Error ${isCreating ? 'creating' : 'joining'} community. Please try again. ${user.name}`);
     }
   };
 

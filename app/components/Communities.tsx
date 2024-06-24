@@ -1,18 +1,8 @@
 import React from 'react';
 import { handleJoinCommunity } from '../utils/dbUtils';
+import { User } from '../types';
 
-interface User {
-    name: string;
-    id : string;
-    interests: string[];
-    friends: string[];
-  }
-  
-  interface Friend {
-    id?: string;
-    name: string;
-    interests: string[];
-  }
+
   
   interface Community {
     id: string;
@@ -51,7 +41,7 @@ const Communities: React.FC<CommunitiesProps> = ({ allCommunities, user, setAllC
               </div>
             </div>
             <button
-              onClick={() => handleJoinCommunity(community.id,community.name, user.name,user.id, setAllCommunities, setstate, state)}
+              onClick={() => handleJoinCommunity(community.id,community.name, user.name,user.userId, setAllCommunities, setstate, state)}
               className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-600"
             >
               Join

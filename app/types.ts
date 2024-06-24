@@ -1,8 +1,9 @@
 export interface User {
   name: string;
-  interests: string[];
-  friends: string[];
-  userId?:string;
+  interests?: string[];
+  friends?: string[];
+  userId:string;
+  id:string
 }
 
 export interface Friend {

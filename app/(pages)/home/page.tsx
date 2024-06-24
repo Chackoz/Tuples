@@ -29,7 +29,9 @@ interface User {
   name: string;
   interests: string[];
   friends: string[];
+  userId:string;
   id:string;
+  
 }
 
 interface Friend {
