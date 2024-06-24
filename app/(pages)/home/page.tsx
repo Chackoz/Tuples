@@ -23,6 +23,7 @@ import ChatWindow from "@/app/components/ui/ChatWindow";
 
 interface User {
   name: string;
+  id : string;
   interests: string[];
   friends: string[];
 }
@@ -65,9 +66,10 @@ function Home() {
       const userRef = doc(db, "users", userId);
       const userSnapshot = await getDoc(userRef);
       if (userSnapshot.exists()) {
+        console.log("Document data:", userSnapshot.id);
         const userData = userSnapshot.data() as User;
         console.log("User fetched", userData);
-        setUser(userData);
+        setUser({...userData, id: userSnapshot.id });
         fetchSimilarUsers(userData);
 
         console.log("User Data is ", userData);
@@ -337,7 +339,7 @@ function Home() {
         <div
           className={` ${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} h-[80vh] custom-scrollbar overflow-y-auto rounded-lg bg-white p-5`}
         >
-          <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
+          <h1 className="mb-5  w-1/3 text-2xl font-bold">{currentView}</h1>
           {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
           {currentView === "Profile" && user && <Profile userId={currentUserId} />}
           {currentView === "Communities" && (

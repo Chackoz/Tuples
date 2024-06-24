@@ -12,6 +12,7 @@ import CreateJoinCommunityModal from "./ui/CreateCommunityModal";
 interface User {
   name: string;
   friends: string[];
+  id:  string;
 }
 
 interface Community {

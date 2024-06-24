@@ -5,7 +5,7 @@ import { db } from '@/app/lib/firebaseConfig';
 interface CreateJoinCommunityModalProps {
   onClose: () => void;
   onCreateOrJoin: () => void;
-  user: { name: string };
+  user: { name: string,id : string };
   state:boolean;
   setstate:(view: boolean) => void;
 }
@@ -24,10 +24,20 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
       if (isCreating) {
         await addDoc(collection(db, 'communities'), {
           name: communityName,
-          creator: user.name,
+          creator: user.id,
           members: [user.name],
           tags: tags,
+
         });
+
+        await addDoc(collection(db, 'chats'), {
+          createdAt : new Date(),
+          type: "community",
+          participants: [user.id],
+          creator  : user.id,
+          name : communityName,
+        });
+
       } else {
         const communitiesRef = collection(db, 'communities');
         const communityDoc = await getDoc(doc(communitiesRef, communityName));

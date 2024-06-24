@@ -20,6 +20,7 @@ interface Chat {
     timestamp: any;
   };
   participantNames?: string[];
+  name?: string;
 }
 
 interface ChatWindowProps {
@@ -92,7 +93,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const newMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        console.log("New messages: ", newMessages);
+       // console.log("New messages: ", newMessages);
         setMessages(newMessages);
       });
       return () => unsubscribe();
@@ -150,7 +151,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
             className={`p-4 cursor-pointer hover:bg-gray-100 ${selectedChatId === chat.id ? 'bg-blue-100' : ''}`}
           >
             <div className="font-semibold">
-            {chat.participantNames ? chat.participantNames.join(', ') : 'Loading...'}
+            {chat.name ? chat.name : chat.participantNames ? chat.participantNames.join(', ') : 'Loading...'}
             </div>
             {chat.lastMessage && (
               <div className="text-sm text-gray-500">
