@@ -26,8 +26,8 @@ interface FriendsListProps {
   myFriends: Friend[];
   currentView: string;
   currentUserId: string;
-  handleAddFriend: () => void;
-  handleRemoveFriend: (friendName: string) => void;
+  state: boolean;
+  setstate: (view: boolean) => void;
 }
 
 const FriendsList: React.FC<FriendsListProps> = ({
@@ -35,21 +35,28 @@ const FriendsList: React.FC<FriendsListProps> = ({
   myFriends,
   currentView,
   currentUserId,
-  handleAddFriend,
-  handleRemoveFriend
+  state,
+  setstate
 }) => {
   return (
     <>
-      {currentView === "Friends" && myFriends.length > 1 && (
+      {currentView === "Friends" && myFriends.length > 0 && (
         <div className="flex w-full flex-col items-center justify-center gap-4 ">
           {myFriends.map((friend, index) => (
             <FriendCard
               key={friend.id || index}
               friend={friend}
               currentUserId={currentUserId}
-              onAddFriend={handleAddFriend}
-              onRemoveFriend={() => handleRemoveFriend(friend.name)}
-              showAddButton={false}
+              onRequestSent={() => {
+                /* Handle request sent */
+              }}
+              onRequestCancelled={() => {
+                /* Handle request cancelled */
+              }}
+              showAddButton={true}
+              isFriend={false}
+              state={state}
+              setstate={setstate}
             />
           ))}
         </div>
@@ -61,9 +68,16 @@ const FriendsList: React.FC<FriendsListProps> = ({
               key={friend.id || index}
               friend={friend}
               currentUserId={currentUserId}
-              onAddFriend={handleAddFriend}
-              onRemoveFriend={() => handleRemoveFriend(friend.name)}
+              onRequestSent={() => {
+                /* Handle request sent */
+              }}
+              onRequestCancelled={() => {
+                /* Handle request cancelled */
+              }}
               showAddButton={true}
+              isFriend={false}
+              state={state}
+              setstate={setstate}
             />
           ))}
         </div>
