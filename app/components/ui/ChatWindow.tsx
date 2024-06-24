@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, addDoc, query, where, orderBy, onSnapshot, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebaseConfig';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { getUserById } from '@/app/utils/dbUtils';
 
 interface Message {
   id: string;
@@ -12,7 +14,12 @@ interface Message {
 interface Chat {
   id: string;
   participants: string[];
-  lastMessage?: { content: string; timestamp: any; };
+  lastMessage?: {
+    content: string;
+    senderId: string;
+    timestamp: any;
+  };
+  participantNames?: string[];
 }
 
 interface ChatWindowProps {
@@ -24,18 +31,55 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  
+  const messageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchChats = async () => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchAndListenToChats = () => {
       const chatsQuery = query(
         collection(db, 'chats'),
         where('participants', 'array-contains', currentUserId)
       );
-      const chatSnapshot = await getDocs(chatsQuery);
-      const chatList = chatSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
-      setChats(chatList);
+  
+      const unsubscribe = onSnapshot(chatsQuery, async (snapshot) => {
+        const chatList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+        
+       
+        const chatsWithNames = await Promise.all(chatList.map(async (chat) => {
+          const participantNames = await Promise.all(
+            chat.participants
+              .filter(id => id !== currentUserId)
+              .map(async (id) => {
+                const user = await getUserById(id);
+                return user ? user.name : 'Unknown User';
+              })
+          );
+          return { ...chat, participantNames };
+        }));
+  
+        setChats(chatsWithNames);
+      });
+  
+      return unsubscribe;
     };
-    fetchChats();
+  
+    const unsubscribe = fetchAndListenToChats();
+    return () => unsubscribe();
   }, [currentUserId]);
 
   useEffect(() => {
@@ -55,7 +99,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     }
   }, [selectedChatId]);
 
-  const sendMessage = async (e: React.FormEvent) => {
+   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === '' || !selectedChatId) return;
 
@@ -65,9 +109,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
       content: newMessage,
       timestamp: new Date()
     });
+    
+    const chatRef = doc(db, 'chats', selectedChatId);
+    await updateDoc(chatRef, {
+      lastMessage: {
+        content: newMessage,
+        senderId: currentUserId,
+        timestamp: new Date()
+      }
+    })
 
     setNewMessage('');
   };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage(prev => prev + emojiData.emoji);
+  };
+
+  const scrollToBottom = () => {
+    if (messageContainerRef.current) {
+      const lastMessage = messageContainerRef.current.lastElementChild;
+      if (lastMessage) {
+        lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <div className="flex h-[70vh] ">
@@ -80,18 +150,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
             className={`p-4 cursor-pointer hover:bg-gray-100 ${selectedChatId === chat.id ? 'bg-blue-100' : ''}`}
           >
             <div className="font-semibold">
-              {chat.participants.filter(p => p !== currentUserId).join(', ')}
+            {chat.participantNames ? chat.participantNames.join(', ') : 'Loading...'}
             </div>
             {chat.lastMessage && (
               <div className="text-sm text-gray-500">
-                {chat.lastMessage.content.substring(0, 30)}...
+                {chat.lastMessage.content.substring(0, 30)}
+                {chat.lastMessage.content.length > 30 ? '...' : ''}
               </div>
             )}
           </div>
         ))}
       </div>
       <div className="w-2/3 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar" >
+        <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -108,17 +179,31 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
             </div>
           ))}
         </div>
-        <form onSubmit={sendMessage} className="border-t p-4">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            className="w-full border rounded px-2 py-1"
-            placeholder="Type a message..."
-          />
-          <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded">
-            Send
-          </button>
+        <form onSubmit={sendMessage} className="border-t p-4 relative">
+          <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
+            {showEmojiPicker && (
+              <EmojiPicker onEmojiClick={handleEmojiClick} />
+            )}
+          </div>
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="px-2 py-1 bg-gray-200 rounded mr-2"
+            >
+              😊
+            </button>
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="flex-grow border rounded px-2 py-1 mr-2"
+              placeholder="Type a message..."
+            />
+            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+              Send
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, getDoc, query, where, getDocs } from "firebase/firestore";
+
+
 import { db } from "../../lib/firebaseConfig";
 import { RiAddFill, RiCloseLine } from "react-icons/ri";
 
 interface Friend {
+  id?: string;  
   name: string;
   interests: string[];
 }
-
 interface FriendCardProps {
   friend: Friend;
   currentUserId: string;
@@ -42,22 +44,57 @@ function FriendCard({
     setProfileColor(getRandomColor(prevColor));
   }, [prevColor]);
 
+ 
   const addFriend = async () => {
     if (!currentUserId) {
       alert("User ID is missing. Please log in again.");
       return;
     }
-
+  
     try {
-      const userRef = doc(db, "users", currentUserId);
-      await updateDoc(userRef, {
+     
+      const currentUserRef = doc(db, "users", currentUserId);
+      await updateDoc(currentUserRef, {
         friends: arrayUnion(friend.name)
       });
-      alert(`${friend.name} added to your friends list!`);
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("name", "==", friend.name));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        throw new Error("Friend's user document not found");
+      }
+      
+      const friendDoc = querySnapshot.docs[0];
+      const friendId = friendDoc.id;
+  
+      // Create a new chat document
+      const newChatRef = await addDoc(collection(db, "chats"), {
+        participants: [currentUserId, friendId],
+        createdAt: serverTimestamp(),
+        lastMessage: {
+          content: "",
+          senderId: "",
+          timestamp: serverTimestamp()
+        },
+        type: "private"
+      });
+
+      await updateDoc(currentUserRef, {
+        chats: arrayUnion(newChatRef.id)
+      });
+  
+      const friendUserRef = doc(db, "users", friendId);
+      await updateDoc(friendUserRef, {
+        chats: arrayUnion(newChatRef.id)
+      });
+  
+  
+      alert(`${friend.name} added to your friends list and chat created!`);
       onAddFriend();
     } catch (error) {
-      console.error("Error adding friend:", error);
-      alert(`Failed to add friend: ${(error as Error).message}`);
+      console.error("Error adding friend or creating chat:", error);
+      alert(`Failed to add friend or create chat: ${(error as Error).message}`);
     }
   };
 

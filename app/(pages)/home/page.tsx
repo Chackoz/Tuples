@@ -60,7 +60,7 @@ function Home() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
 
-  const getUserById = async (userId: string) => {
+ const getUserById = async (userId: string) => {
     try {
       const userRef = doc(db, "users", userId);
       const userSnapshot = await getDoc(userRef);
