@@ -19,9 +19,10 @@ interface CommunitiesProps {
   setAllCommunities: React.Dispatch<React.SetStateAction<Community[]>>;
   setstate: React.Dispatch<React.SetStateAction<boolean>>;
   state: boolean;
+  currentUserId:string;
 }
 
-const Communities: React.FC<CommunitiesProps> = ({ allCommunities, user, setAllCommunities, setstate, state }) => {
+const Communities: React.FC<CommunitiesProps> = ({ allCommunities, user, setAllCommunities, setstate, state ,currentUserId}) => {
   return (
     <div className="flex flex-col gap-4">
       {allCommunities
@@ -41,7 +42,7 @@ const Communities: React.FC<CommunitiesProps> = ({ allCommunities, user, setAllC
               </div>
             </div>
             <button
-              onClick={() => handleJoinCommunity(community.id,community.name, user.name,user.userId, setAllCommunities, setstate, state)}
+              onClick={() => handleJoinCommunity(community.id,community.name, user.name,currentUserId, setAllCommunities, setstate, state)}
               className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-600"
             >
               Join

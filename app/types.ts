@@ -4,6 +4,7 @@ export interface User {
   friends?: string[];
   userId:string;
   id:string
+  currentUserId?:string
 }
 
 export interface Friend {

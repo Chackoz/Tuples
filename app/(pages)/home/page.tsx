@@ -31,7 +31,7 @@ interface User {
   friends: string[];
   userId:string;
   id:string;
-  
+  currentUserId:string;
 }
 
 interface Friend {
@@ -407,6 +407,7 @@ function Home() {
             user={user}
             currentView={currentView}
             setCurrentView={setCurrentView}
+            currentUserId={currentUserId}
           />
         )}
         <div
@@ -422,6 +423,7 @@ function Home() {
               setAllCommunities={setAllCommunities}
               setstate={setstate}
               state={state}
+              currentUserId={currentUserId}
             />
           )}
           {currentView === "Explore" && (

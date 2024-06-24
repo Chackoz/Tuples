@@ -9,9 +9,10 @@ interface CreateJoinCommunityModalProps {
   user: User;
   state:boolean;
   setstate:(view: boolean) => void;
+  currentUserId:string;
 }
 
-function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstate}: CreateJoinCommunityModalProps) {
+function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstate,currentUserId}: CreateJoinCommunityModalProps) {
   const [communityName, setCommunityName] = useState('');
   const [isCreating, setIsCreating] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
@@ -34,7 +35,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
         await addDoc(collection(db, 'chats'), {
           createdAt : new Date(),
           type: "community",
-          participants: [user.userId],
+          participants: [currentUserId],
           creator  : user.name,
           name : communityName,
         });
@@ -58,7 +59,7 @@ function CreateJoinCommunityModal({ onClose, onCreateOrJoin, user ,state,setstat
       
     } catch (error) {
       console.error("Error creating/joining community:", error);
-      alert(`Error ${isCreating ? 'creating' : 'joining'} community. Please try again. ${user.name}`);
+      alert(`Error ${isCreating ? 'creating' : 'joining'} community. Please try again. ${currentUserId}`);
     }
   };
 

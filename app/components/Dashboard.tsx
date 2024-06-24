@@ -29,13 +29,15 @@ function Dashboard({
   currentView,
   setCurrentView,
   state,
-  setstate
+  setstate,
+  currentUserId
 }: {
   user: User;
   currentView: string;
   setCurrentView: (view: string) => void;
   state: boolean;
   setstate: (view: boolean) => void;
+  currentUserId: string;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -156,6 +158,7 @@ function Dashboard({
           user={user}
           state={state}
           setstate={setstate}
+          currentUserId={currentUserId}
         />
       )}
     </div>
