@@ -163,7 +163,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
       </div>
       <div className="w-2/3 flex flex-col">
         <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-4">
-          {messages.map((message) => (
+         {messages.length > 0  ?  messages.map((message) => (
             <div
               key={message.id}
               className={`mb-4 ${message.senderId === currentUserId ? 'text-right' : 'text-left'}`}
@@ -177,34 +177,37 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                 {message.timestamp.toDate().toLocaleString()}
               </div>
             </div>
-          ))}
+          )) : selectedChatId && <div className="text-center text-gray-500">Start your conversation</div>
+          }
         </div>
-        <form onSubmit={sendMessage} className="border-t p-4 relative">
-          <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
-            {showEmojiPicker && (
-              <EmojiPicker onEmojiClick={handleEmojiClick} />
-            )}
-          </div>
-          <div className="flex items-center">
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="px-2 py-1 bg-gray-200 rounded mr-2"
-            >
-              😊
-            </button>
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-grow border rounded px-2 py-1 mr-2"
-              placeholder="Type a message..."
-            />
-            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-              Send
-            </button>
-          </div>
-        </form>
+       {
+        selectedChatId ?  <form onSubmit={sendMessage} className="border-t p-4 relative">
+        <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
+          {showEmojiPicker && (
+            <EmojiPicker onEmojiClick={handleEmojiClick} />
+          )}
+        </div>
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="px-2 py-1 bg-gray-200 rounded mr-2"
+          >
+            😊
+          </button>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            className="flex-grow border rounded px-2 py-1 mr-2"
+            placeholder="Type a message..."
+          />
+          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+            Send
+          </button>
+        </div>
+      </form> : <div className=' w-full h-full flex justify-center items-center text-xl'>Select a chat to start conversation</div>
+       }
       </div>
     </div>
   );
