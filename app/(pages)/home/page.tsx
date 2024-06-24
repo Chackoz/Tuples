@@ -439,7 +439,7 @@ function Home() {
                     .map((_, index) => (
                       <div
                         key={index}
-                        className="mb-8 animate-pulse rounded-lg bg-gray-100 p-4"
+                        className="mb-8 animate-pulse rounded-lg bg-gray-100 p-4 z-0"
                       >
                         <div className="mb-2 h-6 w-3/4 rounded bg-gray-300"></div>
                         <div className="mb-4 h-4 w-full rounded bg-gray-300"></div>
