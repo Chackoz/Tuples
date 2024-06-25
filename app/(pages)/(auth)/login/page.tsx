@@ -60,6 +60,7 @@ function Login() {
         console.log(match[1]);
       } else {
         console.log("Error message format not recognized ",errorMessage);
+        alert("Sorry Database limit reached , pls send moni developers to buy a better plan.");
       }
     }
   };
