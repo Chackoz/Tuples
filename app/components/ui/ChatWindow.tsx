@@ -8,7 +8,10 @@ import {
   onSnapshot,
   updateDoc,
   doc,
-  getDoc
+  getDoc,
+  arrayUnion,
+  arrayRemove,
+  increment
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -33,13 +36,17 @@ interface Chat {
   };
   participantNames?: string[];
   name?: string;
+  unreadCounts: { [userId: string]: number };
 }
 
 interface ChatWindowProps {
   currentUserId: string;
+  ifUnread: boolean;
+  setifUnread: React.Dispatch<React.SetStateAction<boolean>>;
+  state:boolean
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifUnread ,state}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
@@ -115,7 +122,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
           })
         );
 
-        setChats(chatsWithNames);
+        // Sort chats by lastMessage timestamp
+        const sortedChats = chatsWithNames.sort((a, b) => {
+          const timeA = a.lastMessage?.timestamp?.toDate() || new Date(0);
+          const timeB = b.lastMessage?.timestamp?.toDate() || new Date(0);
+          return timeB.getTime() - timeA.getTime();
+        });
+
+        setChats(sortedChats);
+
+        // Check if there are any unread messages
+        const hasUnreadMessages = sortedChats.some(chat => 
+          chat.unreadCounts && chat.unreadCounts[currentUserId] > 0
+        );
+        setifUnread(hasUnreadMessages);
       });
 
       return unsubscribe;
@@ -123,7 +143,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
 
     const unsubscribe = fetchAndListenToChats();
     return () => unsubscribe();
-  }, [currentUserId]);
+  }, [currentUserId, setifUnread,state]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -132,15 +152,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
         where("chatId", "==", selectedChatId),
         orderBy("timestamp")
       );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      const unsubscribe = onSnapshot(q, async (snapshot) => {
         const newMessages = snapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() }) as Message
         );
         setMessages(newMessages);
+
+        // Reset unread count for current user when opening a chat
+        const chatRef = doc(db, "chats", selectedChatId);
+        await updateDoc(chatRef, {
+          [`unreadCounts.${currentUserId}`]: 0
+        });
+
+        // Check if there are any remaining unread messages in other chats
+        const hasUnreadMessages = chats.some(chat => 
+          chat.id !== selectedChatId && 
+          chat.unreadCounts && 
+          chat.unreadCounts[currentUserId] > 0
+        );
+        setifUnread(hasUnreadMessages);
       });
       return () => unsubscribe();
     }
-  }, [selectedChatId]);
+  }, [selectedChatId, currentUserId, chats, setifUnread]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,13 +191,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     });
 
     const chatRef = doc(db, "chats", selectedChatId);
-    await updateDoc(chatRef, {
+    const updateData: any = {
       lastMessage: {
         content: newMessage,
         senderId: currentUserId,
         timestamp: new Date()
       }
+    };
+
+    // Increment unread count for other participants
+    selectedChat?.participants.forEach(participantId => {
+      if (participantId !== currentUserId) {
+        updateData[`unreadCounts.${participantId}`] = increment(1);
+      }
     });
+
+    await updateDoc(chatRef, updateData);
 
     setNewMessage("");
   };
@@ -193,14 +236,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
           <div
             key={chat.id}
             onClick={() => setSelectedChatId(chat.id)}
-            className={`cursor-pointer p-4 hover:bg-gray-100 rounded-lg ${selectedChatId === chat.id ? "bg-blue-100"  : ""}`}
+            className={`cursor-pointer p-4 hover:bg-gray-100 rounded-lg ${
+              selectedChatId === chat.id ? "bg-blue-100" : ""
+            }`}
           >
-            <div className="font-semibold">
-              {chat.name
-                ? chat.name
-                : chat.participantNames
+            <div className="font-semibold flex justify-between items-center">
+              <span>
+                {chat.name
+                  ? chat.name
+                  : chat.participantNames
                   ? chat.participantNames.join(", ")
                   : "Loading..."}
+              </span>
+              {chat.unreadCounts && chat.unreadCounts[currentUserId] > 0 && (
+                <span className="bg-blue-500 text-white rounded-full text-xs w-8 h-8 flex justify-center items-center" >
+                  {chat.unreadCounts[currentUserId]}
+                </span>
+              )}
             </div>
             {chat.lastMessage && (
               <div className="text-sm text-gray-500">

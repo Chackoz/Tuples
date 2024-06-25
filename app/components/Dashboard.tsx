@@ -30,7 +30,8 @@ function Dashboard({
   setCurrentView,
   state,
   setstate,
-  currentUserId
+  currentUserId,
+  ifUnread
 }: {
   user: User;
   currentView: string;
@@ -38,6 +39,7 @@ function Dashboard({
   state: boolean;
   setstate: (view: boolean) => void;
   currentUserId: string;
+  ifUnread:boolean;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -84,7 +86,7 @@ function Dashboard({
             onClick={() => setCurrentView("Chat")}
             className={currentView === "Chat" ? "text-blue-600" : ""}
           >
-            Chat
+            Chat {ifUnread && <span className="text-red-500">!</span>}
           </Link>
           <Link
             href="#"

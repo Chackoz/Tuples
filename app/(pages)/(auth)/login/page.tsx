@@ -27,11 +27,11 @@ function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        await sendEmailVerification(user);
-        setVerificationSent(true);
-        return;
-      }
+      // if (!user.emailVerified) {
+      //   await sendEmailVerification(user);
+      //   setVerificationSent(true);
+      //   return;
+      // }
 
       // Fetch user data from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -59,7 +59,7 @@ function Login() {
         setFirebaseError(match[1]);
         console.log(match[1]);
       } else {
-        console.log("Error message format not recognized");
+        console.log("Error message format not recognized ",errorMessage);
       }
     }
   };

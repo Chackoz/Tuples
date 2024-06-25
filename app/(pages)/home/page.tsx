@@ -77,6 +77,7 @@ function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [ifUnread, setifUnread] = useState(false);
 
   const getUserById = useCallback(
     async (userId: string) => {
@@ -411,13 +412,14 @@ function Home() {
             currentView={currentView}
             setCurrentView={setCurrentView}
             currentUserId={currentUserId}
+            ifUnread={ifUnread}
           />
         )}
         <div
           className={` ${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
+          {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} ifUnread={ifUnread} setifUnread={setifUnread} state={state}/>}
           {currentView === "Profile" && user && <Profile userId={currentUserId} />}
           {currentView === "Communities" && (
             <Communities
