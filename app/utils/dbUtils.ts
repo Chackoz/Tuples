@@ -1,7 +1,6 @@
 import { doc, getDoc, collection, getDocs, updateDoc, arrayRemove, arrayUnion, query, where } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
 
-
 interface User {
     name: string;
     interests: string[];

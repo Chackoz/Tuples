@@ -3,7 +3,7 @@ import { FirebaseOptions, initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-
+import { getStorage } from "firebase/storage";
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.FIREBASE_APIKEY,
   authDomain: process.env.FBASE_AUTH_DOMAIN,
@@ -20,3 +20,5 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export default app;
+
+export const storage = getStorage(app);

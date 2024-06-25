@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef, KeyboardEventHandler } from 'react';
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from '../lib/firebaseConfig';
+import { db, storage } from '../lib/firebaseConfig';
 import { skills } from '../lib/skills';
 import Pill from './ui/Pill';
-
+import { getDownloadURL, uploadBytes } from 'firebase/storage';
+import { getStorage, ref } from "firebase/storage";
 interface ProfileProps {
   userId: string;
 }
@@ -14,6 +15,7 @@ interface User {
   name: string;
   interests: string[];
   userId: string;
+  profilePicUrl?: string;
   // Add other user properties as needed
 }
 
@@ -24,7 +26,9 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+  const [profilePicUrl, setProfilePicUrl] = useState<string | undefined>(undefined);
   const suggestionRef = useRef<(HTMLLIElement | null)[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -35,6 +39,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           const userData = userSnap.data() as User;
           setUser(userData);
           setEditedInterests(userData.interests || []);
+          setProfilePicUrl(userData.profilePicUrl);
         } else {
           console.log("No such user!");
         }
@@ -106,6 +111,33 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const handleRemoveInterest = (interest: string) => {
     setEditedInterests(editedInterests.filter((i) => i !== interest));
   };
+  const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+
+
+        const storage = getStorage();
+        const storageRef = ref(storage, `profilePics/${userId}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        
+        // Update Firestore with the new profile pic URL
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { profilePicUrl: downloadURL });
+        
+        // Update local state
+        setProfilePicUrl(downloadURL);
+        setUser(prevUser => prevUser ? {...prevUser, profilePicUrl: downloadURL} : null);
+      } catch (error) {
+        console.error("Error uploading profile picture:", error);
+      }
+    }
+  };
+
+  const handleProfilePicClick = () => {
+    fileInputRef.current?.click();
+  };
 
   if (!user) {
     return <div>Loading...</div>;
@@ -113,6 +145,31 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-md">
+     <div className="mb-4 flex items-center">
+        <div 
+          className="w-24 h-24 rounded-full overflow-hidden mr-4 cursor-pointer"
+          onClick={handleProfilePicClick}
+        >
+          {profilePicUrl ? (
+            <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-500">No Image</span>
+            </div>
+          )}
+        </div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleProfilePicChange} 
+          className="hidden" 
+          accept="image/*"
+        />
+        <div>
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>User ID:</strong> {user.userId}</p>
+        </div>
+      </div>
      
       <div className="mb-4 w-[40%] flex flex-col justify-between items-stretch">
         <p className='flex justify-between'><strong>Name:</strong> <span className='w-[50%]'>{user.name}</span></p>

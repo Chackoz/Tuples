@@ -12,8 +12,8 @@ import CreateJoinCommunityModal from "./ui/CreateCommunityModal";
 interface User {
   name: string;
   friends: string[];
-  userId:  string;
-  id:string;
+  userId: string;
+  id: string;
 }
 
 interface Community {
@@ -39,7 +39,7 @@ function Dashboard({
   state: boolean;
   setstate: (view: boolean) => void;
   currentUserId: string;
-  ifUnread:boolean;
+  ifUnread: boolean;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -67,6 +67,14 @@ function Dashboard({
     setCurrentView(currentView === "Friends" ? "Explore" : "Friends");
   };
 
+  const [imageSrc, setImageSrc] = useState(
+    currentUserId
+      ? `https://firebasestorage.googleapis.com/v0/b/dosth-ac312.appspot.com/o/profilePics%2F${currentUserId}?alt=media&token=45a57484-33d7-46f0-972d-456a56bb7084`
+      : "/logo.png"
+  );
+  const handleImageError = () => {
+    setImageSrc("/logo.png");
+  };
   return (
     <div className={`${jakartasmall.className} w-[26vw] px-5`}>
       <div className="flex w-full items-start justify-between">
@@ -78,7 +86,11 @@ function Dashboard({
           >
             Home
           </Link>
-          <Link href="#" onClick={() => setCurrentView("Profile")} className={currentView === "Profile" ? "text-blue-600" : ""}>
+          <Link
+            href="#"
+            onClick={() => setCurrentView("Profile")}
+            className={currentView === "Profile" ? "text-blue-600" : ""}
+          >
             Profile
           </Link>
           <Link
@@ -105,11 +117,12 @@ function Dashboard({
         </nav>
         <div className="flex h-52 w-52 flex-col items-center justify-center gap-4 rounded-lg bg-gray-100 p-2">
           <Image
-            src="/logo.png"
-            alt="logo"
+            src={imageSrc}
+            alt={currentUserId ? "User profile" : "Default logo"}
             width={100}
             height={100}
             className="m-1 w-3/5 rounded-2xl object-fill"
+            onError={handleImageError}
           />
           <h1 className="text-xl">{user?.name || "Username"}</h1>
         </div>
