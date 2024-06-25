@@ -1,4 +1,4 @@
-interface User {
+export interface User {
   name: string;
   interests: string[];
   friends: string[];

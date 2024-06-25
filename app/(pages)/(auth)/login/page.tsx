@@ -53,6 +53,7 @@ function Login() {
       }
     } catch (error) {
       const firebaseError = error as FirebaseError;
+      console.error("Error signing in:", firebaseError);
       const errorMessage = firebaseError.message;
       const match = errorMessage.match(/\(([^)]+)\)/);
       if (match) {
