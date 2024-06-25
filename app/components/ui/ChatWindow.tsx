@@ -143,7 +143,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
 
     const unsubscribe = fetchAndListenToChats();
     return () => unsubscribe();
-  }, [currentUserId, setifUnread,state]);
+  }, [currentUserId, setifUnread]);
 
   useEffect(() => {
     if (selectedChatId) {

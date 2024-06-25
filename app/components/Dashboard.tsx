@@ -48,7 +48,7 @@ function Dashboard({
     if (user) {
       fetchUserCommunities();
     }
-  }, [user, currentView, state]);
+  }, [user, currentView]);
 
   const fetchUserCommunities = async () => {
     if (!user) return;

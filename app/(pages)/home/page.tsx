@@ -98,7 +98,7 @@ function Home() {
         return null;
       }
     },
-    [state]
+    []
   );
 
   const fetchSimilarUsers = async (user: User) => {
@@ -391,7 +391,7 @@ function Home() {
       generateInsights(user.interests);
       fetchFriendRequests();
     }
-  }, [user, currentView, fetchUserFriends, generateInsights, fetchFriendRequests, state]);
+  }, [user, currentView, fetchUserFriends, generateInsights, fetchFriendRequests]);
 
   useEffect(() => {
     if (currentView === "Communities") {
