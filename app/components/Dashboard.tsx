@@ -14,6 +14,8 @@ interface User {
   friends: string[];
   userId: string;
   id: string;
+  interests: string[];
+  currentUserId: string;
 }
 
 interface Community {
