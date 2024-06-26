@@ -110,7 +110,7 @@ const Interests: React.FC = () => {
   };
 
   return (
-    <div className="relative flex h-screen flex-col items-center justify-between bg-[#ebebeb]">
+    <div className="relative flex h-screen w-full flex-col items-center justify-between bg-[#ebebeb]">
      <NavBar/>
       <div className="w-[60vw] flex flex-col justify-center items-center mx-auto">
       <h1 className="text-[1.5vw] p-5  text-start w-full">Choose Your Interests</h1>
