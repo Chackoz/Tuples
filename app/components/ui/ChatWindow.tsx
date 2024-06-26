@@ -56,41 +56,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const messageContainerRef = useRef<HTMLDivElement>(null);
   const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState<Timestamp | null>(null);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
-  const getCachedData = (key: string) => {
-    const cachedData = localStorage.getItem(key);
-    if (cachedData) {
-      const { data, timestamp } = JSON.parse(cachedData);
-      if (Date.now() - timestamp < CACHE_EXPIRY) {
-        return data;
-      }
-    }
-    return null;
-  };
 
-  const setCachedData = (key: string, data: any) => {
-    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  };
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const messagesCache = useRef<{ [chatId: string]: Message[] }>({});
+  const usersCache = useRef<{ [key: string]: User }>({});
+  const lastFetchTimestamp = useRef<{ [chatId: string]: number }>({});
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const cachedUsers = getCachedData('users');
-      if (cachedUsers) {
-        setUsers(cachedUsers);
-      } else {
-        const usersCollection = collection(db, "users");
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersData: { [key: string]: User } = {};
-        usersSnapshot.forEach((doc) => {
-          usersData[doc.id] = doc.data() as User;
-        });
-        setUsers(usersData);
-        setCachedData('users', usersData);
-      }
+      const usersCollection = collection(db, "users");
+      const usersSnapshot = await getDocs(usersCollection);
+      const usersData: { [key: string]: User } = {};
+      usersSnapshot.forEach((doc) => {
+        usersData[doc.id] = doc.data() as User;
+      });
+      usersCache.current = usersData;
+      setUsers(usersData);
     };
 
     fetchUsers();
@@ -102,18 +87,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       where("participants", "array-contains", currentUserId),
       orderBy("lastMessage.timestamp", "desc")
     );
-  
+    
     const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
       const chatList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Chat));
       setChats(chatList);
-      setCachedData(`chats_${currentUserId}`, chatList);
   
       const totalUnread = chatList.reduce((sum, chat) => 
         sum + (chat.unreadCounts && chat.unreadCounts[currentUserId] || 0), 0);
       setTotalUnreadCount(totalUnread);
   
-      const hasUnreadMessages = totalUnread > 0;
-      setifUnread(hasUnreadMessages);
+      setifUnread(totalUnread > 0);
   
       if (selectedChatId) {
         loadMessages(selectedChatId);
@@ -132,18 +115,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
   }, [totalUnreadCount]);
 
   const loadMessages = useCallback(async (chatId: string, loadMore = false) => {
-    const cacheKey = `messages_${chatId}`;
-    let cachedMessages = getCachedData(cacheKey) || [];
-
-    if (!loadMore && cachedMessages.length > 0) {
-      setMessages(cachedMessages);
+    const now = Date.now();
+    if (!loadMore && messagesCache.current[chatId] && now - (lastFetchTimestamp.current[chatId] || 0) < CACHE_EXPIRY) {
+      setMessages(messagesCache.current[chatId]);
       return;
     }
 
     let messagesQuery = query(
       collection(db, "messages"),
       where("chatId", "==", chatId),
-      orderBy("timestamp", "desc"),
+      orderBy("timestamp", "asc"),  
       limit(MESSAGES_PER_PAGE)
     );
 
@@ -154,9 +135,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
     const snapshot = await getDocs(messagesQuery);
     const newMessages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Message));
 
-    const updatedMessages = loadMore ? [...cachedMessages, ...newMessages.reverse()] : newMessages.reverse();
-    setMessages(updatedMessages);
-    setCachedData(cacheKey, updatedMessages);
+    const updatedMessages = loadMore ? [...newMessages, ...(messagesCache.current[chatId] || [])] : newMessages;    setMessages(updatedMessages);
+    messagesCache.current[chatId] = updatedMessages;
+    lastFetchTimestamp.current[chatId] = now;
 
     if (newMessages.length > 0) {
       setLastMessageTimestamp(newMessages[newMessages.length - 1].timestamp);
@@ -167,13 +148,37 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       await updateDoc(chatRef, {
         [`unreadCounts.${currentUserId}`]: 0
       });
+      setTotalUnreadCount(prevCount => prevCount - (chats.find(chat => chat.id === chatId)?.unreadCounts[currentUserId] || 0));
     }
-    setTotalUnreadCount(prevCount => prevCount - (chats.find(chat => chat.id === chatId)?.unreadCounts[currentUserId] || 0));
-  }, [currentUserId, lastMessageTimestamp]);
+  }, [currentUserId, lastMessageTimestamp, chats]);
 
   useEffect(() => {
     if (selectedChatId) {
       loadMessages(selectedChatId);
+      
+      const messagesQuery = query(
+        collection(db, "messages"),
+        where("chatId", "==", selectedChatId),
+        orderBy("timestamp", "desc")
+      );
+
+      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const newMessage = { id: change.doc.id, ...change.doc.data() } as Message;
+            setMessages(prevMessages => {
+              if (!prevMessages.some(msg => msg.id === newMessage.id)) {
+                const updatedMessages = [...prevMessages, newMessage];
+                messagesCache.current[selectedChatId] = updatedMessages;
+                return updatedMessages;
+              }
+              return prevMessages;
+            });
+          }
+        });
+      });
+
+      return () => unsubscribe();
     }
   }, [selectedChatId, loadMessages]);
 
@@ -188,13 +193,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       chatId: selectedChatId,
       senderId: currentUserId,
       content: newMessage,
-      timestamp: new Date(),
-      senderName: users[currentUserId]?.name
+      timestamp: Timestamp.now(),
+      senderName: usersCache.current[currentUserId]?.name
     };
 
-
     setMessages(prevMessages => [...prevMessages, newMessageObj]);
-    setTotalUnreadCount(prevCount => prevCount + chats.find(chat => chat.id === selectedChatId)!.participants.filter(id => id !== currentUserId).length);
+    messagesCache.current[selectedChatId] = [...(messagesCache.current[selectedChatId] || []), newMessageObj];
+
     const messageRef = doc(collection(db, "messages"));
     batch.set(messageRef, newMessageObj);
 
@@ -203,7 +208,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       lastMessage: {
         content: newMessage,
         senderId: currentUserId,
-        timestamp: new Date()
+        timestamp: Timestamp.now()
       }
     };
 
@@ -217,14 +222,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
 
     try {
       await batch.commit();
-      // Update cache after successful commit
-      const cacheKey = `messages_${selectedChatId}`;
-      const cachedMessages = getCachedData(cacheKey) || [];
-      setCachedData(cacheKey, [...cachedMessages, newMessageObj]);
     } catch (error) {
       console.error("Failed to send message:", error);
-      // Revert optimistic update on error
       setMessages(prevMessages => prevMessages.filter(msg => msg.id !== newMessageObj.id));
+      messagesCache.current[selectedChatId] = messagesCache.current[selectedChatId].filter(msg => msg.id !== newMessageObj.id);
     }
 
     setNewMessage("");
@@ -234,18 +235,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
     setNewMessage((prev) => prev + emojiData.emoji);
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (smooth = false) => {
     if (messageContainerRef.current) {
-      const lastMessage = messageContainerRef.current.lastElementChild;
-      if (lastMessage) {
-        lastMessage.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+      const scrollOptions: ScrollIntoViewOptions = {
+        behavior: smooth ? "smooth" : "auto",
+        block: "end",
+      };
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
   };
+  
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0) {
+      scrollToBottom(true);
+    }
   }, [messages]);
+  
+  
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [selectedChatId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -303,9 +313,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
         <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-4 custom-scrollbar">
           {messages.length > 0 ? (
             <>
-              <button onClick={() => loadMessages(selectedChatId!, true)} className="mb-4 text-blue-500">
-                Load More
-              </button>
+             <button onClick={() => loadMessages(selectedChatId!, true)} className="mb-4 text-blue-500">
+  Load Older Messages
+</button>
               {messages.map((message) => (
                 <div
                   key={message.id}
