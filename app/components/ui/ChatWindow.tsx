@@ -60,7 +60,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState<Timestamp | null>(null);
-
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const getCachedData = (key: string) => {
     const cachedData = localStorage.getItem(key);
     if (cachedData) {
@@ -102,24 +102,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       where("participants", "array-contains", currentUserId),
       orderBy("lastMessage.timestamp", "desc")
     );
-
+  
     const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
       const chatList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Chat));
       setChats(chatList);
       setCachedData(`chats_${currentUserId}`, chatList);
-
-      const hasUnreadMessages = chatList.some(
-        (chat) => chat.unreadCounts && chat.unreadCounts[currentUserId] > 0
-      );
+  
+      const totalUnread = chatList.reduce((sum, chat) => 
+        sum + (chat.unreadCounts && chat.unreadCounts[currentUserId] || 0), 0);
+      setTotalUnreadCount(totalUnread);
+  
+      const hasUnreadMessages = totalUnread > 0;
       setifUnread(hasUnreadMessages);
-
+  
       if (selectedChatId) {
         loadMessages(selectedChatId);
       }
     });
-
+  
     return () => unsubscribe();
   }, [currentUserId, selectedChatId, setifUnread]);
+
+  useEffect(() => {
+    if (totalUnreadCount > 0) {
+      document.title = `(${totalUnreadCount}) New Messages`;
+    } else {
+      document.title = 'Tuple';
+    }
+  }, [totalUnreadCount]);
 
   const loadMessages = useCallback(async (chatId: string, loadMore = false) => {
     const cacheKey = `messages_${chatId}`;
@@ -158,6 +168,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
         [`unreadCounts.${currentUserId}`]: 0
       });
     }
+    setTotalUnreadCount(prevCount => prevCount - (chats.find(chat => chat.id === chatId)?.unreadCounts[currentUserId] || 0));
   }, [currentUserId, lastMessageTimestamp]);
 
   useEffect(() => {
@@ -181,9 +192,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, ifUnread, setifU
       senderName: users[currentUserId]?.name
     };
 
-    // Optimistic update
-    setMessages(prevMessages => [...prevMessages, newMessageObj]);
 
+    setMessages(prevMessages => [...prevMessages, newMessageObj]);
+    setTotalUnreadCount(prevCount => prevCount + chats.find(chat => chat.id === selectedChatId)!.participants.filter(id => id !== currentUserId).length);
     const messageRef = doc(collection(db, "messages"));
     batch.set(messageRef, newMessageObj);
 
