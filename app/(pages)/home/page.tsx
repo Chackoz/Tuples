@@ -124,7 +124,7 @@ function Home() {
     debouncedFetch(async () => {
       try {
         const userInterests = user.interests.join(", ");
-        const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
+        const response = await axios.post("http://192.168.165.180:5000/api/similar_users", {
           user_interests: userInterests
         });
     
