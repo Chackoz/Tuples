@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   doc,
   getDoc,
@@ -24,6 +24,7 @@ import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
+import { type } from "os";
 
 interface User {
   name: string;
@@ -78,6 +79,8 @@ function Home() {
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [ifUnread, setifUnread] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const getUserById = useCallback(
     async (userId: string) => {
@@ -100,39 +103,85 @@ function Home() {
     },
     []
   );
-
-  const fetchSimilarUsers = async (user: User) => {
-    try {
-      const userInterests = user.interests.join(", ");
-      const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
-        user_interests: userInterests
-      });
-
-      const { similar_users } = response.data;
-
-      if (
-        Array.isArray(similar_users) &&
-        similar_users.every(
-          (user) =>
-            Array.isArray(user) && typeof user[0] === "string" && Array.isArray(user[1])
-        )
-      ) {
-        const formattedFriends = similar_users
-          .map(([name, interests]) => ({ name, interests }))
-          .filter(
-            (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
-          );
-        setFriends(formattedFriends);
-      } else {
-        console.error("Invalid similar_users structure:", similar_users);
-        await fetchRandomUsers(user);
+  const debouncedFetch = useCallback((fetchFunction: () => Promise<void>) => {
+    const currentTime = Date.now();
+    if (currentTime - lastFetchTime < 60000) { // 30 seconds
+      console.log("Fetch call skipped to respect rate limit. Friends List");
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
-    } catch (error) {
-      console.error("Error fetching similar users:", error);
-      await fetchRandomUsers(user);
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchFunction();
+        setLastFetchTime(Date.now());
+      }, 30000 - (currentTime - lastFetchTime));
+    } else {
+      fetchFunction();
+      setLastFetchTime(currentTime);
     }
-  };
+  }, [lastFetchTime]);
 
+   const fetchSimilarUsers = useCallback((user: User) => {
+    debouncedFetch(async () => {
+      try {
+        const userInterests = user.interests.join(", ");
+        const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
+          user_interests: userInterests
+        });
+    
+        const { similar_users } = response.data;
+    
+        if (
+          Array.isArray(similar_users) &&
+          similar_users.every(
+            (user) =>
+              typeof user.name === 'string' &&
+              Array.isArray(user.interests) &&
+              typeof user.userId === 'string' &&
+              typeof user.id === 'string'
+          )
+        ) {
+          const formattedFriends = similar_users
+            .map(({ id, name, interests, userId }) => ({id, name, interests, userId }))
+            .filter(
+              (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
+            );
+          setFriends(formattedFriends);
+          console.log("Similar users fetched successfully:", formattedFriends,"Time",Date.now());
+        } else {
+          console.error("Invalid similar_users structure:", similar_users);
+          fetchRandomUsers(user);
+        }
+      } catch (error) {
+        console.error("Error fetching similar users:", error);
+        fetchRandomUsers(user);
+      }
+    });
+  }, [debouncedFetch]);
+  
+  const fetchRandomUsers = useCallback((user: User) => {
+    debouncedFetch(async () => {
+      try {
+        const usersRef = collection(db, "users");
+        const usersSnapshot = await getDocs(usersRef);
+        const allUsers = usersSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            interests: doc.data().interests,
+            userId: doc.data().userId
+          }))
+          .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
+    
+        const shuffled = allUsers.sort(() => 0.5 - Math.random());
+        const randomUsers = shuffled.slice(0, 5);
+    
+        setFriends(randomUsers);
+        console.log("Random users fetched successfully:", randomUsers,"Time",Date.now());
+      } catch (error) {
+        console.error("Error fetching random users:", error);
+      }
+    });
+  }, [debouncedFetch]);
   const generateInsights = useCallback(
     async (interests: string[]) => {
       const currentTime = Date.now();
@@ -150,7 +199,7 @@ function Home() {
       try {
         const prompt = `Based on these interests: ${interests.join(
           ", "
-        )}, generate 7 fun and thought-provoking insights about life. Each insight should have:
+        )}, generate 7 fun and thought-provoking daily challenges . Each challenge should have:
 
       1. A catchy title (bonus points for puns)
       2. A brief description that's both humorous and thought-provoking
@@ -163,7 +212,7 @@ function Home() {
       Challenge: [Related Challenge]
 
       ---
-
+      choose interests randomly and make sure all fields get equal weightage ,
       Let's make it entertaining and insightful!`;
 
         const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
@@ -193,27 +242,7 @@ function Home() {
     [lastApiCallTime]
   );
 
-  const fetchRandomUsers = async (user: User) => {
-    try {
-      const usersRef = collection(db, "users");
-      const usersSnapshot = await getDocs(usersRef);
-      const allUsers = usersSnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          name: doc.data().name,
-          interests: doc.data().interests,
-          userId: doc.data().userId
-        }))
-        .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
 
-      const shuffled = allUsers.sort(() => 0.5 - Math.random());
-      const randomUsers = shuffled.slice(0, 5);
-
-      setFriends(randomUsers);
-    } catch (error) {
-      console.error("Error fetching random users:", error);
-    }
-  };
 
   const fetchUserFriends = useCallback(async (friendNames: string[]) => {
     try {

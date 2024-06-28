@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/lib/firebaseConfig";
 import { User } from "@/app/types";
+import { LiaSteam } from "react-icons/lia";
+import { Timestamp } from "firebase-admin/firestore";
 
 interface CreateJoinCommunityModalProps {
   onClose: () => void;
@@ -45,6 +47,7 @@ function CreateJoinCommunityModal({
           creator: user?.name,
           members: [user.name],
           tags: tags,
+         
           privateCommunity: priv
         });
 
@@ -53,7 +56,9 @@ function CreateJoinCommunityModal({
           type: "community",
           participants: [currentUserId],
           creator: user.name,
-          name: communityName
+          name: communityName,
+          unreadCounts:{},
+          lastMessage:{content:"",timestamp:new Date(),senderId:""}
         });
       } else {
         const communitiesRef = collection(db, "communities");
