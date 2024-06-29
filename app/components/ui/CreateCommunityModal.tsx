@@ -84,9 +84,7 @@ function CreateJoinCommunityModal({
       setstate(!state);
     } catch (error) {
       console.error("Error creating/joining community:", error);
-      alert(
-        `Error ${isCreating ? "creating" : "joining"} community. Please try again. ${currentUserId}`
-      );
+    
     }
   };
 

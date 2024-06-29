@@ -124,7 +124,7 @@ function Home() {
     debouncedFetch(async () => {
       try {
         const userInterests = user.interests.join(", ");
-        const response = await axios.post("http://192.168.165.180:5000/api/similar_users", {
+        const response = await axios.post("http://10.40.9.104:5000/api/similar_users", {
           user_interests: userInterests
         });
     
@@ -151,6 +151,70 @@ function Home() {
           console.error("Invalid similar_users structure:", similar_users);
           fetchRandomUsers(user);
         }
+      } catch (error) {
+        console.error("Error fetching similar users:", error);
+        fetchRandomUsers(user);
+        fetchSimilarUsersGemini(user);
+      }
+    });
+  }, [debouncedFetch]);
+
+  const fetchSimilarUsersGemini = useCallback((user: User) => {
+    debouncedFetch(async () => {
+      try {
+        // Fetch all users from Firebase
+        const usersRef = collection(db, "users");
+        const usersSnapshot = await getDocs(usersRef);
+        const allUsers = usersSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            interests: doc.data().interests,
+            userId: doc.data().userId
+          }))
+          .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
+  
+        // Prepare data for Gemini API
+        const userInterests = user.interests.join(", ");
+        const allUsersData = allUsers.map(u => `${u.name}: ${u.interests.join(", ")}`).join("\n");
+  
+        const API_KEY = process.env.GEMINI_API_KEY;
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+  
+        const prompt = `Given the following user interests: ${userInterests}, and the list of other users with their interests:
+  
+        ${allUsersData}
+  
+        Rank the top 5 most similar users based on their interests. Return the results in the following format
+  
+        1. [User Name]
+        2. [User Name]
+        3. [User Name]
+        4. [User Name]
+        5. [User Name]
+  
+        Only include the names in your response(no formatting the name), no additional text.`;
+  
+        const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
+          contents: [{ parts: [{ text: prompt }] }]
+        });
+  
+        const generatedText = response.data.candidates[0].content.parts[0].text;
+        const similarUserNames = generatedText.split('\n').map((line: string) => line.split('. ')[1].trim());
+  
+        // Filter and sort allUsers based on the order returned by Gemini
+        const similarUsers = similarUserNames
+          .map((name: any) => allUsers.find(u => u.name === name))
+          .filter((user: Friend): user is Friend => user !== undefined)
+          .map((user: { id: any; name: any; interests: any; userId: any; }) => ({
+            id: user.id,
+            name: user.name,
+            interests: user.interests,
+            userId: user.userId
+          }));
+  
+        setFriends(similarUsers);
+        console.log("Similar users fetched successfully:", similarUsers, "Time", Date.now());
       } catch (error) {
         console.error("Error fetching similar users:", error);
         fetchRandomUsers(user);
