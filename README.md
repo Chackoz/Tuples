@@ -9,7 +9,7 @@ Tuples is our mini-project for Semester 6 of B.Tech in CSE 🚶‍♀️. It's a
 - **Framework:** Next.js
 - **Styling:** Tailwind CSS
 - **Database:** Firebase (Firebase Storage, Realtime Database, and Firestore)
-- **AI Model:** Google's Gemini (for handling model responses when our AI model server is offline)
+- **AI Model:** [Tuples AI](https://github.com/Chackoz/TuplesAi) , Google's Gemini (for handling model responses when our AI model server is offline)
 
 ### Recommendation Model Backend
 - **Backend:** Python Flask API
