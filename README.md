@@ -1,19 +1,52 @@
-# Tuples
+# Tuples: A Student Community Application
 
-#### A Community for Jobless Btech Students
+## What is Tuples?
+Tuples is our mini-project for Semester 6 of B.Tech in CSE 🚶‍♀️. It's a vibrant online community for engineers to share knowledge, collaborate on projects, and network with peers.
 
-### Why Tuples?
+## Technical Stuffs
 
-Tuples started as our S6 mini project with a simple goal — S6 Mini project... , thought it would be fun.
+### Website
+- **Framework:** Next.js
+- **Styling:** Tailwind CSS
+- **Database:** Firebase (Firebase Storage, Realtime Database, and Firestore)
+- **AI Model:** Google's Gemini (for handling model responses when our AI model server is offline)
 
-### Tech Stack
+### Recommendation Model Backend
+- **Backend:** Python Flask API
+- **Functionality:** Intelligent matching of users based on their interests
+- **Model:** Sentence Transformer
 
-- **Next.js**: Building fast and scalable frontend applications.
-- **Firebase**: Providing a robust backend infrastructure.
-- **Flask**: Powering our API development and backend logic.
-- **Sentence Transformers**: For interest based matching algoritm.
+## Contributors
 
-Join us at Tuples, where we blend tech innovation with a touch of fun to make a real difference in the lives of Btech students!
-
-
-## work in progress
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/fal3n-4ngel">
+            <img src="https://avatars.githubusercontent.com/u/79042374?v=4" width="100;" alt="Adithya Krishnan"/>
+            <br />
+            <sub><b>Adithya Krishnan</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Fer-Win">
+            <img src="https://avatars.githubusercontent.com/u/102341775?v=4" width="100;" alt="Ferwin Lopez"/>
+            <br />
+            <sub><b>Ferwin Lopez</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/neviaseb03">
+            <img src="https://avatars.githubusercontent.com/u/101114152?v=4" width="100;" alt="Nevia Sebastian"/>
+            <br />
+            <sub><b>Nevia Sebastian</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Nk0x1">
+            <img src="https://avatars.githubusercontent.com/u/114907090?v=4" width="100;" alt="Nikita Nair"/>
+            <br />
+            <sub><b>Nikita Nair</b></sub>
+        </a>
+    </td>
+</tr>
+</table>
