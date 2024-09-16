@@ -1,5 +1,11 @@
 # Tuples: A Student Community Application
 
+<a href="https://github.com/Chackoz/Tuples/blob/master/Tuples.pdf" download>
+  <button style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer;">
+    Download Report
+  </button>
+</a>
+
 ## What is Tuples?
 Tuples is our mini-project for Semester 6 of B.Tech in CSE 🚶‍♀️. It's a vibrant online community for engineers to share knowledge, collaborate on projects, and network with peers.
 
@@ -9,10 +15,9 @@ Tuples is our mini-project for Semester 6 of B.Tech in CSE 🚶‍♀️. It's a
 - **Framework:** Next.js
 - **Styling:** Tailwind CSS
 - **Database:** Firebase (Firebase Storage, Realtime Database, and Firestore)
-- **AI Model:** [Tuples AI](https://github.com/Chackoz/TuplesAi) , Google's Gemini (for handling model responses when our AI model server is offline)
 
 ### Recommendation Model Backend
-- **Backend:** Python Flask API
+- **Backend:** Python Flask API [Tuples AI](https://github.com/Chackoz/TuplesAi)
 - **Functionality:** Intelligent matching of users based on their interests
 - **Model:** Sentence Transformer
 
