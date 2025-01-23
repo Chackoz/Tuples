@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   doc,
   getDoc,
@@ -23,6 +23,7 @@ import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
+import { type } from "os";
 import { Community, Friend, FriendRequest, Insight, User } from "@/app/types";
 import { profile } from "console";
 
@@ -39,6 +40,8 @@ function Home() {
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [ifUnread, setifUnread] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const getUserById = useCallback(async (userId: string) => {
     try {
@@ -58,38 +61,127 @@ function Home() {
       return null;
     }
   }, []);
-
-  const fetchSimilarUsers = async (user: User) => {
-    try {
-      const userInterests = user.interests.join(", ");
-      const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
-        user_interests: userInterests
-      });
-
-      const { similar_users } = response.data;
-
-      if (
-        Array.isArray(similar_users) &&
-        similar_users.every(
-          (user) =>
-            Array.isArray(user) && typeof user[0] === "string" && Array.isArray(user[1])
-        )
-      ) {
-        const formattedFriends = similar_users
-          .map(([name, interests]) => ({ name, interests }))
-          .filter(
-            (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
-          );
-        setFriends(formattedFriends);
-      } else {
-        console.error("Invalid similar_users structure:", similar_users);
-        await fetchRandomUsers(user);
+  const debouncedFetch = useCallback((fetchFunction: () => Promise<void>) => {
+    const currentTime = Date.now();
+    if (currentTime - lastFetchTime < 60000) { // 30 seconds
+      console.log("Fetch call skipped to respect rate limit. Friends List");
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
-    } catch (error) {
-      console.error("Error fetching similar users:", error);
-      await fetchRandomUsers(user);
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchFunction();
+        setLastFetchTime(Date.now());
+      }, 30000 - (currentTime - lastFetchTime));
+    } else {
+      fetchFunction();
+      setLastFetchTime(currentTime);
     }
-  };
+  }, [lastFetchTime]);
+
+   const fetchSimilarUsers = useCallback((user: User) => {
+    debouncedFetch(async () => {
+      try {
+        const userInterests = user.interests.join(", ");
+        const response = await axios.post("http://10.40.9.104:5000/api/similar_users", {
+          user_interests: userInterests
+        });
+    
+        const { similar_users } = response.data;
+    
+        if (
+          Array.isArray(similar_users) &&
+          similar_users.every(
+            (user) =>
+              typeof user.name === 'string' &&
+              Array.isArray(user.interests) &&
+              typeof user.userId === 'string' &&
+              typeof user.id === 'string'
+          )
+        ) {
+          const formattedFriends = similar_users
+            .map(({ id, name, interests, userId }) => ({id, name, interests, userId }))
+            .filter(
+              (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
+            );
+          setFriends(formattedFriends);
+          console.log("Similar users fetched successfully:", formattedFriends,"Time",Date.now());
+        } else {
+          console.error("Invalid similar_users structure:", similar_users);
+          fetchRandomUsers(user);
+        }
+      } catch (error) {
+        console.error("Error fetching similar users:", error);
+        fetchRandomUsers(user);
+        fetchSimilarUsersGemini(user);
+      }
+    });
+  }, [debouncedFetch]);
+
+  const fetchSimilarUsersGemini = useCallback((user: User) => {
+    debouncedFetch(async () => {
+      try {
+        // Fetch all users from Firebase
+        const usersRef = collection(db, "users");
+        const usersSnapshot = await getDocs(usersRef);
+        const allUsers = usersSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            interests: doc.data().interests,
+            userId: doc.data().userId,
+            profilePicUrl: doc.data().profilePicUrl
+          }))
+          .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
+  
+        // Prepare data for Gemini API
+        const userInterests = user.interests.join(", ");
+        const allUsersData = allUsers.map(u => `${u.name}: ${u.interests.join(", ")}`).join("\n");
+  
+        const API_KEY = process.env.GEMINI_API_KEY;
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+  
+        const prompt = `Given the following user interests: ${userInterests}, and the list of other users with their interests:
+  
+        ${allUsersData}
+  
+        Rank the top 5 most similar users based on their interests. Return the results in the following format
+  
+        1. [User Name]
+        2. [User Name]
+        3. [User Name]
+        4. [User Name]
+        5. [User Name]
+  
+        Only include the names in your response(no formatting the name), no additional text.`;
+  
+        const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
+          contents: [{ parts: [{ text: prompt }] }]
+        });
+  
+        const generatedText = response.data.candidates[0].content.parts[0].text;
+        const similarUserNames = generatedText.split('\n').map((line: string) => line.split('. ')[1].trim());
+  
+        // Filter and sort allUsers based on the order returned by Gemini
+        const similarUsers = similarUserNames
+          .map((name: any) => allUsers.find(u => u.name === name))
+          .filter((user: Friend): user is Friend => user !== undefined)
+          .map((user: { id: any; name: any; interests: any; userId: any;profilePicUrl:any }) => ({
+            id: user.id,
+            name: user.name,
+            interests: user.interests,
+            userId: user.userId,
+            profilePicUrl: user.profilePicUrl
+          }));
+  
+        setFriends(similarUsers);
+        console.log("Similar users fetched successfully:", similarUsers, "Time", Date.now());
+      } catch (error) {
+        console.error("Error fetching similar users:", error);
+        fetchRandomUsers(user);
+      }
+    });
+  }, [debouncedFetch]);
+  
 
   const generateInsights = useCallback(
     async (interests: string[]) => {
@@ -108,7 +200,7 @@ function Home() {
       try {
         const prompt = `Based on these interests: ${interests.join(
           ", "
-        )}, generate 7 fun and thought-provoking insights about life. Each insight should have:
+        )}, generate 7 fun and thought-provoking daily challenges . Each challenge should have:
 
       1. A catchy title (bonus points for puns)
       2. A brief description that's both humorous and thought-provoking
@@ -121,7 +213,7 @@ function Home() {
       Challenge: [Related Challenge]
 
       ---
-
+      choose interests randomly and make sure all fields get equal weightage ,
       Let's make it entertaining and insightful!`;
 
         const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
