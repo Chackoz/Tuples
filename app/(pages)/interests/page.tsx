@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Pill from "../../components/ui/Pill";
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebaseConfig";
-import { skills } from "../../lib/skills";
+import { getRandomSkills, skills } from "../../lib/skills";
 import { onAuthStateChanged } from "firebase/auth";
 import NavBar from "@/app/components/NavBar";
 
@@ -14,6 +14,7 @@ const Interests: React.FC = () => {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set());
   const [selectedSuggestion, setSelectedSuggestion] = useState<number>(0);
+  const [skillsSug, setSkills] = useState<string[]>([]);
 
   const [currentUser, fetchUserInfo] = useState("");
   const [userId, setUserId] = useState<string | undefined>(undefined);
@@ -30,6 +31,7 @@ const Interests: React.FC = () => {
         fetchUserInfo(user.uid);
       }
     });
+    setSkills(getRandomSkills(20));
 
     return () => subscribe();
   }, [fetchUserInfo]);
@@ -110,80 +112,97 @@ const Interests: React.FC = () => {
   };
 
   return (
-    <div className="relative flex h-screen w-full flex-col items-center justify-between bg-[#ebebeb]">
-     <NavBar/>
-      <div className="w-[60vw] flex flex-col justify-center items-center mx-auto">
-      <h1 className="text-[1.5vw] p-5  text-start w-full">Choose Your Interests</h1>
-      <div className="flex h-fit w-[90%] flex-wrap items-center gap-2 rounded-xl border-2 border-[#ccc] px-3 py-2">
-        {selectedSkills.map((skill, index) => (
-          <Pill
-            key={index}
-            text={skill}
-            type={"delete"}
-            onClick={() => handleRemoveSkill(skill)}
-          />
-        ))}
-        <div className="text-black">
-          <input
-            className="outline-none bg-[#ebebeb] p-2 "
-            ref={inputRef}
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`${selectedSkills.length > 0 ? "" : "Type or Select from below"}`}
-            onKeyDown={handleKeyDown}
-          />
-          {suggestions.length > 0 && (
-            <ul
-              ref={scrollableContainer}
-              className="absolute m-0 max-h-80 list-none overflow-y-scroll border-2 border-[#ccc] bg-white p-0 text-black"
-            >
-              {suggestions.map(
-                (skill, index) =>
-                  !selectedSkillSet.has(skill) && (
-                    <li
-                      ref={(el) => {
-                        suggestionRef.current[index] = el;
-                      }}
-                      className={`flex cursor-pointer items-center gap-3 border-b-2 border-[#ccc] px-2 py-3 text-black hover:bg-[#ccc] ${
-                        selectedSuggestion === index ? "bg-[#ccc]" : ""
-                      }`}
-                      key={index}
-                      onClick={() => handleSelectSkill(skill)}
-                    >
-                      <span>{skill}</span>
-                    </li>
-                  )
+    <div className="relative flex min-h-screen w-full flex-col items-center bg-[#f0f0f0]">
+      <NavBar />
+      <div className="w-full max-w-[70vw] px-4 py-8 md:px-6 lg:px-8">
+        <h1 className="mb-6 text-2xl font-semibold text-[#2b2b2b] md:text-3xl">
+          Choose Your Interests
+        </h1>
+        
+        <div className="mb-6 rounded-xl border-2 border-[#d0d0d0] bg-white p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedSkills.map((skill, index) => (
+              <Pill
+                key={index}
+                text={skill}
+                type="delete"
+                onClick={() => handleRemoveSkill(skill)}
+              />
+            ))}
+            <div className="relative flex-1">
+              <input
+                className="w-full bg-white  outline-none"
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={`${selectedSkills.length > 0 ? "" : "Type or Select from below"}`}
+                onKeyDown={handleKeyDown}
+              />
+              {suggestions.length > 0 && (
+                <ul
+                  ref={scrollableContainer}
+                  className="custom-scrollbar absolute left-0 top-full z-10 max-h-[40vh] w-full overflow-y-auto rounded-md border-2 border-[#d0d0d0] bg-white"
+                >
+                  {suggestions.map(
+                    (skill, index) =>
+                      !selectedSkillSet.has(skill) && (
+                        <li
+                          ref={(el) => {
+                            suggestionRef.current[index] = el;
+                          }}
+                          className={`cursor-pointer px-3 py-2 hover:bg-[#f0f0f0] ${
+                            selectedSuggestion === index ? "bg-[#f0f0f0]" : ""
+                          }`}
+                          key={index}
+                          onClick={() => handleSelectSkill(skill)}
+                        >
+                          {skill}
+                        </li>
+                      )
+                  )}
+                </ul>
               )}
-            </ul>
-          )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6 flex-wrap gap-2 md:flex hidden" >
+          {skillsSug
+            .slice(0, 20)
+            .filter(skill => !selectedSkills.includes(skill))
+            .map((skill, index) => (
+              <Pill
+                key={index}
+                type="add"
+                text={skill}
+                onClick={() => handleSelectSkill(skill)}
+              />
+            ))}
+        </div>
+        
+        <div className="mb-6 flex-wrap gap-2 md:hidden flex" >
+          {skillsSug
+            .slice(0, 10)
+            .filter(skill => !selectedSkills.includes(skill))
+            .map((skill, index) => (
+              <Pill
+                key={index}
+                type="add"
+                text={skill}
+                onClick={() => handleSelectSkill(skill)}
+              />
+            ))}
+        </div>
+
+
+        <div 
+          onClick={handleClick}
+          className="mx-auto w-full max-w-xs cursor-pointer rounded-full bg-[#3c82f5] px-6 py-3 text-center text-white hover:bg-[#2c72e5] transition-colors"
+        >
+          Confirm
         </div>
       </div>
-
-      <div className="flex max-h-72 w-[80%] flex-wrap gap-4 px-8 py-4">
-        {skills
-          .slice(0, 10)
-          .map(
-            (skill, index) =>
-              !selectedSkills.includes(skill) && (
-                <Pill
-                  key={index}
-                  type={"add"}
-                  text={skill}
-                  onClick={() => handleSelectSkill(skill)}
-                />
-              )
-          )}
-      </div>
-
-      <div
-        onClick={handleClick}
-        className="text-md flex cursor-pointer items-center justify-center rounded-full bg-blue-500 px-5 py-2 text-white"
-      >
-        Confirm
-      </div>
-      </div>
-      <div> </div>
     </div>
   );
 };

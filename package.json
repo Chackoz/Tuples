@@ -15,6 +15,7 @@
     "firebase": "^10.9.0",
     "firebase-admin": "^12.1.0",
     "firebase-functions": "^5.0.1",
+    "lucide-react": "^0.473.0",
     "next": "14.1.4",
     "postmark": "^4.0.2",
     "react": "^18",

@@ -1,12 +1,10 @@
-// components/Profile.tsx
-
 import React, { useState, useEffect, useRef, KeyboardEventHandler } from 'react';
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db, storage } from '../lib/firebaseConfig';
+import { db } from '../lib/firebaseConfig';
 import { skills } from '../lib/skills';
 import Pill from './ui/Pill';
-import { getDownloadURL, uploadBytes } from 'firebase/storage';
-import { getStorage, ref } from "firebase/storage";
+import axios from 'axios';
+
 interface ProfileProps {
   userId: string;
 }
@@ -16,7 +14,6 @@ interface User {
   interests: string[];
   userId: string;
   profilePicUrl?: string;
-  // Add other user properties as needed
 }
 
 const Profile: React.FC<ProfileProps> = ({ userId }) => {
@@ -27,6 +24,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [profilePicUrl, setProfilePicUrl] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
   const suggestionRef = useRef<(HTMLLIElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,8 +38,6 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           setUser(userData);
           setEditedInterests(userData.interests || []);
           setProfilePicUrl(userData.profilePicUrl);
-        } else {
-          console.log("No such user!");
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -64,6 +60,49 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
     setSuggestions(matchingSkills);
     setSelectedSuggestion(0);
   }, [searchTerm]);
+
+  const uploadToImgBB = async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      return response.data.data.url;
+    } catch (error) {
+      console.error("Error uploading to ImgBB:", error);
+      throw error;
+    }
+  };
+
+  const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        setIsLoading(true);
+        const downloadURL = await uploadToImgBB(file);
+        
+        // Update Firestore with the new profile pic URL
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { profilePicUrl: downloadURL });
+        
+        // Update local state
+        setProfilePicUrl(downloadURL);
+        setUser(prevUser => prevUser ? {...prevUser, profilePicUrl: downloadURL} : null);
+      } catch (error) {
+        console.error("Error uploading profile picture:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const handleEditInterests = () => {
     setIsEditing(true);
@@ -111,29 +150,6 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const handleRemoveInterest = (interest: string) => {
     setEditedInterests(editedInterests.filter((i) => i !== interest));
   };
-  const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-
-
-        const storage = getStorage();
-        const storageRef = ref(storage, `profilePics/${userId}`);
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        
-        // Update Firestore with the new profile pic URL
-        const userRef = doc(db, "users", userId);
-        await updateDoc(userRef, { profilePicUrl: downloadURL });
-        
-        // Update local state
-        setProfilePicUrl(downloadURL);
-        setUser(prevUser => prevUser ? {...prevUser, profilePicUrl: downloadURL} : null);
-      } catch (error) {
-        console.error("Error uploading profile picture:", error);
-      }
-    }
-  };
 
   const handleProfilePicClick = () => {
     fileInputRef.current?.click();
@@ -144,99 +160,123 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-md">
-     <div className="mb-4 flex items-center">
-        <div 
-          className="w-24 h-24 rounded-full overflow-hidden mr-4 cursor-pointer"
-          onClick={handleProfilePicClick}
-        >
-          {profilePicUrl ? (
-            <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
+    <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="bg-white rounded-lg p-6 shadow-md">
+        {/* Profile Picture Section */}
+        <div className="flex flex-col sm:flex-row items-center mb-6">
+          <div 
+            className="w-32 h-32 rounded-full overflow-hidden mb-4 sm:mb-0 sm:mr-6 cursor-pointer relative"
+            onClick={handleProfilePicClick}
+          >
+            {isLoading ? (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <span className="text-white">Uploading...</span>
+              </div>
+            ) : profilePicUrl ? (
+              <img 
+                src={profilePicUrl} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500">Add Photo</span>
+              </div>
+            )}
+          </div>
+          
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleProfilePicChange} 
+            className="hidden" 
+            accept="image/*"
+          />
+          
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl font-bold">{user.name}</h2>
+            <p className="text-gray-600">User ID: {user.userId}</p>
+          </div>
+        </div>
+        
+        {/* Interests Section */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Interests</h3>
+          {isEditing ? (
+            <div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {editedInterests.map((interest, index) => (
+                  <Pill
+                    key={index}
+                    text={interest}
+                    type="delete"
+                    onClick={() => handleRemoveInterest(interest)}
+                  />
+                ))}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Add new interest"
+                  className="w-full border rounded px-3 py-2 mb-2"
+                />
+                {suggestions.length > 0 && (
+                  <ul className="absolute z-10 w-full border rounded mt-1 max-h-40 overflow-y-auto bg-white shadow-lg">
+                    {suggestions.map((skill, index) => (
+                      <li
+                        key={index}
+                        className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                          index === selectedSuggestion ? "bg-gray-200" : ""
+                        }`}
+                        onClick={() => handleAddInterest(skill)}
+                        ref={(el: HTMLLIElement | null) => {
+                          suggestionRef.current[index] = el;
+                        }}
+                      >
+                        {skill}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex space-x-2 mt-4">
+                <button
+                  onClick={handleSaveInterests}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Save Interests
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500">No Image</span>
+            <div>
+              {user.interests && user.interests.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {user.interests.map((interest, index) => (
+                    <Pill key={index} text={interest} type="view" onClick={undefined} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 mb-4">No interests added yet.</p>
+              )}
+              <button
+                onClick={handleEditInterests}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Edit Interests
+              </button>
             </div>
           )}
         </div>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleProfilePicChange} 
-          className="hidden" 
-          accept="image/*"
-        />
-        <div>
-          <p><strong>Name:</strong> {user.name}</p>
-          <p><strong>User ID:</strong> {user.userId}</p>
-        </div>
-      </div>
-     
-      <div className="mb-4 w-[40%] flex flex-col justify-between items-stretch">
-        <p className='flex justify-between'><strong>Name:</strong> <span className='w-[50%]'>{user.name}</span></p>
-        <p className='flex justify-between'><strong>User ID:</strong> <span className='w-[50%]'>{user.userId}</span></p>
-      </div>
-      <div className="mb-4">
-        <h3 className="text-xl font-semibold mb-2">Interests</h3>
-        {isEditing ? (
-          <div>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {editedInterests.map((interest, index) => (
-                <Pill
-                  key={index}
-                  text={interest}
-                  type="delete"
-                  onClick={() => handleRemoveInterest(interest)}
-                />
-              ))}
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Add new interest"
-              className="border rounded px-2 py-1 mb-2"
-            />
-            {suggestions.length > 0 && (
-              <ul className="border rounded mt-1 max-h-40 overflow-y-auto">
-                {suggestions.map((skill, index) => (
-                  <li
-                    key={index}
-                    className={`px-2 py-1 cursor-pointer ${
-                      index === selectedSuggestion ? "bg-gray-200" : ""
-                    }`}
-                    onClick={() => handleAddInterest(skill)}
-                    ref={(el: HTMLLIElement | null) => {
-                        suggestionRef.current[index] = el;
-                    }}
-                  >
-                    {skill}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              onClick={handleSaveInterests}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mx-2"
-            >
-              Save Interests
-            </button>
-          </div>
-        ) : (
-          <div>
-           {user.interests && user.interests.length > 0 ? ( <div className="flex flex-wrap gap-2 mb-4">
-              {user.interests.map((interest, index) => (
-                <Pill key={index} text={interest} type="view" onClick={undefined} />
-              ))}
-            </div>): <p className='py-2'>No interests added yet.</p>}
-            <button
-              onClick={handleEditInterests}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 m-2"
-            >
-              Edit Interests
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

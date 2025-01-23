@@ -1,35 +1,29 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth, db } from "../../../lib/firebaseConfig";
 import { poppins } from "../../../lib/fonts";
 import { useRouter } from "next/navigation";
-import Interests from "../../interests/page";
 
 function Page() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [conpassword, setConPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
   const [isValidEmail, setIsValidEmail] = useState(false);
-  const [firsttry, setfirsttry] = useState(true);
   const [next, setNext] = useState(false);
-  const [firebaseError, setfirebaseError] = useState("");
   const [userId, setUserId] = useState("");
   const [verificationSent, setVerificationSent] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async () => {
-    setfirsttry(false);
-    const emailValue = email;
+  useEffect(() => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@mbcet.ac.in$/;
-    const validEmail = emailRegex.test(emailValue);
-    console.log(validEmail);
-    setIsValidEmail(validEmail);
-    if (isValidEmail) {
+    const validEmail = emailRegex.test(email);
+    
+    if (validEmail) {
       const extractedName = email.split("@")[0].split(".")[0];
       const capitalizedExtractedName =
         extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
@@ -39,48 +33,56 @@ function Page() {
       if (userIdMatch) {
         setUserId(userIdMatch[1]);
       }
+      
+      setIsValidEmail(true);
+    } else {
+      setIsValidEmail(false);
+    }
+  }, [email]);
 
+  const handleSubmit = () => {
+    if (isValidEmail) {
       setNext(true);
+      setError("");
+    } else {
+      setError("Use valid college email id.");
     }
   };
 
   const handleSignup = async () => {
-    setError(false);
-    setfirebaseError("");
-    if (password != conpassword) {
-      setError(true);
-    } else {
-      if (isValidEmail) {
-        try {
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-          const user = userCredential.user;
+    setError("");
+    if (password !== conpassword) {
+      setError("Passwords don't Match");
+      return;
+    }
 
-          // Send email verification
-          await sendEmailVerification(user);
-          setVerificationSent(true);
+    if (!isValidEmail) {
+      setError("Invalid email address");
+      return;
+    }
 
-          await addData(name, user.uid);
-          addCookie(user.uid);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
 
-          // Instead of redirecting, we'll show a message to check email
-          // router.push("/interests");
-        } catch (error) {
-          const firebaseError = error as FirebaseError;
-          const errorMessage = firebaseError.message;
-          const match = errorMessage.match(/\(([^)]+)\)/);
-          if (match) {
-            setfirebaseError(match[1]);
-            console.log(match[1]);
-          } else {
-            console.log("Error message format not recognized");
-            alert("Sorry Database limit reached , pls send moni developers to buy a better plan.");
-          }
-        }
-      }
+      await sendEmailVerification(user);
+      await addData(name, user.uid);
+      addCookie(user.uid);
+
+      setVerificationSent(true);
+    } catch (error) {
+      const firebaseError = error as FirebaseError;
+      const errorMessage = firebaseError.message;
+      const match = errorMessage.match(/\(([^)]+)\)/);
+      
+      setError(match 
+        ? match[1] 
+        : "Registration failed. Please try again."
+      );
     }
   };
 
@@ -90,11 +92,10 @@ function Page() {
       await setDoc(userRef, {
         name,
         userId,
-        Interests:[""],
-        friends: [""], // Initialize empty friends array
-        emailVerified: false // Add this field to track email verification status
+        Interests: [""],
+        friends: [""],
+        emailVerified: false
       });
-      console.log("User data written with ID: ", userRef.id);
     } catch (e) {
       console.error("Error adding document: ", e);
     }
@@ -106,19 +107,17 @@ function Page() {
   };
 
   return (
-    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] ">
+    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] px-10  md:px-4">
       {!next && (
-        <div className="flex h-[600px] w-[500px] flex-col justify-between rounded-sm bg-white  p-10 shadow-md">
+        <div className="flex w-full max-w-[500px] flex-col justify-between rounded-md bg-white p-8 shadow-md sm:p-10 gap-8">
           <div className="w-full">
-            <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Sign Up</h1>
-            {!isValidEmail && !firsttry && (
-              <h2
-                className={`${poppins.className} pt-4  text-xl  tracking-tighter text-red-500`}
-              >
-                Use valid college email id.
+            <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Sign Up</h1>
+            {error && (
+              <h2 className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}>
+                {error}
               </h2>
             )}
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl  tracking-tighter`}>
+            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
               Your email address
             </h2>
             <input
@@ -129,13 +128,13 @@ function Page() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mx-auto w-[90%] rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="mx-auto w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
               placeholder="johndoe@mbcet.ac.in"
             />
 
             <button
-              onClick={() => handleSubmit()}
-              className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+              onClick={handleSubmit}
+              className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
             >
               Sign Up -&gt;
             </button>
@@ -145,7 +144,7 @@ function Page() {
             <br />
             <button
               onClick={() => router.push("/login")}
-              className={`${poppins.className} w-full p-2 text-center text-xl  text-gray-600 underline hover:text-primary`}
+              className={`${poppins.className} w-full p-2 text-center text-xl text-gray-600 underline hover:text-primary`}
             >
               Sign In Instead
             </button>
@@ -153,25 +152,16 @@ function Page() {
         </div>
       )}
       {next && !verificationSent && (
-        <div className="flex h-[600px] w-[400px] flex-col justify-between rounded-3xl bg-white  p-10 shadow-md">
-          <div className="">
-            <h1 className={` ${poppins.className}  pt-5 text-5xl`}>Hello ,</h1>
-            <h1 className={` ${poppins.className}  pt-5 text-3xl`}>{name}</h1>
-            {error && !firebaseError && (
-              <h2
-                className={`${poppins.className} pt-2  text-xl  tracking-tighter text-red-500`}
-              >
-                Passwords don&apos;t Match
+        <div className="flex w-full max-w-[400px] flex-col justify-between rounded-3xl bg-white p-8 shadow-md sm:p-10">
+          <div>
+            <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Hello,</h1>
+            <h1 className={`${poppins.className} pt-5 text-2xl sm:text-3xl`}>{name}</h1>
+            {error && (
+              <h2 className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}>
+                {error}
               </h2>
             )}
-            {firebaseError && (
-              <h2
-                className={`${poppins.className} pt-2  text-xl  tracking-tighter text-red-500`}
-              >
-                {firebaseError}
-              </h2>
-            )}
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl  tracking-tighter`}>
+            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
               Password
             </h2>
             <input
@@ -182,10 +172,9 @@ function Page() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-xl border-2 border-transparent  bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
-              placeholder=""
+              className="w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
             />
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl  tracking-tighter`}>
+            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
               Confirm Password
             </h2>
             <input
@@ -196,31 +185,30 @@ function Page() {
               required
               value={conpassword}
               onChange={(e) => setConPassword(e.target.value)}
-              className="rounded-xl border-2 border-transparent  bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
-              placeholder=""
+              className="w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
             />
 
             <button
-              onClick={() => handleSignup()}
-              className={`${poppins.className} my-2 mt-6  w-fit rounded-3xl bg-[#2727e6] px-4  py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5 `}
+              onClick={handleSignup}
+              className={`${poppins.className} my-2 mt-6 w-fit rounded-3xl bg-[#2727e6] px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
             >
               Confirm
             </button>
           </div>
           <button
             onClick={() => setNext(false)}
-            className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary `}
+            className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary`}
           >
             Go Back
           </button>
         </div>
       )}
       {verificationSent && (
-        <div className="flex h-[300px] w-[400px] flex-col items-center justify-center rounded-3xl bg-white p-10 shadow-md">
-          <h1 className={`${poppins.className} mb-4 text-center text-3xl`}>
+        <div className="flex w-full max-w-[400px] flex-col items-center justify-center rounded-3xl bg-white p-8 shadow-md sm:p-10">
+          <h1 className={`${poppins.className} mb-4 text-center text-2xl sm:text-3xl`}>
             Verification Email Sent
           </h1>
-          <p className={`${poppins.className} mb-6 text-center text-xl`}>
+          <p className={`${poppins.className} mb-6 text-center text-lg sm:text-xl`}>
             Please check your email and click on the verification link to complete your
             registration.
           </p>

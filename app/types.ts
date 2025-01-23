@@ -5,16 +5,22 @@ export interface User {
   userId: string;
   id: string;
   currentUserId: string;
+  profilePicUrl?: string;
 }
 
-interface Friend {
+
+
+
+
+export interface Friend {
   id?: string;
   name: string;
   interests: string[];
   userId?: string;
+  profilePicUrl?: string;
 }
 
-interface Community {
+export interface Community {
   id: string;
   name: string;
   creator: string;
@@ -23,13 +29,13 @@ interface Community {
   privateCommunity?: boolean;
 }
 
-interface Insight {
+export interface Insight {
   title: string;
   description: string;
   challenge: string;
 }
 
-interface FriendRequest {
+export interface FriendRequest {
   id: string;
   from: string;
   to: string;

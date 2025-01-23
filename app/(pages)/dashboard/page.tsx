@@ -7,6 +7,7 @@ import {
   collection,
   getDocs,
   updateDoc,
+  arrayRemove,
   arrayUnion,
   query,
   where,
@@ -23,8 +24,46 @@ import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
-import { Community, Friend, FriendRequest, Insight, User } from "@/app/types";
-import { profile } from "console";
+
+interface User {
+  name: string;
+  interests: string[];
+  friends: string[];
+  userId: string;
+  id: string;
+  currentUserId: string;
+}
+
+interface Friend {
+  id?: string;
+  name: string;
+  interests: string[];
+  userId?: string;
+}
+
+interface Community {
+  id: string;
+  name: string;
+  creator: string;
+  members: string[];
+  tags: string[];
+  privateCommunity?: boolean;
+}
+
+interface Insight {
+  title: string;
+  description: string;
+  challenge: string;
+}
+
+interface FriendRequest {
+  id: string;
+  from: string;
+  to: string;
+  status: string;
+  name: string;
+  toname: string;
+}
 
 function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -109,20 +148,20 @@ function Home() {
         const prompt = `Based on these interests: ${interests.join(
           ", "
         )}, generate 7 fun and thought-provoking insights about life. Each insight should have:
-
-      1. A catchy title (bonus points for puns)
-      2. A brief description that's both humorous and thought-provoking
-      3. A fun challenge or action item related to the insight
-
-      Format the response as a series of insights, separated by dashes (--):
-
-      Title: [Insight Title]
-      Description: [Insight Description]
-      Challenge: [Related Challenge]
-
-      ---
-
-      Let's make it entertaining and insightful!`;
+    
+          1. A catchy title (bonus points for puns)
+          2. A brief description that's both humorous and thought-provoking
+          3. A fun challenge or action item related to the insight
+    
+          Format the response as a series of insights, separated by dashes (--):
+    
+          Title: [Insight Title]
+          Description: [Insight Description]
+          Challenge: [Related Challenge]
+    
+          ---
+    
+          Let's make it entertaining and insightful!`;
 
         const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
           contents: [{ parts: [{ text: prompt }] }]
@@ -160,8 +199,7 @@ function Home() {
           id: doc.id,
           name: doc.data().name,
           interests: doc.data().interests,
-          userId: doc.data().userId,
-          profilePicUrl: doc.data().profilePicUrl
+          userId: doc.data().userId
         }))
         .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
 
@@ -188,8 +226,7 @@ function Home() {
               id: friendDoc.id,
               name: data.name,
               interests: data.interests as string[],
-              userId: data.userId,
-              profilePicUrl: data.profilePicUrl
+              userId: data.userId
             } as Friend;
           }
           return null;
@@ -358,153 +395,193 @@ function Home() {
       fetchAllCommunities();
     }
   }, [currentView, state, fetchAllCommunities]);
+
   return (
     <div
-      className={`flex  min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
+      className={`
+            flex min-h-screen w-full flex-col 
+            bg-[#ebebeb] 
+            lg:p-[10px] 
+            ${jakartasmall.className} 
+            custom-scrollbar
+          `}
     >
       <NavBar />
-      <div className="flex w-full flex-col justify-between p-10 md:flex-row">
+
+      <div
+        className="
+            flex w-full flex-col 
+            space-y-4 
+            px-4 
+            lg:flex-row lg:justify-between 
+            lg:space-x-4 lg:space-y-0 lg:p-10
+          "
+      >
         {user && (
-          <Dashboard
-            state={state}
-            setstate={setstate}
-            user={user}
-            currentView={currentView}
-            setCurrentView={setCurrentView}
-            currentUserId={currentUserId}
-            ifUnread={ifUnread}
-          />
-        )}
-        <div
-          className={` ${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
-        >
-          <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && (
-            <ChatWindow
+          <div className="w-full lg:w-[250px] lg:shrink-0">
+            <Dashboard
+              state={state}
+              setstate={setstate}
+              user={user}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
               currentUserId={currentUserId}
               ifUnread={ifUnread}
-              setifUnread={setifUnread}
-              state={state}
             />
-          )}
-          {currentView === "Profile" && user && <Profile userId={currentUserId} />}
-          {currentView === "Communities" && (
-            <Communities
-              allCommunities={allCommunities}
-              user={user!}
-              setAllCommunities={setAllCommunities}
-              setstate={setstate}
-              state={state}
-              currentUserId={currentUserId}
-            />
-          )}
-          {currentView === "Explore" && (
-            <>
-              {isLoading
-                ? // Skeleton loading state
-                  Array(3)
-                    .fill(null)
-                    .map((_, index) => (
-                      <div
-                        key={index}
-                        className="z-0 mb-8 animate-pulse rounded-lg bg-gray-100 p-4"
-                      >
-                        <div className="mb-2 h-6 w-3/4 rounded bg-gray-300"></div>
-                        <div className="mb-4 h-4 w-full rounded bg-gray-300"></div>
-                        <div className="mb-2 h-4 w-full rounded bg-gray-300"></div>
-                        <div className="h-4 w-3/4 rounded bg-gray-300"></div>
-                      </div>
-                    ))
-                : insights.map((insight, index) => (
-                    <div key={index} className="mb-8 rounded-lg bg-gray-100 p-4">
-                      <h3 className="mb-2 text-xl font-semibold">
-                        {insight.title.replaceAll("**", "")}
-                      </h3>
-                      <p className="mb-4">{insight.description.replaceAll("**", "")}</p>
-                      <div className="rounded bg-blue-100 p-3">
-                        <h4 className="mb-1 font-semibold">Challenge:</h4>
-                        <p>{insight.challenge.replaceAll("**", "")}</p>
-                      </div>
-                    </div>
-                  ))}
-            </>
-          )}
+          </div>
+        )}
 
-          {currentView === "Friends" && (
-            <div className="w-full">
-              <h2 className="mb-4 text-xl font-bold">Friend Requests</h2>
-              {friendRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="mb-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-md"
-                >
-                  <span>{request.name}</span>
-                  <div>
-                    <button
-                      onClick={() => handleAcceptFriendRequest(request)}
-                      className="mr-2 rounded bg-green-500 px-4 py-2 text-white"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleRejectFriendRequest(request)}
-                      className="rounded bg-red-500 px-4 py-2 text-white"
-                    >
-                      Reject
-                    </button>
+        <div
+          className={`
+                w-full 
+                ${currentView === "Chat" ? "lg:w-[70%]" : "lg:w-[calc(100%-550px)]"}
+                custom-scrollbar 
+                h-[calc(100vh-150px)] 
+                overflow-y-auto rounded-lg 
+                bg-white 
+                p-4 
+                lg:p-5
+              `}
+        >
+          <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
+
+          {/* Main Content Area with Responsive Rendering */}
+          <div className="space-y-4">
+            {currentView === "Chat" && (
+              <ChatWindow
+                currentUserId={currentUserId}
+                ifUnread={ifUnread}
+                setifUnread={setifUnread}
+                state={state}
+              />
+            )}
+
+            {currentView === "Profile" && user && <Profile userId={currentUserId} />}
+
+            {currentView === "Communities" && (
+              <Communities
+                allCommunities={allCommunities}
+                user={user!}
+                setAllCommunities={setAllCommunities}
+                setstate={setstate}
+                state={state}
+                currentUserId={currentUserId}
+              />
+            )}
+
+            {currentView === "Explore" && (
+              <div>
+                {isLoading
+                  ? Array(3)
+                      .fill(null)
+                      .map((_, index) => (
+                        <div
+                          key={index}
+                          className="mb-4 animate-pulse rounded-lg bg-gray-100 p-4"
+                        >
+                          <div className="mb-2 h-6 w-3/4 rounded bg-gray-300"></div>
+                          <div className="mb-2 h-4 w-full rounded bg-gray-300"></div>
+                          <div className="h-4 w-1/2 rounded bg-gray-300"></div>
+                        </div>
+                      ))
+                  : insights.map((insight, index) => (
+                      <div key={index} className="mb-4 rounded-lg bg-gray-100 p-4">
+                        <h3 className="mb-2 text-xl font-semibold">
+                          {insight.title.replaceAll("**", "")}
+                        </h3>
+                        <p className="mb-3">{insight.description.replaceAll("**", "")}</p>
+                        <div className="rounded bg-blue-100 p-3">
+                          <h4 className="mb-1 font-semibold">Challenge:</h4>
+                          <p>{insight.challenge.replaceAll("**", "")}</p>
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            )}
+
+            {currentView === "Friends" && (
+              <div>
+                <h2 className="mb-4 text-xl font-bold">Friend Requests</h2>
+                {friendRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="mb-4 flex flex-col items-center justify-between rounded-lg bg-white p-4 shadow-md sm:flex-row"
+                  >
+                    <span className="mb-2 sm:mb-0">{request.name}</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleAcceptFriendRequest(request)}
+                        className="rounded bg-green-500 px-4 py-2 text-white"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectFriendRequest(request)}
+                        className="rounded bg-red-500 px-4 py-2 text-white"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
         {currentView !== "Chat" && (
-          <div className="custom-scrollbar h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
-            {currentView !== "Friends" && <h1 className="pb-5 text-2xl">Add Friends</h1>}
-            {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
-            <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
-            {currentView === "Friends" && myFriends.length > 0 && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 ">
-                {myFriends.map((friend, index) => (
-                  <FriendCard
-                    key={friend.id || index}
-                    friend={friend}
-                    currentUserId={currentUserId}
-                    onRequestSent={() => {
-                      /* Handle request sent */
-                    }}
-                    onRequestCancelled={() => {
-                      /* Handle request cancelled */
-                    }}
-                    showAddButton={false}
-                    isFriend={true}
-                    state={state}
-                    setstate={setstate}
-                  />
-                ))}
-              </div>
-            )}
-            {currentView !== "Friends" && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 ">
-                {friends.map((friend, index) => (
-                  <FriendCard
-                    key={friend.id || index}
-                    friend={friend}
-                    currentUserId={currentUserId}
-                    onRequestSent={() => {
-                      /* Handle request sent */
-                    }}
-                    onRequestCancelled={() => {
-                      /* Handle request cancelled */
-                    }}
-                    showAddButton={true}
-                    isFriend={false}
-                    state={state}
-                    setstate={setstate}
-                  />
-                ))}
-              </div>
-            )}
+          <div
+            className="
+                custom-scrollbar h-[calc(100vh-150px)] 
+                w-full 
+                overflow-y-auto 
+                rounded-lg 
+                bg-white 
+                p-4 
+                lg:w-[250px]
+              "
+          >
+            <h1 className="pb-4 text-2xl font-bold">
+              {currentView === "Friends" ? "My Friends" : "Add Friends"}
+            </h1>
+
+            <div className="space-y-4">
+              {currentView === "Friends" && myFriends.length > 0
+                ? myFriends.map((friend, index) => (
+                    <FriendCard
+                      key={friend.id || index}
+                      friend={friend}
+                      onRequestSent={() => {
+                        /* Handle request sent */
+                      }}
+                      onRequestCancelled={() => {
+                        /* Handle request cancelled */
+                      }}
+                      currentUserId={currentUserId}
+                      showAddButton={false}
+                      isFriend={true}
+                      state={state}
+                      setstate={setstate}
+                    />
+                  ))
+                : friends.map((friend, index) => (
+                    <FriendCard
+                      key={friend.id || index}
+                      onRequestSent={() => {
+                        /* Handle request sent */
+                      }}
+                      onRequestCancelled={() => {
+                        /* Handle request cancelled */
+                      }}
+                      friend={friend}
+                      currentUserId={currentUserId}
+                      showAddButton={true}
+                      isFriend={false}
+                      state={state}
+                      setstate={setstate}
+                    />
+                  ))}
+            </div>
           </div>
         )}
       </div>

@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} custom-scrollbar hidden md:flex`}>
+      <body className={`${inter.className} custom-scrollbar `}>
         <AuthProvider>{children}</AuthProvider>
       </body>
       

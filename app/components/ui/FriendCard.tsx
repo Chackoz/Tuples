@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   doc,
   updateDoc,
@@ -17,6 +18,7 @@ interface Friend {
   interests: string[];
   id?: string;
   userId?: string;
+  profilePicUrl?: string;
 }
 
 interface FriendCardProps {
@@ -89,7 +91,6 @@ function FriendCard({
         setstate(!state);
         return null;
       }
-      
     } catch (error) {
       console.error("Error fetching user:", error);
       return null;
@@ -169,17 +170,43 @@ function FriendCard({
     }
   };
 
+
+  const renderProfilePicture = () => {
+    if (friend.profilePicUrl) {
+      console.log()
+      return (
+        <Image 
+          src={friend.profilePicUrl} 
+          alt={`${friend.name}'s profile`} 
+          width={48} 
+          height={48} 
+          className="rounded-full object-cover" 
+        />
+      );
+    }
+    
+    return (
+      <div
+        className={`flex h-12 w-12 items-center justify-center rounded-full ${profileColor} text-lg font-semibold`}
+      >
+          <Image 
+          src={friend.profilePicUrl||""} 
+          alt={`${friend.name}'s profile`} 
+          width={48} 
+          height={48} 
+          className="rounded-full object-cover" 
+        />
+      </div>
+    );
+  };
+
   return (
     <>
       {friend.name && (
         <div className="flex h-fit w-full max-w-md rounded-2xl bg-white shadow-md transition-all duration-300 hover:shadow-lg">
           <div className="flex w-full items-center justify-between p-4">
             <div className="flex w-full items-center gap-4">
-              <div
-                className={`flex h-12 w-12 items-center justify-center rounded-full ${profileColor} text-lg font-semibold`}
-              >
-                {friend?.name[0].toUpperCase()}
-              </div>
+              {renderProfilePicture()}
               <div className="flex w-[75%] flex-col justify-start">
                 <h1 className="text-[14px] font-medium">{friend.name}</h1>
                 {friend.interests && friend.interests.length > 0 ? (
@@ -193,6 +220,7 @@ function FriendCard({
               </div>
             </div>
             <div className="flex items-center justify-center">
+              {/* Existing button logic remains the same */}
               {isFriend ? (
                 <button
                   onClick={removeFriend}
