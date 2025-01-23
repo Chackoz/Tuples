@@ -30,10 +30,10 @@ function Login() {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         await updateEmailVerificationStatus(user.uid);
         addCookie(user.uid);
-        
+
         userData.interests && userData.interests.length > 0
           ? router.push("/home")
           : router.push("/interests");
@@ -43,10 +43,7 @@ function Login() {
     } catch (error) {
       const firebaseError = error as FirebaseError;
       const match = firebaseError.message.match(/\(([^)]+)\)/);
-      setError(match 
-        ? match[1] 
-        : "Login failed. Please try again."
-      );
+      setError(match ? match[1] : "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +66,9 @@ function Login() {
             Welcome Back,
           </h1>
           {error && (
-            <h2 className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}>
+            <h2
+              className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}
+            >
               {error}
             </h2>
           )}
@@ -104,9 +103,9 @@ function Login() {
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5 ${isLoading ? "cursor-not-allowed opacity-50" : ""}`}
           >
-            {isLoading ? 'Signing In...' : 'Sign In ->'}
+            {isLoading ? "Signing In..." : "Sign In ->"}
           </button>
         </div>
         <button

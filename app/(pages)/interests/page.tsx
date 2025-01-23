@@ -118,7 +118,7 @@ const Interests: React.FC = () => {
         <h1 className="mb-6 text-2xl font-semibold text-[#2b2b2b] md:text-3xl">
           Choose Your Interests
         </h1>
-        
+
         <div className="mb-6 rounded-xl border-2 border-[#d0d0d0] bg-white p-4">
           <div className="flex flex-wrap items-center gap-2">
             {selectedSkills.map((skill, index) => (
@@ -167,10 +167,10 @@ const Interests: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-6 flex-wrap gap-2 md:flex hidden" >
+        <div className="mb-6 hidden flex-wrap gap-2 md:flex">
           {skillsSug
             .slice(0, 20)
-            .filter(skill => !selectedSkills.includes(skill))
+            .filter((skill) => !selectedSkills.includes(skill))
             .map((skill, index) => (
               <Pill
                 key={index}
@@ -180,11 +180,11 @@ const Interests: React.FC = () => {
               />
             ))}
         </div>
-        
-        <div className="mb-6 flex-wrap gap-2 md:hidden flex" >
+
+        <div className="mb-6 flex flex-wrap gap-2 md:hidden">
           {skillsSug
             .slice(0, 10)
-            .filter(skill => !selectedSkills.includes(skill))
+            .filter((skill) => !selectedSkills.includes(skill))
             .map((skill, index) => (
               <Pill
                 key={index}
@@ -195,10 +195,9 @@ const Interests: React.FC = () => {
             ))}
         </div>
 
-
-        <div 
+        <div
           onClick={handleClick}
-          className="mx-auto w-full max-w-xs cursor-pointer rounded-full bg-[#3c82f5] px-6 py-3 text-center text-white hover:bg-[#2c72e5] transition-colors"
+          className="mx-auto w-full max-w-xs cursor-pointer rounded-full bg-[#3c82f5] px-6 py-3 text-center text-white transition-colors hover:bg-[#2c72e5]"
         >
           Confirm
         </div>

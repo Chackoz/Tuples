@@ -67,20 +67,26 @@ const Profile = () => {
         })
         .join(", ");
       console.log("User interests: ", userInterests);
-  
+
       const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
         user_interests: userInterests
       });
-  
+
       console.log("Response", response.data);
       const { similar_users } = response.data;
-  
+
       console.log("Similar users structure:", similar_users);
-  
-      if (Array.isArray(similar_users) && similar_users.every(user => Array.isArray(user) && typeof user[0] === 'string' && Array.isArray(user[1]))) {
+
+      if (
+        Array.isArray(similar_users) &&
+        similar_users.every(
+          (user) =>
+            Array.isArray(user) && typeof user[0] === "string" && Array.isArray(user[1])
+        )
+      ) {
         const formattedFriends = similar_users
           .map(([name, interests]) => ({ name, interests }))
-          .filter(friend => friend.name !== user.name); // Filter out the current user's name from friends list
+          .filter((friend) => friend.name !== user.name); // Filter out the current user's name from friends list
         setFriends(formattedFriends);
       } else {
         console.error("Invalid similar_users structure:", similar_users);
@@ -89,7 +95,6 @@ const Profile = () => {
       console.error("Error fetching similar users:", error);
     }
   };
-  
 
   return (
     <div className="">

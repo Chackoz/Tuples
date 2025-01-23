@@ -14,20 +14,52 @@ import {
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
-import { db } from "../../lib/firebaseConfig";
 import axios from "axios";
+import { db } from "../../lib/firebaseConfig";
+
+// Components
 import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
-import { jakartasmall } from "@/app/utils/fonts";
 import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
-import { type } from "os";
-import { Community, Friend, FriendRequest, Insight, User } from "@/app/types";
-import { profile } from "console";
+
+// Utilities
+import { jakartasmall } from "@/app/utils/fonts";
+
+// Types
+import { Community, Friend, FriendRequest, Insight, Project, User } from "@/app/types";
+import ProjectCreationModal from "@/app/components/ui/CreateProjectModal";
+
+// Utility Functions
+const debouncedFetch = (
+  lastFetchTime: number,
+  setLastFetchTime: React.Dispatch<React.SetStateAction<number>>,
+  fetchFunction: () => Promise<void>,
+  fetchTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>
+) => {
+  const currentTime = Date.now();
+  if (currentTime - lastFetchTime < 60000) {
+    console.log("Fetch call skipped to respect rate limit.");
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = setTimeout(
+      () => {
+        fetchFunction();
+        setLastFetchTime(Date.now());
+      },
+      30000 - (currentTime - lastFetchTime)
+    );
+  } else {
+    fetchFunction();
+    setLastFetchTime(currentTime);
+  }
+};
 
 function Home() {
+  // State Hooks
   const [user, setUser] = useState<User | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [myFriends, setMyFriends] = useState<Friend[]>([]);
@@ -35,14 +67,81 @@ function Home() {
   const [currentView, setCurrentView] = useState<string>("Explore");
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [state, setstate] = useState(false);
+  const [state, setState] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
-  const [ifUnread, setifUnread] = useState(false);
+  const [ifUnread, setIfUnread] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
+  // Fetch All Projects
+  const fetchAllProjects = useCallback(async () => {
+    try {
+      const projectsRef = collection(db, "projects");
+      const q = query(projectsRef);
+      const querySnapshot = await getDocs(q);
+
+      const projectsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Project[];
+
+      setAllProjects(projectsData);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  }, []);
+
+  // Fetch User's Projects
+  const fetchUserProjects = useCallback(async (userId: string) => {
+    try {
+      const projectsRef = collection(db, "projects");
+      const q = query(projectsRef, where("members", "array-contains", userId));
+      const querySnapshot = await getDocs(q);
+
+      const userProjectsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Project[];
+
+      setUserProjects(userProjectsData);
+    } catch (error) {
+      console.error("Error fetching user projects:", error);
+    }
+  }, []);
+
+  // Join Project
+  const handleJoinProject = async (projectId: string) => {
+    if (!currentUserId || !user) {
+      alert("User ID is missing. Please log in again.");
+      return;
+    }
+
+    try {
+      const projectRef = doc(db, "projects", projectId);
+      await updateDoc(projectRef, {
+        members: arrayUnion(user.name)
+      });
+
+      setAllProjects((prevProjects) =>
+        prevProjects.map((project) =>
+          project.id === projectId
+            ? { ...project, members: [...project.members, user.name] }
+            : project
+        )
+      );
+
+      fetchUserProjects(currentUserId);
+    } catch (error) {
+      console.error("Error joining project:", error);
+    }
+  };
+
+  // Fetch User by ID
   const getUserById = useCallback(async (userId: string) => {
     try {
       const userRef = doc(db, "users", userId);
@@ -50,7 +149,7 @@ function Home() {
       if (userSnapshot.exists()) {
         const userData = userSnapshot.data() as User;
         setUser(userData);
-        fetchSimilarUsers(userData);
+        await fetchSimilarUsers(userData);
         return userData;
       } else {
         console.log("Document does not exist!");
@@ -61,86 +160,85 @@ function Home() {
       return null;
     }
   }, []);
-  const debouncedFetch = useCallback((fetchFunction: () => Promise<void>) => {
-    const currentTime = Date.now();
-    if (currentTime - lastFetchTime < 60000) { // 30 seconds
-      console.log("Fetch call skipped to respect rate limit. Friends List");
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-      fetchTimeoutRef.current = setTimeout(() => {
-        fetchFunction();
-        setLastFetchTime(Date.now());
-      }, 30000 - (currentTime - lastFetchTime));
-    } else {
-      fetchFunction();
-      setLastFetchTime(currentTime);
-    }
-  }, [lastFetchTime]);
 
-   const fetchSimilarUsers = useCallback((user: User) => {
-    debouncedFetch(async () => {
-      try {
-        const userInterests = user.interests.join(", ");
-        const response = await axios.post("http://10.40.9.104:5000/api/similar_users", {
-          user_interests: userInterests
-        });
-    
-        const { similar_users } = response.data;
-    
-        if (
-          Array.isArray(similar_users) &&
-          similar_users.every(
-            (user) =>
-              typeof user.name === 'string' &&
-              Array.isArray(user.interests) &&
-              typeof user.userId === 'string' &&
-              typeof user.id === 'string'
-          )
-        ) {
-          const formattedFriends = similar_users
-            .map(({ id, name, interests, userId }) => ({id, name, interests, userId }))
-            .filter(
-              (friend) => friend.name !== user.name && !user.friends.includes(friend.name)
+  // Fetch Similar Users (Primary Method)
+  const fetchSimilarUsers = useCallback(
+    async (user: User) => {
+      const fetchMethod = async () => {
+        try {
+          const userInterests = user.interests.join(", ");
+          const response = await axios.post("http://10.40.9.104:5000/api/similar_users", {
+            user_interests: userInterests
+          });
+
+          const { similar_users } = response.data;
+
+          if (
+            Array.isArray(similar_users) &&
+            similar_users.every(
+              (user) =>
+                typeof user.name === "string" &&
+                Array.isArray(user.interests) &&
+                typeof user.userId === "string" &&
+                typeof user.id === "string"
+            )
+          ) {
+            const formattedFriends = similar_users
+              .map(({ id, name, interests, userId }) => ({ id, name, interests, userId }))
+              .filter(
+                (friend) =>
+                  friend.name !== user.name && !user.friends.includes(friend.name)
+              );
+            setFriends(formattedFriends);
+            console.log(
+              "Similar users fetched successfully:",
+              formattedFriends,
+              "Time",
+              Date.now()
             );
-          setFriends(formattedFriends);
-          console.log("Similar users fetched successfully:", formattedFriends,"Time",Date.now());
-        } else {
-          console.error("Invalid similar_users structure:", similar_users);
-          fetchRandomUsers(user);
+          } else {
+            console.error("Invalid similar_users structure:", similar_users);
+            await fetchRandomUsers(user);
+          }
+        } catch (error) {
+          console.error("Error fetching similar users:", error);
+          await fetchRandomUsers(user);
+          await fetchSimilarUsersGemini(user);
         }
-      } catch (error) {
-        console.error("Error fetching similar users:", error);
-        fetchRandomUsers(user);
-        fetchSimilarUsersGemini(user);
-      }
-    });
-  }, [debouncedFetch]);
+      };
 
-  const fetchSimilarUsersGemini = useCallback((user: User) => {
-    debouncedFetch(async () => {
-      try {
-        // Fetch all users from Firebase
-        const usersRef = collection(db, "users");
-        const usersSnapshot = await getDocs(usersRef);
-        const allUsers = usersSnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            name: doc.data().name,
-            interests: doc.data().interests,
-            userId: doc.data().userId,
-            profilePicUrl: doc.data().profilePicUrl
-          }))
-          .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
-  
-        // Prepare data for Gemini API
-        const userInterests = user.interests.join(", ");
-        const allUsersData = allUsers.map(u => `${u.name}: ${u.interests.join(", ")}`).join("\n");
-  
-        const API_KEY = process.env.GEMINI_API_KEY;
-        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-  
-        const prompt = `Given the following user interests: ${userInterests}, and the list of other users with their interests:
+      debouncedFetch(lastFetchTime, setLastFetchTime, fetchMethod, fetchTimeoutRef);
+    },
+    [lastFetchTime]
+  );
+
+  // Fetch Similar Users (Gemini Fallback)
+  const fetchSimilarUsersGemini = useCallback(
+    async (user: User) => {
+      const fetchMethod = async () => {
+        try {
+          const usersRef = collection(db, "users");
+          const usersSnapshot = await getDocs(usersRef);
+          const allUsers = usersSnapshot.docs
+            .map((doc) => ({
+              id: doc.id,
+              name: doc.data().name,
+              interests: doc.data().interests,
+              userId: doc.data().userId,
+              profilePicUrl: doc.data().profilePicUrl
+            }))
+            .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
+
+          const userInterests = user.interests.join(", ");
+          const allUsersData = allUsers
+            .map((u) => `${u.name}: ${u.interests.join(", ")}`)
+            .join("\n");
+
+          const API_KEY = process.env.GEMINI_API_KEY;
+          const API_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+
+          const prompt = `Given the following user interests: ${userInterests}, and the list of other users with their interests:
   
         ${allUsersData}
   
@@ -153,36 +251,54 @@ function Home() {
         5. [User Name]
   
         Only include the names in your response(no formatting the name), no additional text.`;
-  
-        const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
-          contents: [{ parts: [{ text: prompt }] }]
-        });
-  
-        const generatedText = response.data.candidates[0].content.parts[0].text;
-        const similarUserNames = generatedText.split('\n').map((line: string) => line.split('. ')[1].trim());
-  
-        // Filter and sort allUsers based on the order returned by Gemini
-        const similarUsers = similarUserNames
-          .map((name: any) => allUsers.find(u => u.name === name))
-          .filter((user: Friend): user is Friend => user !== undefined)
-          .map((user: { id: any; name: any; interests: any; userId: any;profilePicUrl:any }) => ({
-            id: user.id,
-            name: user.name,
-            interests: user.interests,
-            userId: user.userId,
-            profilePicUrl: user.profilePicUrl
-          }));
-  
-        setFriends(similarUsers);
-        console.log("Similar users fetched successfully:", similarUsers, "Time", Date.now());
-      } catch (error) {
-        console.error("Error fetching similar users:", error);
-        fetchRandomUsers(user);
-      }
-    });
-  }, [debouncedFetch]);
-  
 
+          const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
+            contents: [{ parts: [{ text: prompt }] }]
+          });
+
+          const generatedText = response.data.candidates[0].content.parts[0].text;
+          const similarUserNames = generatedText
+            .split("\n")
+            .map((line: string) => line.split(". ")[1].trim());
+
+          const similarUsers = similarUserNames
+            .map((name: any) => allUsers.find((u) => u.name === name))
+            .filter((user: Friend): user is Friend => user !== undefined)
+            .map(
+              (user: {
+                id: any;
+                name: any;
+                interests: any;
+                userId: any;
+                profilePicUrl: any;
+              }) => ({
+                id: user.id,
+                name: user.name,
+                interests: user.interests,
+                userId: user.userId,
+                profilePicUrl: user.profilePicUrl
+              })
+            );
+
+          setFriends(similarUsers);
+          console.log(
+            "Similar users fetched successfully:",
+            similarUsers,
+            "Time",
+            Date.now()
+          );
+        } catch (error) {
+          console.error("Error fetching similar users:", error);
+          await fetchRandomUsers(user);
+        }
+      };
+
+      debouncedFetch(lastFetchTime, setLastFetchTime, fetchMethod, fetchTimeoutRef);
+    },
+    [lastFetchTime]
+  );
+
+  // Generate Insights
   const generateInsights = useCallback(
     async (interests: string[]) => {
       const currentTime = Date.now();
@@ -243,6 +359,7 @@ function Home() {
     [lastApiCallTime]
   );
 
+  // Fetch Random Users
   const fetchRandomUsers = async (user: User) => {
     try {
       const usersRef = collection(db, "users");
@@ -266,6 +383,7 @@ function Home() {
     }
   };
 
+  // Fetch User's Friends
   const fetchUserFriends = useCallback(async (friendNames: string[]) => {
     try {
       const friendsData = await Promise.all(
@@ -297,11 +415,13 @@ function Home() {
       console.error("Error fetching user friends:", error);
     }
   }, []);
+
+  // Fetch All Communities
   const fetchAllCommunities = useCallback(async () => {
     try {
       const communitiesRef = collection(db, "communities");
       const q = query(communitiesRef, where("privateCommunity", "!=", true));
-      const querySnapshot = await getDocs(q); // Ensure you pass the correct query `q` here
+      const querySnapshot = await getDocs(q);
 
       const communitiesData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -314,6 +434,7 @@ function Home() {
     }
   }, []);
 
+  // Join Community
   const handleJoinCommunity = async (communityId: string) => {
     if (!currentUserId || !user) {
       alert("User ID is missing. Please log in again.");
@@ -336,13 +457,14 @@ function Home() {
 
       console.log(`Joined community: ${communityId}`);
       setCurrentView("Communities");
-      setstate(!state);
+      setState(!state);
     } catch (error) {
       console.error("Error joining community:", error);
       alert(`Failed to join community: ${(error as Error).message}`);
     }
   };
 
+  // Fetch Friend Requests
   const fetchFriendRequests = useCallback(async () => {
     if (!currentUserId) return;
 
@@ -389,8 +511,8 @@ function Home() {
         },
         type: "private"
       });
-      const currentUserRef = doc(db, "users", currentUserId);
 
+      const currentUserRef = doc(db, "users", currentUserId);
       await updateDoc(currentUserRef, {
         chats: arrayUnion(newChatRef.id)
       });
@@ -407,10 +529,10 @@ function Home() {
     }
   };
 
+  // Reject Friend Request
   const handleRejectFriendRequest = async (request: FriendRequest) => {
     try {
       const requestRef = doc(db, "friendRequests", request.id);
-
       await updateDoc(requestRef, {
         status: "rejected"
       });
@@ -421,6 +543,7 @@ function Home() {
     }
   };
 
+  // User Effect for Initial User Fetch
   useEffect(() => {
     const cookieValue = document.cookie
       .split("; ")
@@ -436,30 +559,45 @@ function Home() {
     }
   }, [getUserById]);
 
+  // User Effect for User-related Fetches
   useEffect(() => {
     if (user) {
       fetchUserFriends(user.friends);
       fetchSimilarUsers(user);
       generateInsights(user.interests);
       fetchFriendRequests();
+      fetchUserProjects(currentUserId);
     }
-  }, [user, currentView, fetchUserFriends, generateInsights, fetchFriendRequests]);
+  }, [
+    user,
+    currentView,
+    fetchUserFriends,
+    generateInsights,
+    fetchFriendRequests,
+    fetchUserProjects
+  ]);
 
+  // User Effect for Communities
   useEffect(() => {
     if (currentView === "Communities") {
       fetchAllCommunities();
     }
-  }, [currentView, state, fetchAllCommunities]);
+    if (currentView === "Projects") {
+      fetchAllProjects();
+    }
+  }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
+
+  // Render the Home Component
   return (
     <div
-      className={`flex  min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
+      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
     >
       <NavBar />
       <div className="flex w-full flex-col justify-between p-10 md:flex-row">
         {user && (
           <Dashboard
             state={state}
-            setstate={setstate}
+            setstate={setState}
             user={user}
             currentView={currentView}
             setCurrentView={setCurrentView}
@@ -468,24 +606,17 @@ function Home() {
           />
         )}
         <div
-          className={` ${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
+          className={`${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && (
-            <ChatWindow
-              currentUserId={currentUserId}
-              ifUnread={ifUnread}
-              setifUnread={setifUnread}
-              state={state}
-            />
-          )}
+          {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
           {currentView === "Profile" && user && <Profile userId={currentUserId} />}
           {currentView === "Communities" && (
             <Communities
               allCommunities={allCommunities}
               user={user!}
               setAllCommunities={setAllCommunities}
-              setstate={setstate}
+              setstate={setState}
               state={state}
               currentUserId={currentUserId}
             />
@@ -493,8 +624,7 @@ function Home() {
           {currentView === "Explore" && (
             <>
               {isLoading
-                ? // Skeleton loading state
-                  Array(3)
+                ? Array(3)
                     .fill(null)
                     .map((_, index) => (
                       <div
@@ -520,6 +650,49 @@ function Home() {
                     </div>
                   ))}
             </>
+          )}
+
+          {currentView === "Projects" && (
+            <div className="w-full">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Projects</h2>
+                <button
+                  onClick={() => setIsProjectModalOpen(true)}
+                  className="rounded bg-blue-500 px-4 py-2 text-white"
+                >
+                  Create New Project
+                </button>
+              </div>
+
+              <ProjectCreationModal
+                isOpen={isProjectModalOpen}
+                onClose={() => setIsProjectModalOpen(false)}
+                currentUserId={currentUserId}
+                userName={user?.name || ""}
+              />
+
+              <div className="flex flex-wrap gap-4">
+                {allProjects.map((project) => (
+                  <div key={project.id} className="rounded-lg bg-white p-6 shadow-md">
+                    <h3 className="mb-2 text-xl font-semibold">{project.title}</h3>
+                    <p className="mb-4 text-gray-600">{project.description}</p>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-gray-500">
+                        {project.members.length} members
+                      </span>
+                      {!project.members.includes(user?.name || "") && (
+                        <button
+                          onClick={() => handleJoinProject(project.id)}
+                          className="rounded bg-green-500 px-3 py-1 text-white"
+                        >
+                          Join Project
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {currentView === "Friends" && (
@@ -562,16 +735,12 @@ function Home() {
                     key={friend.id || index}
                     friend={friend}
                     currentUserId={currentUserId}
-                    onRequestSent={() => {
-                      /* Handle request sent */
-                    }}
-                    onRequestCancelled={() => {
-                      /* Handle request cancelled */
-                    }}
+                    onRequestSent={() => {}}
+                    onRequestCancelled={() => {}}
                     showAddButton={false}
                     isFriend={true}
                     state={state}
-                    setstate={setstate}
+                    setstate={setState}
                   />
                 ))}
               </div>
@@ -583,16 +752,12 @@ function Home() {
                     key={friend.id || index}
                     friend={friend}
                     currentUserId={currentUserId}
-                    onRequestSent={() => {
-                      /* Handle request sent */
-                    }}
-                    onRequestCancelled={() => {
-                      /* Handle request cancelled */
-                    }}
+                    onRequestSent={() => {}}
+                    onRequestCancelled={() => {}}
                     showAddButton={true}
                     isFriend={false}
                     state={state}
-                    setstate={setstate}
+                    setstate={setState}
                   />
                 ))}
               </div>

@@ -22,7 +22,7 @@ function Page() {
   useEffect(() => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@mbcet.ac.in$/;
     const validEmail = emailRegex.test(email);
-    
+
     if (validEmail) {
       const extractedName = email.split("@")[0].split(".")[0];
       const capitalizedExtractedName =
@@ -33,7 +33,7 @@ function Page() {
       if (userIdMatch) {
         setUserId(userIdMatch[1]);
       }
-      
+
       setIsValidEmail(true);
     } else {
       setIsValidEmail(false);
@@ -62,11 +62,7 @@ function Page() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       await sendEmailVerification(user);
@@ -78,11 +74,8 @@ function Page() {
       const firebaseError = error as FirebaseError;
       const errorMessage = firebaseError.message;
       const match = errorMessage.match(/\(([^)]+)\)/);
-      
-      setError(match 
-        ? match[1] 
-        : "Registration failed. Please try again."
-      );
+
+      setError(match ? match[1] : "Registration failed. Please try again.");
     }
   };
 
@@ -109,11 +102,13 @@ function Page() {
   return (
     <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] px-10  md:px-4">
       {!next && (
-        <div className="flex w-full max-w-[500px] flex-col justify-between rounded-md bg-white p-8 shadow-md sm:p-10 gap-8">
+        <div className="flex w-full max-w-[500px] flex-col justify-between gap-8 rounded-md bg-white p-8 shadow-md sm:p-10">
           <div className="w-full">
             <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Sign Up</h1>
             {error && (
-              <h2 className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}>
+              <h2
+                className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}
+              >
                 {error}
               </h2>
             )}
@@ -157,7 +152,9 @@ function Page() {
             <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Hello,</h1>
             <h1 className={`${poppins.className} pt-5 text-2xl sm:text-3xl`}>{name}</h1>
             {error && (
-              <h2 className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}>
+              <h2
+                className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}
+              >
                 {error}
               </h2>
             )}

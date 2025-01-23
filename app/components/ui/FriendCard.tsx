@@ -102,7 +102,6 @@ function FriendCard({
       alert("User ID is missing. Please log in again.");
       return;
     }
-   
 
     try {
       const requestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
@@ -158,43 +157,41 @@ function FriendCard({
       // Remove current user from friend's friends list
       const friendRef = doc(db, "users", friend.id);
       await updateDoc(friendRef, {
-        friends: arrayRemove(user?.name  )
+        friends: arrayRemove(user?.name)
       });
 
       alert(`${friend.name} has been removed from your friends list.`);
       setstate(!state);
-   
     } catch (error) {
       console.error("Error removing friend:", error);
       alert(`Failed to remove friend: ${(error as Error).message}`);
     }
   };
 
-
   const renderProfilePicture = () => {
     if (friend.profilePicUrl) {
-      console.log()
+      console.log();
       return (
-        <Image 
-          src={friend.profilePicUrl} 
-          alt={`${friend.name}'s profile`} 
-          width={48} 
-          height={48} 
-          className="rounded-full object-cover" 
+        <Image
+          src={friend.profilePicUrl}
+          alt={`${friend.name}'s profile`}
+          width={48}
+          height={48}
+          className="rounded-full object-cover"
         />
       );
     }
-    
+
     return (
       <div
         className={`flex h-12 w-12 items-center justify-center rounded-full ${profileColor} text-lg font-semibold`}
       >
-          <Image 
-          src={friend.profilePicUrl||""} 
-          alt={`${friend.name}'s profile`} 
-          width={48} 
-          height={48} 
-          className="rounded-full object-cover" 
+        <Image
+          src={friend.profilePicUrl || ""}
+          alt={`${friend.name}'s profile`}
+          width={48}
+          height={48}
+          className="rounded-full object-cover"
         />
       </div>
     );

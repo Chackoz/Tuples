@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   collection,
   addDoc,
@@ -20,12 +18,13 @@ import { db } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { User } from "@/app/types";
 
+// Typescript interfaces with more precise typing
 interface Message {
   id: string;
   senderId: string;
   chatId: string;
   content: string;
-  timestamp: any;
+  timestamp: Timestamp;
   senderName?: string;
 }
 
@@ -35,48 +34,39 @@ interface Chat {
   lastMessage?: {
     content: string;
     senderId: string;
-    timestamp: any;
+    timestamp: Timestamp;
   };
   participantNames?: string[];
   name?: string;
-  type?:string;
+  type?: string;
   unreadCounts: { [userId: string]: number };
 }
 
 interface ChatWindowProps {
   currentUserId: string;
-  ifUnread: boolean;
-  setifUnread: React.Dispatch<React.SetStateAction<boolean>>;
-  state: boolean;
 }
 
 const MESSAGES_PER_PAGE = 20;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
-const ChatWindow: React.FC<ChatWindowProps> = ({
-  currentUserId,
-  ifUnread,
-  setifUnread,
-  state
-}) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
+  // State management with more explicit typing
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [users, setUsers] = useState<{ [key: string]: User }>({});
-  const [lastMessageTimestamp, setLastMessageTimestamp] = useState<Timestamp | null>(
-    null
-  );
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
+  // Refs for performance and caching
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messagesCache = useRef<{ [chatId: string]: Message[] }>({});
   const usersCache = useRef<{ [key: string]: User }>({});
   const lastFetchTimestamp = useRef<{ [chatId: string]: number }>({});
 
-
+  // Fetch users on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       const usersCollection = collection(db, "users");
@@ -92,51 +82,58 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     fetchUsers();
   }, []);
 
+  // Listen to chats for the current user
   useEffect(() => {
     const chatsQuery = query(
       collection(db, "chats"),
       where("participants", "array-contains", currentUserId),
       orderBy("lastMessage.timestamp", "desc")
     );
-    console.log(currentUserId,"currentUserId")
 
     const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
       const chatList = snapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() }) as Chat
       );
-      console.log(chatList,"chatlist")
+
       setChats(chatList);
 
       const totalUnread = chatList.reduce(
-        (sum, chat) =>
-          sum + ((chat.unreadCounts && chat.unreadCounts[currentUserId]) || 0),
+        (sum, chat) => sum + (chat.unreadCounts?.[currentUserId] || 0),
         0
       );
       setTotalUnreadCount(totalUnread);
-
-      setifUnread(totalUnread > 0);
-
-      if (ifUnread) {
-        if (selectedChatId) {
-          loadMessages(selectedChatId);
-        }
-      }
     });
 
     return () => unsubscribe();
-  }, [currentUserId, selectedChatId, setifUnread]);
+  }, [currentUserId]);
 
+  // Update page title based on unread count
   useEffect(() => {
-    if (totalUnreadCount > 0) {
-      document.title = `(${totalUnreadCount}) New Messages`;
-    } else {
-      document.title = "Tuple";
-    }
+    document.title =
+      totalUnreadCount > 0 ? `(${totalUnreadCount}) New Messages` : "Tuple";
   }, [totalUnreadCount]);
 
+  // Memoized function to get chat name or participant names
+  const getChatName = useCallback(
+    (chat: Chat) => {
+      return (
+        chat.name ||
+        chat.participants
+          .filter((id) => id !== currentUserId)
+          .map((id) => users[id]?.name)
+          .join(", ") ||
+        "Loading..."
+      );
+    },
+    [currentUserId, users]
+  );
+
+  // Load messages for a specific chat
   const loadMessages = useCallback(
     async (chatId: string, loadMore = false) => {
       const now = Date.now();
+
+      // Check cache first
       if (
         !loadMore &&
         messagesCache.current[chatId] &&
@@ -153,10 +150,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         limit(MESSAGES_PER_PAGE)
       );
 
-      if (loadMore && lastMessageTimestamp) {
-        messagesQuery = query(messagesQuery, startAfter(lastMessageTimestamp));
-      }
-
       const snapshot = await getDocs(messagesQuery);
       const newMessages = snapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }) as Message)
@@ -165,90 +158,58 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const updatedMessages = loadMore
         ? [...(messagesCache.current[chatId] || []), ...newMessages]
         : newMessages;
+
       setMessages(updatedMessages);
       messagesCache.current[chatId] = updatedMessages;
       lastFetchTimestamp.current[chatId] = now;
 
-      if (newMessages.length > 0) {
-        setLastMessageTimestamp(newMessages[0].timestamp);
-      }
-
-      if (!loadMore) {
-        const chatRef = doc(db, "chats", chatId);
-        await updateDoc(chatRef, {
-          [`unreadCounts.${currentUserId}`]: 0
-        });
-        // setTotalUnreadCount(
-        //   (prevCount) =>
-        //     prevCount -
-        //     (chats.find((chat) => chat.id === chatId)?.unreadCounts[currentUserId] || 0)
-        // );
-      }
+      // Reset unread count for the chat
+      const chatRef = doc(db, "chats", chatId);
+      await updateDoc(chatRef, {
+        [`unreadCounts.${currentUserId}`]: 0
+      });
     },
-    [currentUserId, lastMessageTimestamp, chats]
+    [currentUserId]
   );
 
+  // Real-time message listener
   useEffect(() => {
-    if (selectedChatId) {
-      loadMessages(selectedChatId);
+    if (!selectedChatId) return;
 
-      const messagesQuery = query(
-        collection(db, "messages"),
-        where("chatId", "==", selectedChatId),
-        orderBy("timestamp", "desc")
-      );
+    loadMessages(selectedChatId);
 
-      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const newMessage = { id: change.doc.id, ...change.doc.data() } as Message;
-            setMessages((prevMessages) => {
-              if (!prevMessages.some((msg) => msg.id === newMessage.id)) {
-                const updatedMessages = [...prevMessages, newMessage].sort(
-                  (a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()
-                );
-                messagesCache.current[selectedChatId] = updatedMessages;
+    const messagesQuery = query(
+      collection(db, "messages"),
+      where("chatId", "==", selectedChatId),
+      orderBy("timestamp", "desc")
+    );
 
-                // Update the chat's last message
-                setChats((prevChats) =>
-                  prevChats.map((chat) =>
-                    chat.id === selectedChatId
-                      ? {
-                          ...chat,
-                          lastMessage: {
-                            content: newMessage.content,
-                            senderId: newMessage.senderId,
-                            timestamp: newMessage.timestamp
-                          },
-                          unreadCounts: {
-                            ...chat.unreadCounts,
-                            [currentUserId]:
-                              newMessage.senderId !== currentUserId
-                                ? (chat.unreadCounts[currentUserId] || 0) + 1
-                                : chat.unreadCounts[currentUserId] || 0
-                          }
-                        }
-                      : chat
-                  )
-                );
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const newMessage = {
+            id: change.doc.id,
+            ...change.doc.data()
+          } as Message;
 
-                // Update total unread count
-                if (newMessage.senderId !== currentUserId) {
-                  setTotalUnreadCount((prevCount) => prevCount + 1);
-                }
+          setMessages((prevMessages) => {
+            if (prevMessages.some((msg) => msg.id === newMessage.id)) return prevMessages;
 
-                return updatedMessages;
-              }
-              return prevMessages;
-            });
-          }
-        });
+            const updatedMessages = [...prevMessages, newMessage].sort(
+              (a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()
+            );
+
+            messagesCache.current[selectedChatId] = updatedMessages;
+            return updatedMessages;
+          });
+        }
       });
+    });
 
-      return () => unsubscribe();
-    }
-  }, [selectedChatId, loadMessages, currentUserId]);
+    return () => unsubscribe();
+  }, [selectedChatId, loadMessages]);
 
+  // Send message handler
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === "" || !selectedChatId) return;
@@ -256,19 +217,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const batch = writeBatch(db);
 
     const newMessageObj: Message = {
-      id: Date.now().toString(), // Temporary ID
+      id: Date.now().toString(),
       chatId: selectedChatId,
       senderId: currentUserId,
       content: newMessage,
       timestamp: Timestamp.now(),
       senderName: usersCache.current[currentUserId]?.name
     };
-
-    setMessages((prevMessages) => [...prevMessages, newMessageObj]);
-    messagesCache.current[selectedChatId] = [
-      ...(messagesCache.current[selectedChatId] || []),
-      newMessageObj
-    ];
 
     const messageRef = doc(collection(db, "messages"));
     batch.set(messageRef, newMessageObj);
@@ -297,43 +252,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     try {
       await batch.commit();
+      setNewMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
-      setMessages((prevMessages) =>
-        prevMessages.filter((msg) => msg.id !== newMessageObj.id)
-      );
-      messagesCache.current[selectedChatId] = messagesCache.current[
-        selectedChatId
-      ].filter((msg) => msg.id !== newMessageObj.id);
     }
-
-    setNewMessage("");
   };
 
+  // Emoji selection handler
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
   };
 
-  const scrollToBottom = (smooth = false) => {
+  // Scroll to bottom utility
+  const scrollToBottom = useCallback((smooth = false) => {
     if (messageContainerRef.current) {
-      const scrollOptions: ScrollIntoViewOptions = {
-        behavior: smooth ? "smooth" : "auto",
-        block: "end"
-      };
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
-  };
+  }, []);
 
+  // Scroll on messages/chat change
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom(true);
-    }
-  }, [messages]);
+    scrollToBottom(true);
+  }, [messages, selectedChatId, scrollToBottom]);
 
-  useEffect(() => {
-    scrollToBottom(false);
-  }, [selectedChatId]);
-
+  // Click outside emoji picker handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -351,34 +293,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, []);
 
   return (
-    <div className="flex h-[70vh]">
-      <div className="custom-scrollbar w-1/3 overflow-y-auto rounded-lg border-r">
-        <h2 className="p-4 text-xl font-bold">Chats</h2>
+    <div className="flex h-[70vh] rounded-lg border shadow-sm">
+      {/* Chat List Sidebar */}
+      <div className="custom-scrollbar w-1/3 overflow-y-auto border-r bg-gray-50">
         {chats.map((chat) => (
           <div
             key={chat.id}
             onClick={() => setSelectedChatId(chat.id)}
-            className={`cursor-pointer rounded-lg p-4 hover:bg-gray-100 ${
+            className={`cursor-pointer p-4 hover:bg-gray-100 ${
               selectedChatId === chat.id ? "bg-blue-100" : ""
             }`}
           >
-            <div className="flex items-center justify-between font-semibold">
-              <span>
-                {chat.name ||
-                  chat.participants
-                    .filter((id) => id !== currentUserId)
-                    .map((id) => users[id]?.name)
-                    .join(", ") ||
-                  "Loading..."}
-              </span>
-              {/* {chat.unreadCounts && chat.unreadCounts[currentUserId] > 0 && (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-800">{getChatName(chat)}</span>
+              {chat.unreadCounts?.[currentUserId] > 0 && (
+                <span className="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">
                   {chat.unreadCounts[currentUserId]}
                 </span>
-              )} */}
+              )}
             </div>
             {chat.lastMessage && (
-              <div className="text-sm text-gray-500">
+              <div className="mt-1 text-sm text-gray-500">
                 {chat.lastMessage.content.substring(0, 30)}
                 {chat.lastMessage.content.length > 30 ? "..." : ""}
               </div>
@@ -386,80 +321,88 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Message Window */}
       <div className="flex w-2/3 flex-col">
-        <div
-          ref={messageContainerRef}
-          className="custom-scrollbar flex-1 overflow-y-auto p-4"
-        >
-          {messages.length > 0 ? (
-            <>
-              <button
-                onClick={() => loadMessages(selectedChatId!, true)}
-                className="mb-4 text-blue-500"
-              >
-                Load Older Messages
-              </button>
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-4 ${
-                    message.senderId === currentUserId ? "text-right" : "text-left"
-                  }`}
-                >
-                  <div
-                    className={`inline-block rounded-lg p-2 max-w-[400px] text-justify ${
-                      message.senderId === currentUserId
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    {message.content}
-                  </div>
-                  {chats.find((chat) => chat.id === selectedChatId)?.participants
-                    .length! >  1 && chats.find((chat) => chat.id === selectedChatId)?.type==="community"&& (
-                    <div className="mt-1 flex flex-col text-xs text-gray-500">
-                      {message.senderName}
-                    </div>
-                  )}
-                  <div className="mt-1 flex flex-col text-xs text-gray-500">
-                    {message.timestamp.toDate().toLocaleString()}
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : (
-            selectedChatId && (
-              <div className="text-center text-gray-500">Start your conversation</div>
-            )
-          )}
-        </div>
         {selectedChatId ? (
-          <form onSubmit={sendMessage} className="relative border-t p-4">
-            <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
-              {showEmojiPicker && <EmojiPicker onEmojiClick={handleEmojiClick} />}
+          <>
+            <div
+              ref={messageContainerRef}
+              className="custom-scrollbar flex-1 overflow-y-auto p-4"
+            >
+              {messages.length > 0 ? (
+                <>
+                  <button
+                    onClick={() => loadMessages(selectedChatId, true)}
+                    className="mb-4 text-blue-500 hover:underline"
+                  >
+                    Load Older Messages
+                  </button>
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`mb-4 ${
+                        message.senderId === currentUserId ? "text-right" : "text-left"
+                      }`}
+                    >
+                      <div
+                        className={`inline-block max-w-[400px] rounded-lg p-2 text-justify ${
+                          message.senderId === currentUserId
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-800"
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                      {/* Show sender name for community chats */}
+                      {chats.find((chat) => chat.id === selectedChatId)?.type ===
+                        "community" && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          {message.senderName}
+                        </div>
+                      )}
+                      <div className="mt-1 text-xs text-gray-500">
+                        {message.timestamp.toDate().toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-500">
+                  Start your conversation
+                </div>
+              )}
             </div>
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="mr-2 rounded bg-gray-200 px-2 py-1"
-              >
-                😊
-              </button>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="mr-2 flex-grow rounded border px-2 py-1"
-                placeholder="Type a message..."
-              />
-              <button type="submit" className="rounded bg-blue-500 px-4 py-2 text-white">
-                Send
-              </button>
-            </div>
-          </form>
+            <form onSubmit={sendMessage} className="border-t p-4">
+              <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
+                {showEmojiPicker && <EmojiPicker onEmojiClick={handleEmojiClick} />}
+              </div>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="mr-2 rounded bg-gray-200 px-2 py-1"
+                >
+                  😊
+                </button>
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="mr-2 flex-grow rounded border px-3 py-2"
+                  placeholder="Type a message..."
+                />
+                <button
+                  type="submit"
+                  className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                >
+                  Send
+                </button>
+              </div>
+            </form>
+          </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xl">
+          <div className="flex h-full w-full items-center justify-center text-xl text-gray-500">
             Select a chat to start conversation
           </div>
         )}

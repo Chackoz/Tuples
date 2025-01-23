@@ -7,7 +7,7 @@ import { collection, doc, getDoc, getDocs, query, where } from "firebase/firesto
 import { db } from "../lib/firebaseConfig";
 import Link from "next/link";
 import CreateJoinCommunityModal from "./ui/CreateCommunityModal";
-import { Community, User } from "../types";
+import { Community, Project, User } from "../types";
 
 function Dashboard({
   user,
@@ -30,10 +30,13 @@ function Dashboard({
   const [communities, setCommunities] = useState<Community[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState<string | undefined>(undefined);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showProjectModal, setShowProjectModal] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchUserCommunities();
+      fetchUserProjects();
     }
   }, [user, currentView]);
 
@@ -44,7 +47,7 @@ function Dashboard({
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data() as User;
-          setProfilePicUrl(userData.profilePicUrl || '/default-profile.png');
+          setProfilePicUrl(userData.profilePicUrl || "/default-profile.png");
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -55,6 +58,19 @@ function Dashboard({
       fetchUserProfile();
     }
   }, [currentUserId]);
+
+  const fetchUserProjects = async () => {
+    if (!user) return;
+
+    const projectsRef = collection(db, "projects");
+    const q = query(projectsRef, where("members", "array-contains", user.name));
+    const querySnapshot = await getDocs(q);
+    const userProjects = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Project[];
+    setProjects(userProjects);
+  };
 
   const fetchUserCommunities = async () => {
     if (!user) return;
@@ -82,12 +98,12 @@ function Dashboard({
   ];
 
   return (
-    <div className={`${jakartasmall.className} relative w-full lg:w-[26vw] px-4 lg:px-5`}>
+    <div className={`${jakartasmall.className} relative w-full px-4 lg:w-[26vw] lg:px-5`}>
       {/* Mobile Menu Toggle */}
-      <div className="lg:hidden flex justify-between items-center py-4">
-        <button 
+      <div className="flex items-center justify-between py-4 lg:hidden">
+        <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 bg-gray-100 rounded"
+          className="rounded bg-gray-100 p-2"
         >
           <RiMenuLine />
         </button>
@@ -107,13 +123,10 @@ function Dashboard({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-white z-50 p-4">
-          <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-50 bg-white p-4 lg:hidden">
+          <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-bold">Menu</h2>
-            <button 
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-2xl"
-            >
+            <button onClick={() => setMobileMenuOpen(false)} className="text-2xl">
               &times;
             </button>
           </div>
@@ -126,12 +139,12 @@ function Dashboard({
                   setCurrentView(item.view);
                   setMobileMenuOpen(false);
                 }}
-                className={`block p-3 rounded ${
+                className={`block rounded p-3 ${
                   currentView === item.view ? "bg-blue-100 text-blue-600" : ""
                 }`}
               >
                 {item.label}
-                {item.hasUnread && <span className="text-red-500 ml-2">!</span>}
+                {item.hasUnread && <span className="ml-2 text-red-500">!</span>}
               </Link>
             ))}
           </nav>
@@ -152,7 +165,7 @@ function Dashboard({
                 }`}
               >
                 {item.label}
-                {item.hasUnread && <span className="text-red-500 ml-2">!</span>}
+                {item.hasUnread && <span className="ml-2 text-red-500">!</span>}
               </Link>
             ))}
           </nav>
@@ -163,7 +176,7 @@ function Dashboard({
                 alt="User profile"
                 width={100}
                 height={100}
-                className="m-1 w-3/5 rounded-2xl object-cover max-h-[80%]"
+                className="m-1 max-h-[80%] w-3/5 rounded-2xl object-cover"
               />
             )}
             <h1 className="text-xl">{user?.name || "Username"}</h1>
@@ -198,7 +211,7 @@ function Dashboard({
             <RiAddLine className="mr-1" /> Create or Join
           </button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-2 overflow-auto py-4">
+        <div className="grid grid-cols-2 gap-2 overflow-auto py-4 md:grid-cols-3 lg:grid-cols-2">
           {communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           ))}
@@ -207,11 +220,19 @@ function Dashboard({
 
       {/* Projects Section */}
       <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
-        <h1 className="mb-4 text-lg font-semibold">My Projects</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-2 py-4">
-          <CommunityBox />
-          <CommunityBox />
-          <CommunityBox />
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold">My Projects</h1>
+          <button
+            onClick={() => setShowProjectModal(true)}
+            className="flex items-center rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
+          >
+            <RiAddLine className="mr-1" /> Create Project
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 py-4 md:grid-cols-3 lg:grid-cols-2">
+          {projects.map((project) => (
+            <CommunityBox key={project.id} project={project} />
+          ))}
         </div>
       </div>
 

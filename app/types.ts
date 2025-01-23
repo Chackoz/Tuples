@@ -9,7 +9,17 @@ export interface User {
 }
 
 
-
+export interface Project {
+  id: string;
+  name?:string;
+  title: string;
+  description: string;
+  owner: string;
+  members: string[];
+  technologies: string[];
+  createdAt: Date;
+  status: 'planning' | 'in-progress' | 'completed';
+}
 
 
 export interface Friend {
