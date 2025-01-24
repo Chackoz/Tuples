@@ -170,7 +170,7 @@ function Dashboard({
               </Link>
             ))}
           </nav>
-          <div className="flex h-52 w-52 flex-col items-center justify-center gap-4 rounded-lg bg-gray-100 p-2">
+          <div className="flex w-[14vw] flex-col items-center justify-center gap-4 rounded-lg bg-gray-100 p-2">
             {profilePicUrl && (
               <Image
                 src={profilePicUrl}
@@ -180,7 +180,7 @@ function Dashboard({
                 className="m-1 max-h-[80%] w-3/5 rounded-2xl object-cover"
               />
             )}
-            <h1 className="text-xl">{user?.name || "Username"}</h1>
+            <h1 className="text-[1.5vw]">{user?.name || "Username"}</h1>
           </div>
         </div>
 

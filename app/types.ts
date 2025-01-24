@@ -21,6 +21,7 @@ export interface Project {
   userIds:string[]
   idealTeamSize: number;
   createdAt: Date;
+  isPrivate?: boolean;
 }
 
 export interface Friend {
