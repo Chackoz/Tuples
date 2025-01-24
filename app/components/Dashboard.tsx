@@ -115,7 +115,7 @@ function Dashboard({
               alt="User profile"
               width={50}
               height={50}
-              className="rounded-full object-cover "
+              className="rounded-full object-cover w-[60px] h-[60px]"
             />
           )}
           <h1 className="text-lg">{user?.name || "Username"}</h1>
@@ -177,7 +177,7 @@ function Dashboard({
                 alt="User profile"
                 width={100}
                 height={100}
-                className="m-1 max-h-[80%] w-3/5 rounded-2xl object-cover"
+                className="m-1 w-[100px] h-[100px]  object-cover rounded-full"
               />
             )}
             <h1 className="text-[1.5vw]">{user?.name || "Username"}</h1>
@@ -212,7 +212,7 @@ function Dashboard({
             <RiAddLine className="mr-1" /> Create or Join
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2 overflow-auto py-4 md:grid-cols-3 lg:grid-cols-2">
+        <div className="flex flex-wrap overflow-auto py-4 gap-4">
           {communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           ))}
@@ -230,7 +230,7 @@ function Dashboard({
             <RiAddLine className="mr-1" /> Create Project
           </button> */}
         </div>
-        <div className="grid grid-cols-2 gap-2 py-4 md:grid-cols-3 lg:grid-cols-2">
+        <div className="flex flex-wrap gap-4">
           {projects.map((project) => (
             <CommunityBox key={project.id} project={project} />
           ))}

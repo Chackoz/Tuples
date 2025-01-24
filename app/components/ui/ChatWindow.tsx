@@ -1,4 +1,3 @@
-"use effect"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   collection,
@@ -203,10 +202,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
       const snapshot = await getDocs(messagesQuery);
       const newMessages = snapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }) as Message)
-        .reverse();
+        .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
       const updatedMessages = loadMore
-        ? [...(messagesCache.current[chatId] || []), ...newMessages]
+        ? [...newMessages, ...(messagesCache.current[chatId] || [])]
         : newMessages;
 
       setMessages(updatedMessages);
@@ -244,9 +243,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           setMessages((prevMessages) => {
             if (prevMessages.some((msg) => msg.id === newMessage.id)) return prevMessages;
 
-            const updatedMessages = [...prevMessages, newMessage].sort(
-              (a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()
-            );
+            const updatedMessages = [newMessage, ...prevMessages]
+              .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
             messagesCache.current[selectedChatId] = updatedMessages;
             return updatedMessages;
@@ -341,8 +339,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     };
   }, []);
 
-  // Render Chat List
-  const renderChatList = () => {
+   // Render Chat List
+   const renderChatList = () => {
     return filteredChats.map((chat) => (
       <div
         key={chat.id}
@@ -478,7 +476,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   >
                     Load Older Messages
                   </button>
-                  {messages.map((message) => (
+                  {messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()).map((message) => (
                     <div
                       key={message.id}
                       className={`mb-4 ${
@@ -529,8 +527,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="mr-2 flex-grow rounded border px-3 py-2"
-                  placeholder="Type a message..."
-                />
+                  placeholder="Type a message"
+
+                  />
                 <button
                   type="submit"
                   className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"

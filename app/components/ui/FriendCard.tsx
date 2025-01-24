@@ -213,7 +213,7 @@ function FriendCard({
           alt={`${friend.name}'s profile`}
           width={48}
           height={48}
-          className="rounded-full object-cover"
+          className="rounded-full object-cover h-[40px] w-[40px] md:h-[50px] md:w-[50px] "
         />
       );
     }
