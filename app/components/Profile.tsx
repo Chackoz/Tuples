@@ -67,37 +67,71 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
     
     try {
       const response = await axios.post(
-        `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`, 
+        `https://api.imgbb.com/1/upload`, 
         formData,
         {
+          params: { key: process.env.NEXT_PUBLIC_IMGBB_API_KEY },
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         }
       );
       return response.data.data.url;
-    } catch (error) {
-      console.error("Error uploading to ImgBB:", error);
-      throw error;
+    } catch (error: any) {
+      console.error("ImgBB Upload Error:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+  
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            throw new Error("Invalid upload request. Check file type and size.");
+          case 401:
+            throw new Error("ImgBB API key is invalid or missing.");
+          case 500:
+            throw new Error("ImgBB server error. Please try again later.");
+          default:
+            throw new Error("Image upload failed. Please try again.");
+        }
+      } else if (error.request) {
+        throw new Error("No response received from ImgBB. Check your internet connection.");
+      } else {
+        throw new Error("Error setting up image upload request.");
+      }
     }
   };
 
   const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+  
+      if (!allowedTypes.includes(file.type)) {
+        alert('Only JPEG, PNG, and GIF images are allowed');
+        return;
+      }
+  
+      if (file.size > maxSize) {
+        alert('File size should not exceed 5MB');
+        return;
+      }
+  
       try {
         setIsLoading(true);
         const downloadURL = await uploadToImgBB(file);
         
-        // Update Firestore with the new profile pic URL
         const userRef = doc(db, "users", userId);
         await updateDoc(userRef, { profilePicUrl: downloadURL });
         
-        // Update local state
         setProfilePicUrl(downloadURL);
         setUser(prevUser => prevUser ? {...prevUser, profilePicUrl: downloadURL} : null);
-      } catch (error) {
-        console.error("Error uploading profile picture:", error);
+      } catch (error: any) {
+        alert(error.message || 'Failed to upload profile picture');
+        console.error("Profile Picture Upload Error:", error);
       } finally {
         setIsLoading(false);
       }

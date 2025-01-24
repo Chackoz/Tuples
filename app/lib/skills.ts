@@ -1,26 +1,31 @@
 export const skills = [
+  // Lifestyle Interests
+  "Fitness & Wellness",
+  "Travel",
+  "Cooking",
+  "Photography",
+  "Music",
+  "Movies",
+  "Reading",
+  "Art",
+  "Dancing",
+  "Gaming",
+  "Sports",
+  "Outdoor Activities",
+  "Technology",
+  "Fashion",
+  "Food & Dining",
+  "Podcasts",
+  "Blogging",
 
-
-   // Lifestyle Interests
-   "Fitness & Wellness",
-   "Travel",
-   "Cooking",
-   "Photography",
-   "Music",
-   "Movies",
-   "Reading",
-   "Art",
-   "Dancing",
-   "Gaming",
-   "Sports",
-   "Outdoor Activities",
-   "Technology",
-   "Fashion",
-   "Food & Dining",
-   "Podcasts",
-   "Blogging",
-
-
+  // Weeby Interests
+  "Anime",
+  "Manga",
+  "K-Drama",
+  "K-Pop",
+  "Drama",
+  "Books",
+  "Writing",
 
   // Academic Disciplines
   "Arts & Humanities",
