@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, KeyboardEventHandler } from "react"
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
 import { skills } from "../lib/skills";
-import Pill from "./ui/Pill";
+
 import axios from "axios";
+import Pill from "./ui/Pill";
 
 interface ProfileProps {
   userId: string;
@@ -35,6 +36,11 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data() as User;
+          const interests = userData.interests?.length 
+          ? (userData.interests.includes('MBCET') 
+            ? userData.interests 
+            : ['MBCET', ...userData.interests]) 
+          : ['MBCET'];
           setUser(userData);
           setEditedInterests(userData.interests || []);
           setProfilePicUrl(userData.profilePicUrl);
@@ -177,6 +183,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   };
 
   const handleRemoveInterest = (interest: string) => {
+    if (interest === "MBCET") return;
     setEditedInterests(editedInterests.filter((i) => i !== interest));
   };
 

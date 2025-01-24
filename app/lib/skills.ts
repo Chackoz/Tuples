@@ -1,4 +1,6 @@
 export const skills = [
+
+  "MBCET",
   // Lifestyle Interests
   "Fitness & Wellness",
   "Travel",
@@ -81,6 +83,7 @@ export const skills = [
   "Cloud Computing",
   "Web Development",
   "Front-End Development", 
+
 
 
   // Creative Skills

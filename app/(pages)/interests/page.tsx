@@ -11,8 +11,8 @@ import NavBar from "@/app/components/NavBar";
 const Interests: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set());
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(["MBCET"]);
+  const [selectedSkillSet, setSelectedSkillSet] = useState<Set<string>>(new Set(["MBCET"]));
   const [selectedSuggestion, setSelectedSuggestion] = useState<number>(0);
   const [skillsSug, setSkills] = useState<string[]>([]);
 
@@ -64,6 +64,9 @@ const Interests: React.FC = () => {
   };
 
   const handleRemoveSkill = (skillToRemove: string) => {
+    // Prevent removing MBCET
+    if (skillToRemove === "MBCET") return;
+
     const updatedSkills = selectedSkills.filter((skill) => skill !== skillToRemove);
     setSelectedSkills(updatedSkills);
     const updatedSkillSet = new Set(selectedSkillSet);
@@ -75,10 +78,12 @@ const Interests: React.FC = () => {
     if (
       e.key === "Backspace" &&
       e.currentTarget.value === "" &&
-      selectedSkills.length > 0
+      selectedSkills.length > 1 // Changed to prevent removing MBCET
     ) {
       const lastSkill = selectedSkills[selectedSkills.length - 1];
-      handleRemoveSkill(lastSkill);
+      if (lastSkill !== "MBCET") {
+        handleRemoveSkill(lastSkill);
+      }
     } else if (e.key === "ArrowDown" && suggestions.length > 0) {
       e.preventDefault();
       setSelectedSuggestion((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
@@ -125,18 +130,18 @@ const Interests: React.FC = () => {
               <Pill
                 key={index}
                 text={skill}
-                type="delete"
-                onClick={() => handleRemoveSkill(skill)}
+                type={skill === "MBCET" ? "default" : "delete"}
+                onClick={() => skill !== "MBCET" && handleRemoveSkill(skill)}
               />
             ))}
             <div className="relative flex-1">
               <input
-                className="w-full bg-white  outline-none"
+                className="w-full bg-white outline-none"
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`${selectedSkills.length > 0 ? "" : "Type or Select from below"}`}
+                placeholder={`${selectedSkills.length > 1 ? "" : "Type or Select from below"}`}
                 onKeyDown={handleKeyDown}
               />
               {suggestions.length > 0 && (
