@@ -201,7 +201,7 @@ function Dashboard({
       </div>
 
       {/* Communities Section */}
-      <div className="my-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
+      <div className="my-5 w-full gap-4 rounded-lg bg-white p-4 shadow md:flex flex-col hidden">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold">My Communities</h1>
           <button
@@ -219,7 +219,7 @@ function Dashboard({
       </div>
 
       {/* Projects Section */}
-      <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow">
+      <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow md:flex flex-col hidden">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold">My Projects</h1>
           <button

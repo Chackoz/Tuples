@@ -17,6 +17,7 @@ import {
 import { db } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { User } from "@/app/types";
+import { ArrowLeft, Send, Smile } from "lucide-react";
 
 // Typescript interfaces with more precise typing
 interface Message {
@@ -275,6 +276,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     scrollToBottom(true);
   }, [messages, selectedChatId, scrollToBottom]);
 
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [isChatListView, setIsChatListView] = useState(true);
+
+  // Add responsive check
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    checkMobileView();
+    window.addEventListener('resize', checkMobileView);
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
+
+
+
   // Click outside emoji picker handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -293,19 +310,56 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   }, []);
 
   return (
-    <div className="flex h-[70vh] rounded-lg border shadow-sm">
-      {/* Chat List Sidebar */}
-      <div className="custom-scrollbar w-1/3 overflow-y-auto border-r bg-gray-50">
+    <div className={`flex h-[70vh] rounded-lg border shadow-sm ${isMobileView ? 'flex-col' : ''}`}>
+      {/* Mobile Header for Chat Selection */}
+      {isMobileView && isChatListView && (
+        <div className="p-4 bg-gray-100 text-xl font-semibold">
+          Your Chats
+        </div>
+      )}
+
+      {/* Mobile Header for Chat Window */}
+      {isMobileView && !isChatListView && selectedChatId && (
+        <div className="flex items-center p-4 bg-gray-100">
+          <button 
+            onClick={() => setIsChatListView(true)} 
+            className="mr-4"
+          >
+            <ArrowLeft />
+          </button>
+          <span className="text-xl font-semibold">
+            {selectedChatId ? getChatName(chats.find(c => c.id === selectedChatId)!) : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Chat List Sidebar - Responsive */}
+      <div 
+        className={`
+          custom-scrollbar 
+          ${isMobileView 
+            ? `${isChatListView ? 'block' : 'hidden'}` 
+            : 'w-1/3 border-r bg-gray-50'
+          } 
+          overflow-y-auto`
+        }
+      >
         {chats.map((chat) => (
           <div
             key={chat.id}
-            onClick={() => setSelectedChatId(chat.id)}
-            className={`cursor-pointer p-4 hover:bg-gray-100 ${
-              selectedChatId === chat.id ? "bg-blue-100" : ""
-            }`}
+            onClick={() => {
+              setSelectedChatId(chat.id);
+              if (isMobileView) setIsChatListView(false);
+            }}
+            className={`
+              cursor-pointer p-4 hover:bg-gray-100 
+              ${selectedChatId === chat.id ? "bg-blue-100" : ""}
+            `}
           >
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-800">{getChatName(chat)}</span>
+              <span className="font-semibold text-gray-800">
+                {getChatName(chat)}
+              </span>
               {chat.unreadCounts?.[currentUserId] > 0 && (
                 <span className="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">
                   {chat.unreadCounts[currentUserId]}
@@ -322,8 +376,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
         ))}
       </div>
 
-      {/* Message Window */}
-      <div className="flex w-2/3 flex-col">
+      {/* Message Window - Responsive */}
+      <div 
+        className={`
+          flex flex-col 
+          ${isMobileView 
+            ? `${!isChatListView ? 'block' : 'hidden'} w-full` 
+            : 'w-2/3'
+          }
+        `}
+      >
         {selectedChatId ? (
           <>
             <div
@@ -354,9 +416,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                       >
                         {message.content}
                       </div>
-                      {/* Show sender name for community chats */}
-                      {chats.find((chat) => chat.id === selectedChatId)?.type ===
-                        "community" && (
+                      {chats.find((chat) => chat.id === selectedChatId)?.type === "community" && (
                         <div className="mt-1 text-xs text-gray-500">
                           {message.senderName}
                         </div>
@@ -383,7 +443,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="mr-2 rounded bg-gray-200 px-2 py-1"
                 >
-                  😊
+                  <Smile size={20} />
                 </button>
                 <input
                   type="text"
@@ -396,7 +456,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                   type="submit"
                   className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
                 >
-                  Send
+                  <Send size={20} />
                 </button>
               </div>
             </form>

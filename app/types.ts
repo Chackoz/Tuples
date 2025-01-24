@@ -53,3 +53,14 @@ export interface FriendRequest {
   name: string;
   toname: string;
 }
+
+
+export interface Post {
+  id?: string;
+  userId: string;
+  userName: string;
+  title: string;
+  content: string;
+  interests: string[];
+  createdAt: any;
+}

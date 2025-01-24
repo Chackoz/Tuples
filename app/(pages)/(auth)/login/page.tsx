@@ -1,61 +1,24 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FirebaseError } from "firebase/app";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../../../lib/firebaseConfig";
-import { poppins } from "../../../lib/fonts";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { poppins } from "../../../lib/fonts";
+import { useAuth } from "@/app/hooks/useAuth";
+
 
 function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const addCookie = (id: string) => {
-    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    document.cookie = `userId=${id}; expires=${expires.toUTCString()}`;
-  };
+  
+  const { 
+    email, 
+    error, 
+    isLoading, 
+    setEmail, 
+    login 
+  } = useAuth();
 
   const handleSubmit = async () => {
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-
-        await updateEmailVerificationStatus(user.uid);
-        addCookie(user.uid);
-
-        userData.interests && userData.interests.length > 0
-          ? router.push("/home")
-          : router.push("/interests");
-      } else {
-        setError("User data not found. Please sign up first.");
-      }
-    } catch (error) {
-      const firebaseError = error as FirebaseError;
-      const match = firebaseError.message.match(/\(([^)]+)\)/);
-      setError(match ? match[1] : "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateEmailVerificationStatus = async (userId: string) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, { emailVerified: true });
-    } catch (error) {
-      console.error("Error updating email verification status:", error);
-    }
+    await login(password);
   };
 
   return (

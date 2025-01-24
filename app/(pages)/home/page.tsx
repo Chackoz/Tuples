@@ -12,12 +12,13 @@ import {
   where,
   deleteDoc,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  orderBy,
+  limit
 } from "firebase/firestore";
 import axios from "axios";
 import { db } from "../../lib/firebaseConfig";
 
-// Components
 import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import FriendCard from "@/app/components/ui/FriendCard";
@@ -25,14 +26,22 @@ import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
 
-// Utilities
 import { jakartasmall } from "@/app/utils/fonts";
 
-// Types
-import { Community, Friend, FriendRequest, Insight, Project, User } from "@/app/types";
+import {
+  Community,
+  Friend,
+  FriendRequest,
+  Insight,
+  Post,
+  Project,
+  User
+} from "@/app/types";
 import ProjectCreationModal from "@/app/components/ui/CreateProjectModal";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/hooks/useAuth";
+import { PostCreationModal, PostsList } from "@/app/components/FeedPosts";
 
-// Utility Functions
 const debouncedFetch = (
   lastFetchTime: number,
   setLastFetchTime: React.Dispatch<React.SetStateAction<number>>,
@@ -59,6 +68,9 @@ const debouncedFetch = (
 };
 
 function Home() {
+  const router = useRouter();
+  const { email, name, userId } = useAuth();
+
   // State Hooks
   const [user, setUser] = useState<User | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -77,6 +89,49 @@ function Home() {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Responsive check
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    checkMobileView();
+    window.addEventListener('resize', checkMobileView);
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
+
+  const fetchPosts = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const postsRef = collection(db, "posts");
+      const q = query(
+        postsRef,
+        where("interests", "array-contains-any", user.interests),
+        orderBy("createdAt", "desc"),
+        limit(20) // Limit to 20 most recent posts
+      );
+
+      const querySnapshot = await getDocs(q);
+      const fetchedPosts = querySnapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data()
+          }) as Post
+      );
+
+      setPosts(fetchedPosts);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    }
+  }, [user]);
 
   // Fetch All Projects
   const fetchAllProjects = useCallback(async () => {
@@ -298,67 +353,6 @@ function Home() {
     [lastFetchTime]
   );
 
-  // Generate Insights
-  const generateInsights = useCallback(
-    async (interests: string[]) => {
-      const currentTime = Date.now();
-      if (currentTime - lastApiCallTime < 60000) {
-        console.log("API call skipped to respect rate limit.");
-        return;
-      }
-
-      setLastApiCallTime(currentTime);
-      setIsLoading(true);
-      const API_KEY = process.env.GEMINI_API_KEY;
-      const API_URL =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-
-      try {
-        const prompt = `Based on these interests: ${interests.join(
-          ", "
-        )}, generate 7 fun and thought-provoking daily challenges . Each challenge should have:
-
-      1. A catchy title (bonus points for puns)
-      2. A brief description that's both humorous and thought-provoking
-      3. A fun challenge or action item related to the insight
-
-      Format the response as a series of insights, separated by dashes (--):
-
-      Title: [Insight Title]
-      Description: [Insight Description]
-      Challenge: [Related Challenge]
-
-      ---
-      choose interests randomly and make sure all fields get equal weightage ,
-      Let's make it entertaining and insightful!`;
-
-        const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
-          contents: [{ parts: [{ text: prompt }] }]
-        });
-
-        const generatedText = response.data.candidates[0].content.parts[0].text;
-
-        const insightEntries = generatedText
-          .split("---")
-          .filter((entry: string) => entry.trim() !== "");
-        const insightsData = insightEntries.map((entry: string) => {
-          const lines = entry.trim().split("\n");
-          return {
-            title: lines[0].replace("Title: ", ""),
-            description: lines[1].replace("Description: ", ""),
-            challenge: lines[2]?.replace("Challenge: ", "")
-          };
-        });
-        setInsights(insightsData);
-      } catch (error) {
-        console.error("Error generating insights:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [lastApiCallTime]
-  );
-
   // Fetch Random Users
   const fetchRandomUsers = async (user: User) => {
     try {
@@ -383,39 +377,6 @@ function Home() {
     }
   };
 
-  // Fetch User's Friends
-  const fetchUserFriends = useCallback(async (friendNames: string[]) => {
-    try {
-      const friendsData = await Promise.all(
-        friendNames.map(async (name) => {
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("name", "==", name));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            const friendDoc = querySnapshot.docs[0];
-            const data = friendDoc.data();
-            return {
-              id: friendDoc.id,
-              name: data.name,
-              interests: data.interests as string[],
-              userId: data.userId,
-              profilePicUrl: data.profilePicUrl
-            } as Friend;
-          }
-          return null;
-        })
-      );
-
-      const validFriends = friendsData.filter(
-        (friend): friend is Friend => friend !== null
-      );
-      console.log("valid friends: ", validFriends);
-      setMyFriends(validFriends);
-    } catch (error) {
-      console.error("Error fetching user friends:", error);
-    }
-  }, []);
-
   // Fetch All Communities
   const fetchAllCommunities = useCallback(async () => {
     try {
@@ -433,36 +394,6 @@ function Home() {
       console.error("Error fetching communities:", error);
     }
   }, []);
-
-  // Join Community
-  const handleJoinCommunity = async (communityId: string) => {
-    if (!currentUserId || !user) {
-      alert("User ID is missing. Please log in again.");
-      return;
-    }
-
-    try {
-      const communityRef = doc(db, "communities", communityId);
-      await updateDoc(communityRef, {
-        members: arrayUnion(user.name)
-      });
-
-      setAllCommunities((prevCommunities) =>
-        prevCommunities.map((community) =>
-          community.id === communityId
-            ? { ...community, members: [...community.members, user.name] }
-            : community
-        )
-      );
-
-      console.log(`Joined community: ${communityId}`);
-      setCurrentView("Communities");
-      setState(!state);
-    } catch (error) {
-      console.error("Error joining community:", error);
-      alert(`Failed to join community: ${(error as Error).message}`);
-    }
-  };
 
   // Fetch Friend Requests
   const fetchFriendRequests = useCallback(async () => {
@@ -543,7 +474,6 @@ function Home() {
     }
   };
 
-  // User Effect for Initial User Fetch
   useEffect(() => {
     const cookieValue = document.cookie
       .split("; ")
@@ -555,29 +485,10 @@ function Home() {
       setCurrentUserId(cookieValue);
       getUserById(cookieValue);
     } else {
-      console.error("User ID not found in cookie");
+      router.push("/login");
     }
-  }, [getUserById]);
+  }, [getUserById, router]);
 
-  // User Effect for User-related Fetches
-  useEffect(() => {
-    if (user) {
-      fetchUserFriends(user.friends);
-      fetchSimilarUsers(user);
-      generateInsights(user.interests);
-      fetchFriendRequests();
-      fetchUserProjects(currentUserId);
-    }
-  }, [
-    user,
-    currentView,
-    fetchUserFriends,
-    generateInsights,
-    fetchFriendRequests,
-    fetchUserProjects
-  ]);
-
-  // User Effect for Communities
   useEffect(() => {
     if (currentView === "Communities") {
       fetchAllCommunities();
@@ -585,9 +496,10 @@ function Home() {
     if (currentView === "Projects") {
       fetchAllProjects();
     }
+    if (currentView === "Posts") {
+      fetchPosts(); // Implement this method to fetch posts
+    }
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
-
-  // Render the Home Component
   return (
     <div
       className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
@@ -606,7 +518,7 @@ function Home() {
           />
         )}
         <div
-          className={`${currentView === "Chat" ? "w-[70%]" : "w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
+          className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
           {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
@@ -620,36 +532,6 @@ function Home() {
               state={state}
               currentUserId={currentUserId}
             />
-          )}
-          {currentView === "Explore" && (
-            <>
-              {isLoading
-                ? Array(3)
-                    .fill(null)
-                    .map((_, index) => (
-                      <div
-                        key={index}
-                        className="z-0 mb-8 animate-pulse rounded-lg bg-gray-100 p-4"
-                      >
-                        <div className="mb-2 h-6 w-3/4 rounded bg-gray-300"></div>
-                        <div className="mb-4 h-4 w-full rounded bg-gray-300"></div>
-                        <div className="mb-2 h-4 w-full rounded bg-gray-300"></div>
-                        <div className="h-4 w-3/4 rounded bg-gray-300"></div>
-                      </div>
-                    ))
-                : insights.map((insight, index) => (
-                    <div key={index} className="mb-8 rounded-lg bg-gray-100 p-4">
-                      <h3 className="mb-2 text-xl font-semibold">
-                        {insight.title.replaceAll("**", "")}
-                      </h3>
-                      <p className="mb-4">{insight.description.replaceAll("**", "")}</p>
-                      <div className="rounded bg-blue-100 p-3">
-                        <h4 className="mb-1 font-semibold">Challenge:</h4>
-                        <p>{insight.challenge.replaceAll("**", "")}</p>
-                      </div>
-                    </div>
-                  ))}
-            </>
           )}
 
           {currentView === "Projects" && (
@@ -694,6 +576,29 @@ function Home() {
               </div>
             </div>
           )}
+          {currentView === "Explore" && user && (
+            <div>
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Community Posts</h2>
+                <button
+                  onClick={() => setIsPostModalOpen(true)}
+                  className="rounded bg-blue-500 px-4 py-2 text-white"
+                >
+                  Create New Post
+                </button>
+              </div>
+
+              <PostCreationModal
+                isOpen={isPostModalOpen}
+                onClose={() => setIsPostModalOpen(false)}
+                userId={currentUserId}
+                userName={user.name}
+                userInterests={user.interests}
+              />
+
+              <PostsList userId={currentUserId} userInterests={user.interests} />
+            </div>
+          )}
 
           {currentView === "Friends" && (
             <div className="w-full">
@@ -724,12 +629,12 @@ function Home() {
           )}
         </div>
         {currentView !== "Chat" && (
-          <div className="custom-scrollbar h-[80vh] w-[23vw] overflow-y-auto rounded-lg bg-white p-5">
+          <div className="custom-scrollbar h-[80vh] md:w-[23vw] overflow-y-auto rounded-lg bg-white p-5 mt-5 md:mt-0">
             {currentView !== "Friends" && <h1 className="pb-5 text-2xl">Add Friends</h1>}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
             {currentView === "Friends" && myFriends.length > 0 && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 ">
+              <div className="flex w-full flex-col items-center justify-center gap-4 mt-10">
                 {myFriends.map((friend, index) => (
                   <FriendCard
                     key={friend.id || index}
@@ -768,5 +673,4 @@ function Home() {
     </div>
   );
 }
-
 export default Home;

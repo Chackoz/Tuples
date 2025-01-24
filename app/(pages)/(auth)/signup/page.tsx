@@ -1,114 +1,45 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FirebaseError } from "firebase/app";
-import { doc, setDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { auth, db } from "../../../lib/firebaseConfig";
-import { poppins } from "../../../lib/fonts";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { poppins } from "../../../lib/fonts";
+import { useAuth } from "@/app/hooks/useAuth";
+
 
 function Page() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [conpassword, setConPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isValidEmail, setIsValidEmail] = useState(false);
   const [next, setNext] = useState(false);
-  const [userId, setUserId] = useState("");
-  const [verificationSent, setVerificationSent] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@mbcet.ac.in$/;
-    const validEmail = emailRegex.test(email);
-
-    if (validEmail) {
-      const extractedName = email.split("@")[0].split(".")[0];
-      const capitalizedExtractedName =
-        extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
-      setName(capitalizedExtractedName);
-
-      const userIdMatch = email.match(/\.(.*?)@/);
-      if (userIdMatch) {
-        setUserId(userIdMatch[1]);
-      }
-
-      setIsValidEmail(true);
-    } else {
-      setIsValidEmail(false);
-    }
-  }, [email]);
+  
+  const { 
+    name, 
+    email, 
+    error, 
+    isValidEmail, 
+    verificationSent, 
+    setEmail, 
+    validateEmail, 
+    signUp 
+  } = useAuth();
 
   const handleSubmit = () => {
-    if (isValidEmail) {
+    if (validateEmail()) {
       setNext(true);
-      setError("");
-    } else {
-      setError("Use valid college email id.");
     }
   };
 
   const handleSignup = async () => {
-    setError("");
-    if (password !== conpassword) {
-      setError("Passwords don't Match");
-      return;
-    }
-
-    if (!isValidEmail) {
-      setError("Invalid email address");
-      return;
-    }
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await sendEmailVerification(user);
-      await addData(name, user.uid);
-      addCookie(user.uid);
-
-      setVerificationSent(true);
-    } catch (error) {
-      const firebaseError = error as FirebaseError;
-      const errorMessage = firebaseError.message;
-      const match = errorMessage.match(/\(([^)]+)\)/);
-
-      setError(match ? match[1] : "Registration failed. Please try again.");
-    }
-  };
-
-  const addData = async (name: string, id: string) => {
-    try {
-      const userRef = doc(db, "users", id);
-      await setDoc(userRef, {
-        name,
-        userId,
-        Interests: [""],
-        friends: [""],
-        emailVerified: false
-      });
-    } catch (e) {
-      console.error("Error adding document: ", e);
-    }
-  };
-
-  const addCookie = (id: string) => {
-    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    document.cookie = `userId=${id}; expires=${expires.toUTCString()}`;
+    await signUp(password, conpassword);
   };
 
   return (
-    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] px-10  md:px-4">
+    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] px-10 md:px-4">
       {!next && (
         <div className="flex w-full max-w-[500px] flex-col justify-between gap-8 rounded-md bg-white p-8 shadow-md sm:p-10">
           <div className="w-full">
             <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Sign Up</h1>
             {error && (
-              <h2
-                className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}
-              >
+              <h2 className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}>
                 {error}
               </h2>
             )}
@@ -152,9 +83,7 @@ function Page() {
             <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Hello,</h1>
             <h1 className={`${poppins.className} pt-5 text-2xl sm:text-3xl`}>{name}</h1>
             {error && (
-              <h2
-                className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}
-              >
+              <h2 className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}>
                 {error}
               </h2>
             )}

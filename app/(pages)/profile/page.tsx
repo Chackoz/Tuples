@@ -1,130 +1,139 @@
-"use client";
-import { doc, getDoc } from "firebase/firestore";
-import React, { useContext, useEffect, useState } from "react";
-import { db } from "../../lib/firebaseConfig";
-import AuthContext from "../../context/AuthContext";
-import axios from "axios";
+"use client"
+import React, { useState, useEffect } from 'react';
+import { RiTrophyLine, RiTeamLine, RiProjectorLine, RiLineChartLine } from 'react-icons/ri';
+import Image from "next/image";
+import { jakartasmall } from '@/app/utils/fonts';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/app/lib/firebaseConfig';
+import NavBar from '@/app/components/NavBar';
 
-interface User {
-  name: string;
-  interests: string[];
-}
 
-interface Friend {
-  name: string;
-  interests: string[];
-}
-
-const Profile = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const { currentUser } = useContext(AuthContext);
-
-  const getUserById = async (userId: any) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      const userSnapshot = await getDoc(userRef);
-      if (userSnapshot.exists()) {
-        const userData = userSnapshot.data();
-        console.log("User fetched", userData);
-        setUser(userData as User);
-        fetchSimilarUsers(userData as User); // Fetch similar users after setting the user
-        return userData;
-      } else {
-        console.log("Document does not exist!");
-        return;
-      }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      return null;
-    }
-  };
+const UserStats: React.FC = () => {
+  const [user, setUser] = useState<any>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [communities, setCommunities] = useState<any[]>([]);
 
   useEffect(() => {
-    const cookieValue = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userId"))
-      ?.split("=")?.[1];
+    const fetchUserData = async () => {
+      const cookieValue = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("userId"))
+        ?.split("=")?.[1];
 
-    if (cookieValue) {
-      getUserById(cookieValue);
-    }
+      if (cookieValue) {
+        // Fetch user details
+        const userRef = doc(db, "users", cookieValue);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          setUser(userData);
+
+          // Fetch user's projects
+          const projectsRef = collection(db, "projects");
+          const projectsQuery = query(projectsRef, where("members", "array-contains", userData.name));
+          const projectsSnapshot = await getDocs(projectsQuery);
+          setProjects(projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+          // Fetch user's communities
+          const communitiesRef = collection(db, "communities");
+          const communitiesQuery = query(communitiesRef, where("members", "array-contains", userData.name));
+          const communitiesSnapshot = await getDocs(communitiesQuery);
+          setCommunities(communitiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }
+      }
+    };
+
+    fetchUserData();
   }, []);
 
-  const fetchSimilarUsers = async (user: User) => {
-    try {
-      const userInterests = user.interests
-        .map((interest) => {
-          if (interest === "🎨 UI/UX Design") {
-            return "UI/UX Design";
-          } else if (interest === "🖥️ Backend Development") {
-            return "Backend Development";
-          } else if (interest === "🌐 Full Stack Development") {
-            return "Full Stack Development";
-          } else {
-            return interest;
-          }
-        })
-        .join(", ");
-      console.log("User interests: ", userInterests);
-
-      const response = await axios.post("http://127.0.0.1:5000/api/similar_users", {
-        user_interests: userInterests
-      });
-
-      console.log("Response", response.data);
-      const { similar_users } = response.data;
-
-      console.log("Similar users structure:", similar_users);
-
-      if (
-        Array.isArray(similar_users) &&
-        similar_users.every(
-          (user) =>
-            Array.isArray(user) && typeof user[0] === "string" && Array.isArray(user[1])
-        )
-      ) {
-        const formattedFriends = similar_users
-          .map(([name, interests]) => ({ name, interests }))
-          .filter((friend) => friend.name !== user.name); // Filter out the current user's name from friends list
-        setFriends(formattedFriends);
-      } else {
-        console.error("Invalid similar_users structure:", similar_users);
-      }
-    } catch (error) {
-      console.error("Error fetching similar users:", error);
+  const statsCards = [
+    {
+      icon: <RiProjectorLine className="text-blue-500" />,
+      title: "Total Projects",
+      value: projects.length,
+      color: "bg-blue-50"
+    },
+    {
+      icon: <RiTeamLine className="text-green-500" />,
+      title: "Communities",
+      value: communities.length,
+      color: "bg-green-50"
+    },
+    {
+      icon: <RiTrophyLine className="text-purple-500" />,
+      title: "Completed Projects",
+      value: projects.filter(p => p.status === 'completed').length,
+      color: "bg-purple-50"
+    },
+    {
+      icon: <RiLineChartLine className="text-orange-500" />,
+      title: "Skill Level",
+      value: `Level ${user?.skillLevel || 1}`,
+      color: "bg-orange-50"
     }
-  };
+  ];
+
+  if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="">
-      <div className="text-3xl">Hi {user?.name}</div>
-      <div className="flex flex-col">
-        <span className="mb-2 text-lg font-semibold">Your Interests:</span>
-        {user?.interests?.map((interest, index) => (
-          <span key={index} className="text-md">
-            {interest}
-          </span>
-        ))}
+    <div className={`${jakartasmall.className} relative w-screen px-4  lg:px-5 flex flex-col items-center justify-between min-h-screen min-w-screen`}>
+      <NavBar/>
+      {/* User Profile Header */}
+      <div className="hidden lg:block">
+        <div className="flex h-52 w-52 flex-col items-center justify-center gap-4 rounded-lg bg-gray-100 p-2">
+          {user.profilePicUrl && (
+            <Image
+              src={user.profilePicUrl}
+              alt="User profile"
+              width={100}
+              height={100}
+              className="m-1 max-h-[80%] w-3/5 rounded-2xl object-cover"
+            />
+          )}
+          <h1 className="text-xl">{user.name}</h1>
+        </div>
       </div>
-      <div className="mt-4">
-        <span className="mb-2 text-lg font-semibold">Friend Suggestion:</span>
-        {friends.map((friend, index) => (
-          <div key={index} className="mt-2">
-            <span className="font-semibold">{friend.name}</span>
-            <div>
-              {friend.interests.map((interest, i) => (
-                <span key={i} className="text-sm">
-                  {interest}
-                  {i < friend.interests.length - 1 ? ", " : ""}
-                </span>
-              ))}
-            </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-4 py-6">
+        {statsCards.map((card, index) => (
+          <div 
+            key={index} 
+            className={`flex flex-col items-center justify-center rounded-lg p-4 shadow-md ${card.color}`}
+          >
+            <div className="mb-2 text-3xl">{card.icon}</div>
+            <h2 className="text-sm text-gray-600">{card.title}</h2>
+            <div className="text-xl font-bold text-blue-600">{card.value}</div>
           </div>
         ))}
       </div>
+
+      {/* Detailed Performance Section */}
+      <div className="rounded-lg bg-white p-4 shadow">
+        <h2 className="mb-4 text-lg font-semibold">Performance Insights</h2>
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span>Project Completion Rate</span>
+            <span className="font-bold text-green-600">
+              {projects.length > 0 
+                ? ((projects.filter(p => p.status === 'completed').length / projects.length) * 100).toFixed(1)
+                : '0'}%
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Community Engagement</span>
+            <span className="font-bold text-blue-600">{communities.length} Active</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Skill Progression</span>
+            <span className="font-bold text-purple-600">+{user.skillLevel || 1} Levels</span>
+          </div>
+        </div>
+      </div>
+      <div></div>
     </div>
   );
 };
 
-export default Profile;
+export default UserStats;
