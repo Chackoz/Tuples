@@ -163,7 +163,7 @@ function PostsList({
     const aiPostsRef = collection(db, AI_POSTS_COLLECTION);
     const q = query(
       aiPostsRef,
-      where("interests", "array-contains-any", userInterests),
+      //where("interests", "array-contains-any", userInterests),
       orderBy("createdAt", "desc"),
       limit(5)
     );

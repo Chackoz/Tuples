@@ -73,6 +73,15 @@ export const skills = [
   "Robotics",
   "3D Printing",
   "CAD Design",
+  "Web Design",
+  "Game Development",
+  "Virtual Reality (VR)",
+  "Augmented Reality (AR)",
+  "Cybersecurity",
+  "Cloud Computing",
+  "Web Development",
+  "Front-End Development", 
+
 
   // Creative Skills
   "Creative Writing",

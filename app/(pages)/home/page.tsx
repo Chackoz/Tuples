@@ -502,10 +502,10 @@ function Home() {
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
   return (
     <div
-      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[10px] ${jakartasmall.className} custom-scrollbar`}
+      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[5px] md:p-[10px] ${jakartasmall.className} custom-scrollbar`}
     >
       <NavBar />
-      <div className="flex w-full flex-col justify-between p-10 md:flex-row">
+      <div className="flex w-full flex-col justify-between md:p-10 p-4 md:flex-row">
         {user && (
           <Dashboard
             state={state}
@@ -518,7 +518,7 @@ function Home() {
           />
         )}
         <div
-          className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-5`}
+          className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white md:p-5 p-2`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
           {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
@@ -578,11 +578,11 @@ function Home() {
           )}
           {currentView === "Explore" && user && (
             <div>
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-6 flex items-center justify-between md:p-0 p-2">
                 <h2 className="text-2xl font-bold">Community Posts</h2>
                 <button
                   onClick={() => setIsPostModalOpen(true)}
-                  className="rounded bg-blue-500 px-4 py-2 text-white"
+                  className="rounded bg-blue-500 px-4 py-2 text-white md:text-md text-xs "
                 >
                   Create New Post
                 </button>
@@ -629,12 +629,12 @@ function Home() {
           )}
         </div>
         {currentView !== "Chat" && (
-          <div className="custom-scrollbar h-[80vh] md:w-[23vw] overflow-y-auto rounded-lg bg-white p-5 mt-5 md:mt-0">
-            {currentView !== "Friends" && <h1 className="pb-5 text-2xl">Add Friends</h1>}
+          <div className="custom-scrollbar h-[80vh] md:w-[23vw] overflow-y-auto rounded-lg bg-white p-5 mt-5 md:mt-0 md:block hidden">
+            {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
             {currentView === "Friends" && myFriends.length > 0 && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 mt-10">
+              <div className="flex w-full flex-col items-center justify-center gap-4 mt-10 ">
                 {myFriends.map((friend, index) => (
                   <FriendCard
                     key={friend.id || index}
@@ -651,7 +651,7 @@ function Home() {
               </div>
             )}
             {currentView !== "Friends" && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 ">
+              <div className="flex w-full flex-col items-center justify-center gap-4  ">
                 {friends.map((friend, index) => (
                   <FriendCard
                     key={friend.id || index}

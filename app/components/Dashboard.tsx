@@ -94,7 +94,8 @@ function Dashboard({
     { view: "Profile", label: "Profile" },
     { view: "Chat", label: "Chat", hasUnread: ifUnread },
     { view: "Communities", label: "Communities" },
-    { view: "Projects", label: "Projects" }
+    { view: "Projects", label: "Projects" },
+    { view: "Friends", label: "Friends" }
   ];
 
   return (

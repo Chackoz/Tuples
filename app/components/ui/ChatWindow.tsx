@@ -310,7 +310,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   }, []);
 
   return (
-    <div className={`flex h-[70vh] rounded-lg border shadow-sm ${isMobileView ? 'flex-col' : ''}`}>
+    <div className={`flex md:h-[70vh] rounded-lg border shadow-sm ${isMobileView ? 'flex-col' : ''}`}>
       {/* Mobile Header for Chat Selection */}
       {isMobileView && isChatListView && (
         <div className="p-4 bg-gray-100 text-xl font-semibold">
@@ -390,7 +390,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
           <>
             <div
               ref={messageContainerRef}
-              className="custom-scrollbar flex-1 overflow-y-auto p-4"
+              className="custom-scrollbar flex-1 overflow-y-auto md:p-4 p-2 min-h-[50vh]"
             >
               {messages.length > 0 ? (
                 <>
