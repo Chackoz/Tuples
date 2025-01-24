@@ -56,7 +56,7 @@ function NavBar() {
             Interests
           </a>
           <a
-            href="/profile"
+            href="/stats"
             className="text-sm transition-all duration-300 hover:underline"
           >
             Stats
@@ -78,7 +78,7 @@ function NavBar() {
           <a href="/interests" className="text-2xl hover:underline" onClick={toggleMenu}>
             Interests
           </a>
-          <a href="/profile" className="text-2xl hover:underline" onClick={toggleMenu}>
+          <a href="/stats" className="text-2xl hover:underline" onClick={toggleMenu}>
             Stats
           </a>
           <button

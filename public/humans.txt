@@ -1,0 +1,39 @@
+_______________________________________________________________________________
+TEAM | チーム
+Adithya Krishnan - Developer
+Ferwin Lopez - Developer
+Nevia Sebastian - Developer
+Nikita Nair - Developer
+_______________________________________________________________________________
+TECHNOLOGY | テクノロジー
+React
+Next.js
+Tailwind CSS
+Firebase
+Framer Motion
+Sentence Transformers
+_______________________________________________________________________________
+DESIGN | デザイン
+Figma
+Canva
+_______________________________________________________________________________
+FONTS | フォント
+Jakarta Sans
+Poppins
+_______________________________________________________________________________
+ICONS | アイコン
+react-icons
+lucide-react
+_______________________________________________________________________________
+DEVELOPMENT TOOLS | 開発ツール
+Visual Studio Code
+Git
+GitHub
+Firebase Console
+_______________________________________________________________________________
+LICENSE | ライセンス
+GNU General Public License v3.0
+_______________________________________________________________________________
+CONTACT | 連絡先
+Project Repository: https://github.com/fal3n-4ngel/TuplesAI
+_______________________________________________________________________________
