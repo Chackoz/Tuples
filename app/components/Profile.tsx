@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, KeyboardEventHandler } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEventHandler } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from '../lib/firebaseConfig';
-import { skills } from '../lib/skills';
-import Pill from './ui/Pill';
-import axios from 'axios';
+import { db } from "../lib/firebaseConfig";
+import { skills } from "../lib/skills";
+import Pill from "./ui/Pill";
+import axios from "axios";
 
 interface ProfileProps {
   userId: string;
@@ -63,19 +63,15 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
 
   const uploadToImgBB = async (file: File) => {
     const formData = new FormData();
-    formData.append('image', file);
-    
+    formData.append("image", file);
+
     try {
-      const response = await axios.post(
-        `https://api.imgbb.com/1/upload`, 
-        formData,
-        {
-          params: { key: process.env.NEXT_PUBLIC_IMGBB_API_KEY },
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+      const response = await axios.post(`https://api.imgbb.com/1/upload`, formData, {
+        params: { key: process.env.NEXT_PUBLIC_IMGBB_API_KEY },
+        headers: {
+          "Content-Type": "multipart/form-data"
         }
-      );
+      });
       return response.data.data.url;
     } catch (error: any) {
       console.error("ImgBB Upload Error:", {
@@ -83,7 +79,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
         status: error.response?.status,
         data: error.response?.data
       });
-  
+
       if (error.response) {
         switch (error.response.status) {
           case 400:
@@ -96,7 +92,9 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
             throw new Error("Image upload failed. Please try again.");
         }
       } else if (error.request) {
-        throw new Error("No response received from ImgBB. Check your internet connection.");
+        throw new Error(
+          "No response received from ImgBB. Check your internet connection."
+        );
       } else {
         throw new Error("Error setting up image upload request.");
       }
@@ -106,31 +104,32 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const handleProfilePicChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
       const maxSize = 5 * 1024 * 1024; // 5MB
-  
+
       if (!allowedTypes.includes(file.type)) {
-        alert('Only JPEG, PNG, and GIF images are allowed');
+        alert("Only JPEG, PNG, and GIF images are allowed");
         return;
       }
-  
+
       if (file.size > maxSize) {
-        alert('File size should not exceed 5MB');
+        alert("File size should not exceed 5MB");
         return;
       }
-  
+
       try {
         setIsLoading(true);
         const downloadURL = await uploadToImgBB(file);
-        
+
         const userRef = doc(db, "users", userId);
         await updateDoc(userRef, { profilePicUrl: downloadURL });
-        
+
         setProfilePicUrl(downloadURL);
-        setUser(prevUser => prevUser ? {...prevUser, profilePicUrl: downloadURL} : null);
+        setUser((prevUser) =>
+          prevUser ? { ...prevUser, profilePicUrl: downloadURL } : null
+        );
       } catch (error: any) {
-        alert(error.message || 'Failed to upload profile picture');
+        alert(error.message || "Failed to upload profile picture");
         console.error("Profile Picture Upload Error:", error);
       } finally {
         setIsLoading(false);
@@ -168,14 +167,10 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
       handleAddInterest(searchTerm);
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedSuggestion((prev) =>
-        prev < suggestions.length - 1 ? prev + 1 : prev
-      );
+      setSelectedSuggestion((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedSuggestion((prev) =>
-        prev > 0 ? prev - 1 : 0
-      );
+      setSelectedSuggestion((prev) => (prev > 0 ? prev - 1 : 0));
     } else if (e.key === "Backspace" && searchTerm === "") {
       setEditedInterests((prev) => prev.slice(0, -1));
     }
@@ -194,51 +189,62 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-2xl">
-      <div className="bg-white rounded-lg p-6 shadow-md">
+    <div className="container mx-auto max-w-2xl px-4 py-6">
+      <div className="rounded-lg bg-white p-6 shadow-md">
         {/* Profile Picture Section */}
-        <div className="flex flex-col sm:flex-row items-center mb-6">
-          <div 
-            className="w-32 h-32 rounded-full overflow-hidden mb-4 sm:mb-0 sm:mr-6 cursor-pointer relative"
+        <div className="mb-6 flex flex-col items-center sm:flex-row">
+          <div
+            className="group relative mb-4 h-32 w-32 cursor-pointer overflow-hidden rounded-full sm:mb-0 sm:mr-6"
             onClick={handleProfilePicClick}
           >
             {isLoading ? (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                 <span className="text-white">Uploading...</span>
               </div>
             ) : profilePicUrl ? (
-              <img 
-                src={profilePicUrl} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
+              <img
+                src={profilePicUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div className="flex h-full w-full items-center justify-center bg-gray-200">
                 <span className="text-gray-500">Add Photo</span>
               </div>
             )}
+
+            {/* Camera Icon Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 transition-all duration-300 group-hover:bg-opacity-30">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="h-8 w-8 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                fill="currentColor"
+              >
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5V13h4v1.5l3-3-3-3V10H10v1.5l-3 3z" />
+              </svg>
+            </div>
           </div>
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleProfilePicChange} 
-            className="hidden" 
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleProfilePicChange}
+            className="hidden"
             accept="image/*"
           />
-          
+
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-bold">{user.name}</h2>
             <p className="text-gray-600">User ID: {user.userId}</p>
           </div>
         </div>
-        
         {/* Interests Section */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Interests</h3>
+          <h3 className="mb-4 text-lg font-semibold">Interests</h3>
           {isEditing ? (
             <div>
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 flex flex-wrap gap-2">
                 {editedInterests.map((interest, index) => (
                   <Pill
                     key={index}
@@ -255,14 +261,14 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Add new interest"
-                  className="w-full border rounded px-3 py-2 mb-2"
+                  className="mb-2 w-full rounded border px-3 py-2"
                 />
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-10 w-full border rounded mt-1 max-h-40 overflow-y-auto bg-white shadow-lg">
+                  <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border bg-white shadow-lg">
                     {suggestions.map((skill, index) => (
                       <li
                         key={index}
-                        className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                        className={`cursor-pointer px-3 py-2 hover:bg-gray-100 ${
                           index === selectedSuggestion ? "bg-gray-200" : ""
                         }`}
                         onClick={() => handleAddInterest(skill)}
@@ -276,16 +282,16 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   </ul>
                 )}
               </div>
-              <div className="flex space-x-2 mt-4">
+              <div className="mt-4 flex space-x-2">
                 <button
                   onClick={handleSaveInterests}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                  className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
                 >
                   Save Interests
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                  className="rounded bg-gray-200 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-300"
                 >
                   Cancel
                 </button>
@@ -294,17 +300,17 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           ) : (
             <div>
               {user.interests && user.interests.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="mb-4 flex flex-wrap gap-2">
                   {user.interests.map((interest, index) => (
                     <Pill key={index} text={interest} type="view" onClick={undefined} />
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 mb-4">No interests added yet.</p>
+                <p className="mb-4 text-gray-500">No interests added yet.</p>
               )}
               <button
                 onClick={handleEditInterests}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-700"
               >
                 Edit Interests
               </button>

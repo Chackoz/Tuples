@@ -187,8 +187,8 @@ function FriendCard({
         className={`flex h-12 w-12 items-center justify-center rounded-full ${profileColor} text-lg font-semibold`}
       >
         <Image
-          src={friend.profilePicUrl || ""}
-          alt={`${friend.name}'s profile`}
+          src={friend.profilePicUrl || "/logo.png"}
+          alt={`${friend.name[0]}`}
           width={48}
           height={48}
           className="rounded-full object-cover"

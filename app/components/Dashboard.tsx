@@ -47,7 +47,7 @@ function Dashboard({
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data() as User;
-          setProfilePicUrl(userData.profilePicUrl || "/default-profile.png");
+          setProfilePicUrl(userData.profilePicUrl || "/logo.png");
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
