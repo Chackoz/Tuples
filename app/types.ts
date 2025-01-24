@@ -11,16 +11,17 @@ export interface User {
 
 export interface Project {
   id: string;
-  name?:string;
   title: string;
   description: string;
+  technologies: string[];
+  skills: string[];
   owner: string;
   members: string[];
-  technologies: string[];
-  createdAt: Date;
   status: 'planning' | 'in-progress' | 'completed';
+  userIds:string[]
+  idealTeamSize: number;
+  createdAt: Date;
 }
-
 
 export interface Friend {
   id?: string;

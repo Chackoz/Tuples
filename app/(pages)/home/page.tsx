@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   doc,
   getDoc,
@@ -12,407 +11,77 @@ import {
   where,
   deleteDoc,
   addDoc,
-  serverTimestamp,
-  orderBy,
-  limit
+  serverTimestamp
 } from "firebase/firestore";
-import axios from "axios";
 import { db } from "../../lib/firebaseConfig";
-
 import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import FriendCard from "@/app/components/ui/FriendCard";
 import Profile from "@/app/components/Profile";
 import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
-
 import { jakartasmall } from "@/app/utils/fonts";
-
-import {
-  Community,
-  Friend,
-  FriendRequest,
-  Insight,
-  Post,
-  Project,
-  User
-} from "@/app/types";
-import ProjectCreationModal from "@/app/components/ui/CreateProjectModal";
+import { Community, Friend, FriendRequest, User } from "@/app/types";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/hooks/useAuth";
 import { PostCreationModal, PostsList } from "@/app/components/FeedPosts";
-
-const debouncedFetch = (
-  lastFetchTime: number,
-  setLastFetchTime: React.Dispatch<React.SetStateAction<number>>,
-  fetchFunction: () => Promise<void>,
-  fetchTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>
-) => {
-  const currentTime = Date.now();
-  if (currentTime - lastFetchTime < 60000) {
-    console.log("Fetch call skipped to respect rate limit.");
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-    fetchTimeoutRef.current = setTimeout(
-      () => {
-        fetchFunction();
-        setLastFetchTime(Date.now());
-      },
-      30000 - (currentTime - lastFetchTime)
-    );
-  } else {
-    fetchFunction();
-    setLastFetchTime(currentTime);
-  }
-};
+import { useProject } from "@/app/hooks/useProject";
+import { useFriends } from "@/app/hooks/useFriends";
+import Projects from "@/app/components/ProjectSection";
 
 function Home() {
   const router = useRouter();
-  const { email, name, userId } = useAuth();
+  const { allProjects, fetchAllProjects, joinProject } = useProject();
+  const { friends, myFriends, refreshFriends } = useFriends();
 
   // State Hooks
   const [user, setUser] = useState<User | null>(null);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [myFriends, setMyFriends] = useState<Friend[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [currentView, setCurrentView] = useState<string>("Explore");
   const [allCommunities, setAllCommunities] = useState<Community[]>([]);
-  const [insights, setInsights] = useState<Insight[]>([]);
   const [state, setState] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [ifUnread, setIfUnread] = useState(false);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
-  const [userProjects, setUserProjects] = useState<Project[]>([]);
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [posts, setPosts] = useState<Post[]>([]);
 
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Responsive check
-  useEffect(() => {
-    const checkMobileView = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-    
-    checkMobileView();
-    window.addEventListener('resize', checkMobileView);
-    return () => window.removeEventListener('resize', checkMobileView);
-  }, []);
-
-  const fetchPosts = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const postsRef = collection(db, "posts");
-      const q = query(
-        postsRef,
-        where("interests", "array-contains-any", user.interests),
-        orderBy("createdAt", "desc"),
-        limit(20) // Limit to 20 most recent posts
-      );
-
-      const querySnapshot = await getDocs(q);
-      const fetchedPosts = querySnapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data()
-          }) as Post
-      );
-
-      setPosts(fetchedPosts);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    }
-  }, [user]);
-
-  // Fetch All Projects
-  const fetchAllProjects = useCallback(async () => {
-    try {
-      const projectsRef = collection(db, "projects");
-      const q = query(projectsRef);
-      const querySnapshot = await getDocs(q);
-
-      const projectsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Project[];
-
-      setAllProjects(projectsData);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    }
-  }, []);
-
-  // Fetch User's Projects
-  const fetchUserProjects = useCallback(async (userId: string) => {
-    try {
-      const projectsRef = collection(db, "projects");
-      const q = query(projectsRef, where("members", "array-contains", userId));
-      const querySnapshot = await getDocs(q);
-
-      const userProjectsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Project[];
-
-      setUserProjects(userProjectsData);
-    } catch (error) {
-      console.error("Error fetching user projects:", error);
-    }
-  }, []);
-
-  // Join Project
-  const handleJoinProject = async (projectId: string) => {
-    if (!currentUserId || !user) {
-      alert("User ID is missing. Please log in again.");
-      return;
-    }
-
-    try {
-      const projectRef = doc(db, "projects", projectId);
-      await updateDoc(projectRef, {
-        members: arrayUnion(user.name)
-      });
-
-      setAllProjects((prevProjects) =>
-        prevProjects.map((project) =>
-          project.id === projectId
-            ? { ...project, members: [...project.members, user.name] }
-            : project
-        )
-      );
-
-      fetchUserProjects(currentUserId);
-    } catch (error) {
-      console.error("Error joining project:", error);
-    }
-  };
-
-  const getUserById = useCallback(async (userId: string) => {
-    try {
-      const userRef = doc(db, "users", userId);
-      const userSnapshot = await getDoc(userRef);
-      if (userSnapshot.exists()) {
-        const userData = userSnapshot.data() as User;
-        setUser(userData);
-        
-        // Fetch and set friends for the current user
-        const friendsRef = collection(db, "users");
-        const friendsQuery = query(
-          friendsRef, 
-          where("name", "in", userData.friends)
-        );
-        const friendsSnapshot = await getDocs(friendsQuery);
-        const userFriends = friendsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Friend[];
-        
-        setMyFriends(userFriends);
-        
-        await fetchSimilarUsers(userData);
-        return userData;
-      } else {
-        console.log("Document does not exist!");
+  const getUserById = useCallback(
+    async (userId: string) => {
+      try {
+        const userRef = doc(db, "users", userId);
+        const userSnapshot = await getDoc(userRef);
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data() as User;
+          setUser(userData);
+          await refreshFriends(userId, userData);
+          return userData;
+        } else {
+          console.log("Document does not exist!");
+          return null;
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
         return null;
       }
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      return null;
-    }
-  }, []);
-
-  // Fetch Similar Users (Primary Method)
-  const fetchSimilarUsers = useCallback(
-    async (user: User) => {
-      const fetchMethod = async () => {
-        try {
-          const userInterests = user.interests.join(", ");
-          const response = await axios.post("http://10.40.9.104:5000/api/similar_users", {
-            user_interests: userInterests
-          });
-
-          const { similar_users } = response.data;
-
-          if (
-            Array.isArray(similar_users) &&
-            similar_users.every(
-              (user) =>
-                typeof user.name === "string" &&
-                Array.isArray(user.interests) &&
-                typeof user.userId === "string" &&
-                typeof user.id === "string"
-            )
-          ) {
-            const formattedFriends = similar_users
-              .map(({ id, name, interests, userId }) => ({ id, name, interests, userId }))
-              .filter(
-                (friend) =>
-                  friend.name !== user.name && !user.friends.includes(friend.name)
-              );
-            setFriends(formattedFriends);
-            console.log(
-              "Similar users fetched successfully:",
-              formattedFriends,
-              "Time",
-              Date.now()
-            );
-          } else {
-            console.error("Invalid similar_users structure:", similar_users);
-            await fetchRandomUsers(user);
-          }
-        } catch (error) {
-          console.error("Error fetching similar users:", error);
-          await fetchRandomUsers(user);
-          await fetchSimilarUsersGemini(user);
-        }
-      };
-
-      debouncedFetch(lastFetchTime, setLastFetchTime, fetchMethod, fetchTimeoutRef);
     },
-    [lastFetchTime]
+    [refreshFriends]
   );
 
-  // Fetch Similar Users (Gemini Fallback)
-  const fetchSimilarUsersGemini = useCallback(
-    async (user: User) => {
-      const fetchMethod = async () => {
-        try {
-          const usersRef = collection(db, "users");
-          const usersSnapshot = await getDocs(usersRef);
-          const allUsers = usersSnapshot.docs
-            .map((doc) => ({
-              id: doc.id,
-              name: doc.data().name,
-              interests: doc.data().interests,
-              userId: doc.data().userId,
-              profilePicUrl: doc.data().profilePicUrl
-            }))
-            .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
-
-          const userInterests = user.interests.join(", ");
-          const allUsersData = allUsers
-            .map((u) => `${u.name}: ${u.interests.join(", ")}`)
-            .join("\n");
-
-          const API_KEY = process.env.GEMINI_API_KEY;
-          const API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-
-          const prompt = `Given the following user interests: ${userInterests}, and the list of other users with their interests:
-  
-        ${allUsersData}
-  
-        Rank the top 5 most similar users based on their interests. Return the results in the following format
-  
-        1. [User Name]
-        2. [User Name]
-        3. [User Name]
-        4. [User Name]
-        5. [User Name]
-  
-        Only include the names in your response(no formatting the name), no additional text.`;
-
-          const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
-            contents: [{ parts: [{ text: prompt }] }]
-          });
-
-          const generatedText = response.data.candidates[0].content.parts[0].text;
-          const similarUserNames = generatedText
-            .split("\n")
-            .map((line: string) => line.split(". ")[1].trim());
-
-          const similarUsers = similarUserNames
-            .map((name: any) => allUsers.find((u) => u.name === name))
-            .filter((user: Friend): user is Friend => user !== undefined)
-            .map(
-              (user: {
-                id: any;
-                name: any;
-                interests: any;
-                userId: any;
-                profilePicUrl: any;
-              }) => ({
-                id: user.id,
-                name: user.name,
-                interests: user.interests,
-                userId: user.userId,
-                profilePicUrl: user.profilePicUrl
-              })
-            );
-
-          setFriends(similarUsers);
-          console.log(
-            "Similar users fetched successfully:",
-            similarUsers,
-            "Time",
-            Date.now()
-          );
-        } catch (error) {
-          console.error("Error fetching similar users:", error);
-          await fetchRandomUsers(user);
-        }
-      };
-
-      debouncedFetch(lastFetchTime, setLastFetchTime, fetchMethod, fetchTimeoutRef);
-    },
-    [lastFetchTime]
-  );
-
-  // Fetch Random Users
-  const fetchRandomUsers = async (user: User) => {
-    try {
-      const usersRef = collection(db, "users");
-      const usersSnapshot = await getDocs(usersRef);
-      const allUsers = usersSnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          name: doc.data().name,
-          interests: doc.data().interests,
-          userId: doc.data().userId,
-          profilePicUrl: doc.data().profilePicUrl
-        }))
-        .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
-
-      const shuffled = allUsers.sort(() => 0.5 - Math.random());
-      const randomUsers = shuffled.slice(0, 5);
-
-      setFriends(randomUsers);
-    } catch (error) {
-      console.error("Error fetching random users:", error);
-    }
-  };
-
-  // Fetch All Communities
   const fetchAllCommunities = useCallback(async () => {
     try {
       const communitiesRef = collection(db, "communities");
       const q = query(communitiesRef, where("privateCommunity", "!=", true));
       const querySnapshot = await getDocs(q);
-
       const communitiesData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data()
       })) as Community[];
-
       setAllCommunities(communitiesData);
     } catch (error) {
       console.error("Error fetching communities:", error);
     }
   }, []);
 
-  // Fetch Friend Requests
   const fetchFriendRequests = useCallback(async () => {
     if (!currentUserId) return;
-
     const requestsRef = collection(db, "friendRequests");
     const q = query(
       requestsRef,
@@ -433,12 +102,10 @@ function Home() {
       await updateDoc(userRef, {
         friends: arrayUnion(request.name)
       });
-
       const friendUserRef = doc(db, "users", request.from);
       await updateDoc(friendUserRef, {
         friends: arrayUnion(request.toname)
       });
-
       const requestRef = doc(db, "friendRequests", request.id);
       await updateDoc(requestRef, {
         status: "accepted"
@@ -461,20 +128,20 @@ function Home() {
       await updateDoc(currentUserRef, {
         chats: arrayUnion(newChatRef.id)
       });
-
       const friendUserRef1 = doc(db, "users", request.from);
       await updateDoc(friendUserRef1, {
         chats: arrayUnion(newChatRef.id)
       });
 
-      fetchFriendRequests();
-      getUserById(currentUserId);
+      // Trigger state update and refresh
+      setState((prev) => !prev);
+      await fetchFriendRequests();
+      await getUserById(currentUserId);
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
   };
 
-  // Reject Friend Request
   const handleRejectFriendRequest = async (request: FriendRequest) => {
     try {
       const requestRef = doc(db, "friendRequests", request.id);
@@ -482,20 +149,23 @@ function Home() {
         status: "rejected"
       });
       await deleteDoc(requestRef);
-      fetchFriendRequests();
+
+      // Trigger state update and refresh
+      setState((prev) => !prev);
+      await fetchFriendRequests();
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
   };
+
+ 
 
   useEffect(() => {
     const cookieValue = document.cookie
       .split("; ")
       .find((row) => row.startsWith("userId"))
       ?.split("=")?.[1];
-
     if (cookieValue) {
-      console.log("User ID found in cookie:", cookieValue);
       setCurrentUserId(cookieValue);
       getUserById(cookieValue);
     } else {
@@ -510,8 +180,8 @@ function Home() {
     if (currentView === "Projects") {
       fetchAllProjects();
     }
-    if (currentView === "Posts") {
-      fetchPosts(); // Implement this method to fetch posts
+    if (currentView === "Friends") {
+      fetchFriendRequests();
     }
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
 
@@ -520,12 +190,14 @@ function Home() {
       fetchFriendRequests();
     }
   }, [currentUserId, state]);
+
   return (
     <div
       className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[5px] md:p-[10px] ${jakartasmall.className} custom-scrollbar`}
     >
       <NavBar />
-      <div className="flex w-full flex-col justify-between md:p-10 p-4 md:flex-row">
+
+      <div className="flex w-full flex-col justify-between p-4 md:flex-row md:p-10">
         {user && (
           <Dashboard
             state={state}
@@ -538,10 +210,12 @@ function Home() {
           />
         )}
         <div
-          className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white md:p-5 p-2`}
+          className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-2 md:p-5`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && <ChatWindow currentUserId={currentUserId} />}
+          {currentView === "Chat" && (
+            <ChatWindow currentUserId={currentUserId} setIfUnread={setIfUnread} />
+          )}
           {currentView === "Profile" && user && <Profile userId={currentUserId} />}
           {currentView === "Communities" && (
             <Communities
@@ -553,56 +227,22 @@ function Home() {
               currentUserId={currentUserId}
             />
           )}
-
-          {currentView === "Projects" && (
-            <div className="w-full">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Projects</h2>
-                <button
-                  onClick={() => setIsProjectModalOpen(true)}
-                  className="rounded bg-blue-500 px-4 py-2 text-white"
-                >
-                  Create New Project
-                </button>
-              </div>
-
-              <ProjectCreationModal
-                isOpen={isProjectModalOpen}
-                onClose={() => setIsProjectModalOpen(false)}
-                currentUserId={currentUserId}
-                userName={user?.name || ""}
-              />
-
-              <div className="flex flex-wrap gap-4">
-                {allProjects.map((project) => (
-                  <div key={project.id} className="rounded-lg bg-white p-6 shadow-md">
-                    <h3 className="mb-2 text-xl font-semibold">{project.title}</h3>
-                    <p className="mb-4 text-gray-600">{project.description}</p>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-gray-500">
-                        {project.members.length} members
-                      </span>
-                      {!project.members.includes(user?.name || "") && (
-                        <button
-                          onClick={() => handleJoinProject(project.id)}
-                          className="rounded bg-green-500 px-3 py-1 text-white"
-                        >
-                          Join Project
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {currentView === "Projects" && user && (
+            <Projects
+              allProjects={allProjects}
+              user={user}
+              currentUserId={currentUserId}
+              fetchAllProjects={fetchAllProjects}
+              setState={setState}
+            />
           )}
           {currentView === "Explore" && user && (
             <div>
-              <div className="mb-6 flex items-center justify-between md:p-0 p-2">
+              <div className="mb-6 flex items-center justify-between p-2 md:p-0">
                 <h2 className="text-2xl font-bold">Community Posts</h2>
                 <button
                   onClick={() => setIsPostModalOpen(true)}
-                  className="rounded bg-blue-500 px-4 py-2 text-white md:text-md text-xs "
+                  className="md:text-md rounded bg-blue-500 px-4 py-2 text-xs text-white "
                 >
                   Create New Post
                 </button>
@@ -649,12 +289,12 @@ function Home() {
           )}
         </div>
         {currentView !== "Chat" && (
-          <div className="custom-scrollbar h-[80vh] md:w-[23vw] overflow-y-auto rounded-lg bg-white p-5 mt-5 md:mt-0 md:block hidden">
+          <div className="custom-scrollbar mt-5 hidden h-[80vh] overflow-y-auto rounded-lg bg-white p-5 md:mt-0 md:block md:w-[23vw]">
             {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
             {currentView === "Friends" && myFriends.length >= 0 && (
-              <div className="flex w-full flex-col items-center justify-center gap-4 mt-10 ">
+              <div className="mt-10 flex w-full flex-col items-center justify-center gap-4 ">
                 {myFriends.map((friend, index) => (
                   <FriendCard
                     key={friend.id || index}
@@ -671,7 +311,7 @@ function Home() {
               </div>
             )}
             {currentView !== "Friends" && (
-              <div className="flex w-full flex-col items-center justify-center gap-4  ">
+              <div className="flex w-full flex-col items-center justify-center gap-4">
                 {friends.map((friend, index) => (
                   <FriendCard
                     key={friend.id || index}
@@ -693,4 +333,5 @@ function Home() {
     </div>
   );
 }
+
 export default Home;

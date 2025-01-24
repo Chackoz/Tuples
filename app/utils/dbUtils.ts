@@ -1,29 +1,38 @@
 import { doc, getDoc, collection, getDocs, updateDoc, arrayRemove, arrayUnion, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
+import { Community, User } from "../types";
 
-interface User {
-    name: string;
-    interests: string[];
-    friends: string[];
-}
-
-interface Friend {
-    id?: string;
-    name: string;
-    interests: string[];
-}
-
-interface Community {
-    id: string;
-    name: string;
-    creator: string;
-    members: string[];
-    tags: string[];
-}
 
 // Cache for users and communities
 const userCache = new Map<string, User>();
 const communityCache = new Map<string, Community>();
+
+
+
+export const debouncedFetch = (
+  lastFetchTime: number,
+  setLastFetchTime: React.Dispatch<React.SetStateAction<number>>,
+  fetchFunction: () => Promise<void>,
+  fetchTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>
+) => {
+  const currentTime = Date.now();
+  if (currentTime - lastFetchTime < 60000) {
+    console.log("Fetch call skipped to respect rate limit.");
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = setTimeout(
+      () => {
+        fetchFunction();
+        setLastFetchTime(Date.now());
+      },
+      30000 - (currentTime - lastFetchTime)
+    );
+  } else {
+    fetchFunction();
+    setLastFetchTime(currentTime);
+  }
+};
 
 export const getUserById = async (userId: string): Promise<User | null> => {
     if (userCache.has(userId)) {

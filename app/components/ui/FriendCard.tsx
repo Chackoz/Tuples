@@ -7,7 +7,11 @@ import {
   arrayRemove,
   getDoc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import { RiUserAddLine, RiUserUnfollowLine } from "react-icons/ri";
@@ -146,20 +150,53 @@ function FriendCard({
       alert("User ID is missing. Please log in again.");
       return;
     }
-
+  
     try {
-      // Remove friend from current user's friends list
-      const userRef = doc(db, "users", currentUserId);
-      await updateDoc(userRef, {
-        friends: arrayRemove(friend.name)
+      // Find and delete the chat between the two users
+      const chatsRef = collection(db, "chats");
+      const userChatsQuery = query(
+        chatsRef,
+        where("participants", "array-contains", currentUserId),
+        where("type", "==", "private")
+      );
+      const userChatsSnapshot = await getDocs(userChatsQuery);
+  
+      const chatToDelete = userChatsSnapshot.docs.find(chatDoc => {
+        const participants = chatDoc.data().participants;
+        return participants.includes(friend.id);
       });
-
-      // Remove current user from friend's friends list
-      const friendRef = doc(db, "users", friend.id);
-      await updateDoc(friendRef, {
-        friends: arrayRemove(user?.name)
-      });
-
+  
+      if (chatToDelete) {
+        // Delete the specific chat document
+        await deleteDoc(doc(db, "chats", chatToDelete.id));
+  
+        // Remove chat reference from both users
+        const currentUserRef = doc(db, "users", currentUserId);
+        const friendUserRef = doc(db, "users", friend.id);
+  
+        await updateDoc(currentUserRef, {
+          friends: arrayRemove(friend.name),
+          chats: arrayRemove(chatToDelete.id)
+        });
+  
+        await updateDoc(friendUserRef, {
+          friends: arrayRemove(user?.name),
+          chats: arrayRemove(chatToDelete.id)
+        });
+      } else {
+        // Fallback if no chat found - just remove from friends list
+        const currentUserRef = doc(db, "users", currentUserId);
+        const friendUserRef = doc(db, "users", friend.id);
+  
+        await updateDoc(currentUserRef, {
+          friends: arrayRemove(friend.name)
+        });
+  
+        await updateDoc(friendUserRef, {
+          friends: arrayRemove(user?.name)
+        });
+      }
+  
       alert(`${friend.name} has been removed from your friends list.`);
       setstate(!state);
     } catch (error) {
@@ -167,7 +204,6 @@ function FriendCard({
       alert(`Failed to remove friend: ${(error as Error).message}`);
     }
   };
-
   const renderProfilePicture = () => {
     if (friend.profilePicUrl) {
       console.log();

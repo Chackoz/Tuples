@@ -20,6 +20,8 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
     title: "",
     description: "",
     technologies: "",
+    skills: "",
+    idealTeamSize: 3,
     status: "planning" as "planning" | "in-progress" | "completed"
   });
 
@@ -67,7 +69,9 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
         owner: currentUserId,
         members: [userName],
         technologies: projectData.technologies.split(",").map((tech) => tech.trim()),
-        createdAt: serverTimestamp()
+        skills: projectData.skills.split(",").map((skill) => skill.trim()),
+        createdAt: serverTimestamp(),
+        idealTeamSize: Number(projectData.idealTeamSize)
       };
 
       const projectRef = await addDoc(collection(db, "projects"), projectToCreate);
@@ -77,12 +81,13 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
         title: "",
         description: "",
         technologies: "",
+        skills: "",
+        idealTeamSize: 3,
         status: "planning"
       });
       onClose();
     } catch (error) {
       console.error("Error creating project:", error);
-      // Optionally set a general error state
     }
   };
 
@@ -125,7 +130,7 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
                 errors.description ? "border-red-500" : "border-gray-300"
               } p-2 shadow-sm`}
               rows={4}
-              placeholder="Describe your project"
+              placeholder="Describe your project goals and vision"
             />
           </div>
 
@@ -145,6 +150,35 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
                 errors.technologies ? "border-red-500" : "border-gray-300"
               } p-2 shadow-sm`}
               placeholder="React, Node.js, Firebase"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Required Skills (comma-separated)
+            </label>
+            <input
+              type="text"
+              name="skills"
+              value={projectData.skills}
+              onChange={handleInputChange}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm"
+              placeholder="UI/UX, Backend Development, DevOps"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Ideal Team Size
+            </label>
+            <input
+              type="number"
+              name="idealTeamSize"
+              value={projectData.idealTeamSize}
+              onChange={handleInputChange}
+              min={2}
+              max={10}
+              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm"
             />
           </div>
 

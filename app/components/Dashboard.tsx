@@ -223,12 +223,12 @@ function Dashboard({
       <div className="mt-5 w-full gap-4 rounded-lg bg-white p-4 shadow md:flex flex-col hidden">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold">My Projects</h1>
-          <button
+          {/* <button
             onClick={() => setShowProjectModal(true)}
             className="flex items-center rounded bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
           >
             <RiAddLine className="mr-1" /> Create Project
-          </button>
+          </button> */}
         </div>
         <div className="grid grid-cols-2 gap-2 py-4 md:grid-cols-3 lg:grid-cols-2">
           {projects.map((project) => (

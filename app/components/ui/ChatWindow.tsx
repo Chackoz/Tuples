@@ -1,3 +1,4 @@
+"use effect"
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   collection,
@@ -10,16 +11,23 @@ import {
   doc,
   getDocs,
   limit,
-  startAfter,
   Timestamp,
   writeBatch
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { User } from "@/app/types";
-import { ArrowLeft, Send, Smile } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Smile,
+  Search,
+  UserCircle,
+  Users,
+  MessageCircle
+} from "lucide-react";
 
-// Typescript interfaces with more precise typing
+// Typescript interfaces
 interface Message {
   id: string;
   senderId: string;
@@ -39,19 +47,20 @@ interface Chat {
   };
   participantNames?: string[];
   name?: string;
-  type?: string;
+  type?: "private" | "community";
   unreadCounts: { [userId: string]: number };
 }
 
 interface ChatWindowProps {
   currentUserId: string;
+  setIfUnread: (unread: boolean) => void;
 }
 
 const MESSAGES_PER_PAGE = 20;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
-  // State management with more explicit typing
+const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) => {
+  // State Management
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
@@ -59,15 +68,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+  const [chatType, setChatType] = useState<"all" | "private" | "community">("all");
 
-  // Refs for performance and caching
+  // Refs
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const messagesCache = useRef<{ [chatId: string]: Message[] }>({});
   const usersCache = useRef<{ [key: string]: User }>({});
   const lastFetchTimestamp = useRef<{ [chatId: string]: number }>({});
 
-  // Fetch users on component mount
+  // Responsive State
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [isChatListView, setIsChatListView] = useState(true);
+
+  // Fetch Users
   useEffect(() => {
     const fetchUsers = async () => {
       const usersCollection = collection(db, "users");
@@ -83,7 +99,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     fetchUsers();
   }, []);
 
-  // Listen to chats for the current user
+  // Listen to Chats
   useEffect(() => {
     const chatsQuery = query(
       collection(db, "chats"),
@@ -103,18 +119,52 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
         0
       );
       setTotalUnreadCount(totalUnread);
+      setIfUnread(totalUnread > 0);
     });
 
     return () => unsubscribe();
   }, [currentUserId]);
 
-  // Update page title based on unread count
+  // Chat Filtering
+  useEffect(() => {
+    let filtered = chats;
+
+    if (chatType !== "all") {
+      filtered = filtered.filter((chat) => chat.type === chatType);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((chat) => {
+        const chatName = getChatName(chat).toLowerCase();
+        const lastMessageContent = chat.lastMessage?.content.toLowerCase() || "";
+        return (
+          chatName.includes(searchTerm.toLowerCase()) ||
+          lastMessageContent.includes(searchTerm.toLowerCase())
+        );
+      });
+    }
+
+    setFilteredChats(filtered);
+  }, [chats, searchTerm, chatType]);
+
+  // Update Page Title
   useEffect(() => {
     document.title =
       totalUnreadCount > 0 ? `(${totalUnreadCount}) New Messages` : "Tuple";
   }, [totalUnreadCount]);
 
-  // Memoized function to get chat name or participant names
+  // Responsive Check
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    checkMobileView();
+    window.addEventListener("resize", checkMobileView);
+    return () => window.removeEventListener("resize", checkMobileView);
+  }, []);
+
+  // Get Chat Name
   const getChatName = useCallback(
     (chat: Chat) => {
       return (
@@ -129,12 +179,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     [currentUserId, users]
   );
 
-  // Load messages for a specific chat
+  // Load Messages
   const loadMessages = useCallback(
     async (chatId: string, loadMore = false) => {
       const now = Date.now();
 
-      // Check cache first
       if (
         !loadMore &&
         messagesCache.current[chatId] &&
@@ -164,7 +213,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
       messagesCache.current[chatId] = updatedMessages;
       lastFetchTimestamp.current[chatId] = now;
 
-      // Reset unread count for the chat
       const chatRef = doc(db, "chats", chatId);
       await updateDoc(chatRef, {
         [`unreadCounts.${currentUserId}`]: 0
@@ -173,7 +221,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     [currentUserId]
   );
 
-  // Real-time message listener
+  // Real-time Message Listener
   useEffect(() => {
     if (!selectedChatId) return;
 
@@ -210,7 +258,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     return () => unsubscribe();
   }, [selectedChatId, loadMessages]);
 
-  // Send message handler
+  // Send Message Handler
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() === "" || !selectedChatId) return;
@@ -259,40 +307,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     }
   };
 
-  // Emoji selection handler
+  // Emoji Selection Handler
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
   };
 
-  // Scroll to bottom utility
+  // Scroll to Bottom Utility
   const scrollToBottom = useCallback((smooth = false) => {
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
   }, []);
 
-  // Scroll on messages/chat change
+  // Scroll on Messages/Chat Change
   useEffect(() => {
     scrollToBottom(true);
   }, [messages, selectedChatId, scrollToBottom]);
 
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [isChatListView, setIsChatListView] = useState(true);
-
-  // Add responsive check
-  useEffect(() => {
-    const checkMobileView = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-    
-    checkMobileView();
-    window.addEventListener('resize', checkMobileView);
-    return () => window.removeEventListener('resize', checkMobileView);
-  }, []);
-
-
-
-  // Click outside emoji picker handler
+  // Click Outside Emoji Picker Handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -309,88 +341,134 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     };
   }, []);
 
-  return (
-    <div className={`flex md:h-[70vh] rounded-lg border shadow-sm ${isMobileView ? 'flex-col' : ''}`}>
-      {/* Mobile Header for Chat Selection */}
-      {isMobileView && isChatListView && (
-        <div className="p-4 bg-gray-100 text-xl font-semibold">
-          Your Chats
+  // Render Chat List
+  const renderChatList = () => {
+    return filteredChats.map((chat) => (
+      <div
+        key={chat.id}
+        onClick={() => {
+          setSelectedChatId(chat.id);
+          if (isMobileView) setIsChatListView(false);
+        }}
+        className={`
+          flex 
+          cursor-pointer items-center 
+          p-4 hover:bg-gray-100 
+          ${selectedChatId === chat.id ? "bg-blue-100" : ""}
+          border-b transition-colors duration-200
+        `}
+      >
+        <div className="mr-4">
+          {chat.type === "community" ? (
+            <Users className="text-green-500" />
+          ) : (
+            <UserCircle />
+          )}
         </div>
-      )}
+        <div className="flex-grow">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-gray-800">{getChatName(chat)}</span>
+            {chat.unreadCounts?.[currentUserId] > 0 && (
+              <div className="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">
+                {chat.unreadCounts[currentUserId]}
+              </div>
+            )}
+          </div>
+          {chat.lastMessage && (
+            <div className="mt-1 truncate text-sm text-gray-500">
+              {chat.lastMessage.content}
+            </div>
+          )}
+        </div>
+      </div>
+    ));
+  };
 
-      {/* Mobile Header for Chat Window */}
-      {isMobileView && !isChatListView && selectedChatId && (
-        <div className="flex items-center p-4 bg-gray-100">
-          <button 
-            onClick={() => setIsChatListView(true)} 
-            className="mr-4"
+  // Render Search Bar
+  const renderSearchBar = () => (
+    <div className="border-b bg-white p-4">
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-grow">
+          <input
+            type="text"
+            placeholder="Search chats..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-md border py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400"
+            size={20}
+          />
+        </div>
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setChatType("all")}
+            className={`rounded-md p-2 ${chatType === "all" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
           >
+            <MessageCircle size={20} />
+          </button>
+          <button
+            onClick={() => setChatType("private")}
+            className={`rounded-md p-2 ${chatType === "private" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          >
+            <UserCircle size={20} />
+          </button>
+          <button
+            onClick={() => setChatType("community")}
+            className={`rounded-md p-2 ${chatType === "community" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          >
+            <Users size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      className={`flex rounded-lg border shadow-sm md:h-[70vh] ${isMobileView ? "flex-col" : ""}`}
+    >
+      {/* Mobile Header for Chat Selection */}
+      {isMobileView && !isChatListView && selectedChatId && (
+        <div className="flex items-center bg-gray-100 p-4">
+          <button onClick={() => setIsChatListView(true)} className="mr-4">
             <ArrowLeft />
           </button>
           <span className="text-xl font-semibold">
-            {selectedChatId ? getChatName(chats.find(c => c.id === selectedChatId)!) : ''}
+            {selectedChatId
+              ? getChatName(chats.find((c) => c.id === selectedChatId)!)
+              : ""}
           </span>
         </div>
       )}
 
-      {/* Chat List Sidebar - Responsive */}
-      <div 
+      <div
         className={`
-          custom-scrollbar 
-          ${isMobileView 
-            ? `${isChatListView ? 'block' : 'hidden'}` 
-            : 'w-1/3 border-r bg-gray-50'
-          } 
-          overflow-y-auto`
-        }
+      custom-scrollbar 
+      ${
+        isMobileView
+          ? `${isChatListView ? "block" : "hidden"}`
+          : "w-1/3 border-r bg-gray-50"
+      } 
+      overflow-y-auto`}
       >
-        {chats.map((chat) => (
-          <div
-            key={chat.id}
-            onClick={() => {
-              setSelectedChatId(chat.id);
-              if (isMobileView) setIsChatListView(false);
-            }}
-            className={`
-              cursor-pointer p-4 hover:bg-gray-100 
-              ${selectedChatId === chat.id ? "bg-blue-100" : ""}
-            `}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-800">
-                {getChatName(chat)}
-              </span>
-              {chat.unreadCounts?.[currentUserId] > 0 && (
-                <span className="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">
-                  {chat.unreadCounts[currentUserId]}
-                </span>
-              )}
-            </div>
-            {chat.lastMessage && (
-              <div className="mt-1 text-sm text-gray-500">
-                {chat.lastMessage.content.substring(0, 30)}
-                {chat.lastMessage.content.length > 30 ? "..." : ""}
-              </div>
-            )}
-          </div>
-        ))}
+        {renderSearchBar()}
+        {renderChatList()}
       </div>
 
       {/* Message Window - Responsive */}
-      <div 
+      <div
         className={`
-          flex flex-col 
-          ${isMobileView 
-            ? `${!isChatListView ? 'block' : 'hidden'} w-full` 
-            : 'w-2/3'
-          }
-        `}
+      flex flex-col 
+      ${isMobileView ? `${!isChatListView ? "block" : "hidden"} w-full` : "w-2/3"}
+    `}
       >
         {selectedChatId ? (
           <>
             <div
               ref={messageContainerRef}
-              className="custom-scrollbar flex-1 overflow-y-auto md:p-4 p-2 min-h-[50vh]"
+              className="custom-scrollbar min-h-[50vh] flex-1 overflow-y-auto p-2 md:p-4"
             >
               {messages.length > 0 ? (
                 <>
@@ -416,7 +494,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
                       >
                         {message.content}
                       </div>
-                      {chats.find((chat) => chat.id === selectedChatId)?.type === "community" && (
+                      {chats.find((chat) => chat.id === selectedChatId)?.type ===
+                        "community" && (
                         <div className="mt-1 text-xs text-gray-500">
                           {message.senderName}
                         </div>
@@ -470,5 +549,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId }) => {
     </div>
   );
 };
+
 
 export default ChatWindow;
