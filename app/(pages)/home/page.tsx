@@ -196,7 +196,6 @@ function Home() {
     }
   };
 
-  // Fetch User by ID
   const getUserById = useCallback(async (userId: string) => {
     try {
       const userRef = doc(db, "users", userId);
@@ -204,6 +203,21 @@ function Home() {
       if (userSnapshot.exists()) {
         const userData = userSnapshot.data() as User;
         setUser(userData);
+        
+        // Fetch and set friends for the current user
+        const friendsRef = collection(db, "users");
+        const friendsQuery = query(
+          friendsRef, 
+          where("name", "in", userData.friends)
+        );
+        const friendsSnapshot = await getDocs(friendsQuery);
+        const userFriends = friendsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Friend[];
+        
+        setMyFriends(userFriends);
+        
         await fetchSimilarUsers(userData);
         return userData;
       } else {
@@ -500,6 +514,12 @@ function Home() {
       fetchPosts(); // Implement this method to fetch posts
     }
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchFriendRequests();
+    }
+  }, [currentUserId, state]);
   return (
     <div
       className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[5px] md:p-[10px] ${jakartasmall.className} custom-scrollbar`}
@@ -633,7 +653,7 @@ function Home() {
             {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
-            {currentView === "Friends" && myFriends.length > 0 && (
+            {currentView === "Friends" && myFriends.length >= 0 && (
               <div className="flex w-full flex-col items-center justify-center gap-4 mt-10 ">
                 {myFriends.map((friend, index) => (
                   <FriendCard
