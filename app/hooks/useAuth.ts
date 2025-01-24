@@ -5,6 +5,7 @@ import { FirebaseError } from 'firebase/app';
 
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../lib/firebaseConfig';
+import { user } from 'firebase-functions/v1/auth';
 
 interface UseAuthReturn {
   name: string;
@@ -56,6 +57,7 @@ export const useAuth = (): UseAuthReturn => {
 
   const addData = async (name: string, id: string) => {
     try {
+      if(userId === '') return;
       const userRef = doc(db, 'users', id);
       await setDoc(userRef, {
         name,
@@ -95,6 +97,7 @@ export const useAuth = (): UseAuthReturn => {
       const user = userCredential.user;
 
       await sendEmailVerification(user);
+      
       await addData(name, user.uid);
       addCookie(user.uid);
 
@@ -113,18 +116,26 @@ export const useAuth = (): UseAuthReturn => {
   const login = async (password: string) => {
     setError('');
     setIsLoading(true);
-
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+  
+      // Check email verification status
+      if (!user.emailVerified) {
+        setError('Please verify your email before logging in.');
+        await auth.signOut(); // Sign out the user
+        setIsLoading(false);
+        return;
+      }
+  
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-
+  
         await updateEmailVerificationStatus(user.uid);
         addCookie(user.uid);
-
+  
         userData.interests && userData.interests.length > 0
           ? router.push('/home')
           : router.push('/interests');
