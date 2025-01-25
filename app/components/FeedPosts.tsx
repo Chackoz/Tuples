@@ -163,7 +163,7 @@ function PostsList({
     const aiPostsRef = collection(db, AI_POSTS_COLLECTION);
     const q = query(
       aiPostsRef,
-      //where("interests", "array-contains-any", userInterests),
+      where("interests", "array-contains-any", userInterests),
       orderBy("createdAt", "desc"),
       limit(5)
     );
@@ -182,15 +182,18 @@ function PostsList({
     try {
       // First, check cached AI posts
       const cachedAIPosts = await fetchCachedAIPosts();
-      if (cachedAIPosts.length > 0) {
+      if (cachedAIPosts.length > 4) {
+        console.log("Using cached AI posts.");
         return cachedAIPosts;
       }
-
+    
       // If no cached posts, generate new ones
       const canGenerate = await checkGenerationLimit();
       if (!canGenerate) {
+        console.log("Generation limit reached for today.");
         return [];
       }
+      console.log("Generating new AI posts.");
 
       const API_KEY = process.env.GEMINI_API_KEY;
       const API_URL =

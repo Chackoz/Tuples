@@ -63,6 +63,7 @@ export const skills = [
   "Innovation Management",
   "Systems Thinking",
   "Adaptive Learning",
+  "Development",
 
   // Digital & Media Skills
   "Content Creation",

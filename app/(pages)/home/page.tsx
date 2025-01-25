@@ -179,8 +179,6 @@ function Home() {
     }
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
 
- 
-
   return (
     <div
       className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[5px] md:p-[10px] ${jakartasmall.className} custom-scrollbar`}
@@ -203,29 +201,6 @@ function Home() {
           className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-2 md:p-5`}
         >
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
-          {currentView === "Chat" && (
-            <ChatWindow currentUserId={currentUserId} setIfUnread={setIfUnread} />
-          )}
-          {currentView === "Profile" && user && <Profile userId={currentUserId} />}
-          {currentView === "Communities" && (
-            <Communities
-              allCommunities={allCommunities}
-              user={user!}
-              setAllCommunities={setAllCommunities}
-              setstate={setState}
-              state={state}
-              currentUserId={currentUserId}
-            />
-          )}
-          {currentView === "Projects" && user && (
-            <Projects
-              allProjects={allProjects}
-              user={user}
-              currentUserId={currentUserId}
-              fetchAllProjects={fetchAllProjects}
-              setState={setState}
-            />
-          )}
           {currentView === "Explore" && user && (
             <div>
               <div className="mb-6 flex items-center justify-between p-2 md:p-0">
@@ -248,6 +223,29 @@ function Home() {
 
               <PostsList userId={currentUserId} userInterests={user.interests} />
             </div>
+          )}
+          {currentView === "Chat" && (
+            <ChatWindow currentUserId={currentUserId} setIfUnread={setIfUnread} />
+          )}
+          {currentView === "Profile" && user && <Profile userId={currentUserId} />}
+          {currentView === "Communities" && (
+            <Communities
+              allCommunities={allCommunities}
+              user={user!}
+              setAllCommunities={setAllCommunities}
+              setstate={setState}
+              state={state}
+              currentUserId={currentUserId}
+            />
+          )}
+          {currentView === "Projects" && user && (
+            <Projects
+              allProjects={allProjects}
+              user={user}
+              currentUserId={currentUserId}
+              fetchAllProjects={fetchAllProjects}
+              setState={setState}
+            />
           )}
 
           {currentView === "Friends" && (
@@ -280,7 +278,9 @@ function Home() {
         </div>
         {currentView !== "Chat" && (
           <div className="custom-scrollbar mt-5 hidden h-[80vh] overflow-y-auto rounded-lg bg-white p-5 md:mt-0 md:block md:w-[23vw]">
-            {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Suggested Friends</h1>}
+            {currentView !== "Friends" && (
+              <h1 className="pb-5 text-2xl ">Suggested Friends</h1>
+            )}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
             {currentView === "Friends" && myFriends.length >= 0 && (
