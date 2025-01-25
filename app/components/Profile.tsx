@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, KeyboardEventHandler } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { db } from "../lib/firebaseConfig";
 import { skills } from "../lib/skills";
 
 import axios from "axios";
 import Pill from "./ui/Pill";
+import { Post } from "../types";
 
 interface ProfileProps {
   userId: string;
@@ -19,6 +20,7 @@ interface User {
 
 const Profile: React.FC<ProfileProps> = ({ userId }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedInterests, setEditedInterests] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,6 +46,18 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           setUser(userData);
           setEditedInterests(userData.interests || []);
           setProfilePicUrl(userData.profilePicUrl);
+          
+          // Fetch user posts
+          const postsQuery = query(
+            collection(db, "posts"),
+            where("userId", "==", userId)
+          );
+          const postsSnapshot = await getDocs(postsQuery);
+          const posts = postsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Post));
+          setUserPosts(posts);
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -177,9 +191,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedSuggestion((prev) => (prev > 0 ? prev - 1 : 0));
-    } else if (e.key === "Backspace" && searchTerm === "") {
-      setEditedInterests((prev) => prev.slice(0, -1));
-    }
+    } 
   };
 
   const handleRemoveInterest = (interest: string) => {
@@ -323,6 +335,25 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
               </button>
             </div>
           )}
+           {userPosts.length > 0 && (
+          <div className="mt- 2border-t pt-6 overflow-y-auto md:max-h-[20vh] ">
+            <h3 className="mb-4 text-lg font-semibold">Your Posts</h3>
+            <div className="space-y-4">
+              {userPosts.map(post => (
+                <div 
+                  key={post.id} 
+                  className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <h4 className="text-xl font-semibold mb-2">{post.title}</h4>
+                  <p className="text-gray-700 mb-2">{post.content}</p>
+                  <div className="text-sm text-gray-500">
+                    Posted on {post.createdAt?.toDate().toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </div>

@@ -1,7 +1,137 @@
 export const skills = [
-
+  // Core Institution Identity
   "MBCET",
-  // Lifestyle Interests
+
+  // Lifestyle & Personal Interests
+  "Fitness & Wellness",
+  "Digital Nomadism",
+  "Sustainable Living",
+  "Creative Hobbies",
+  "Cultural Exploration",
+  "Mindful Living",
+  "Urban Exploration",
+  "Personal Branding",
+
+  // Creative & Artistic Domains
+  "Digital Art",
+  "Music Production",
+  "Filmmaking",
+  "Performance Arts",
+  "Creative Writing",
+  "Photography",
+  "Graphic Design",
+  "Sound Design",
+  "Animation",
+  "Illustration",
+
+  // Technology & Innovation
+  "AI",
+  "AI/ML",
+  "Web Development",
+  "Mobile App Development",
+  "Cloud Computing",
+  "Artificial Intelligence",
+  "Machine Learning",
+  "Blockchain Technology",
+  "Cybersecurity",
+  "Internet of Things",
+  "Data Science",
+  "Virtual Reality",
+  "Augmented Reality",
+  "Quantum Computing",
+
+  // Academic & Research Disciplines
+  "Interdisciplinary Studies",
+  "Climate Change Research",
+  "Biotechnology",
+  "Neuroscience",
+  "Space Exploration",
+  "Sustainable Development",
+  "Urban Planning",
+  "Computational Biology",
+  "Digital Humanities",
+  "Cognitive Psychology",
+
+  // Professional & Soft Skills
+  "Strategic Leadership",
+  "Design Thinking",
+  "Global Communication",
+  "Emotional Intelligence",
+  "Agile Methodologies",
+  "Conflict Resolution",
+  "Cross-Cultural Collaboration",
+  "Innovation Management",
+  "Systems Thinking",
+  "Adaptive Learning",
+
+  // Digital & Media Skills
+  "Content Creation",
+  "Digital Marketing",
+  "Social Media Strategy",
+  "SEO & Analytics",
+  "Podcast Production",
+  "Video Editing",
+  "UI/UX Design",
+  "Interactive Media",
+  "Digital Storytelling",
+  "Brand Communication",
+
+  // Entrepreneurship & Innovation
+  "Social Entrepreneurship",
+  "Startup Ecosystem",
+  "Product Management",
+  "Innovation Consulting",
+  "Sustainable Business Models",
+  "Tech Entrepreneurship",
+  "Impact Investing",
+  "Design Entrepreneurship",
+
+  // Wellness & Personal Development
+  "Holistic Wellness",
+  "Mental Health Advocacy",
+  "Life Coaching",
+  "Stress Management",
+  "Nutritional Science",
+  "Mindfulness Coaching",
+  "Positive Psychology",
+  "Resilience Training",
+
+  // Social Impact & Community
+  "Community Development",
+  "Social Justice",
+  "Environmental Advocacy",
+  "Diversity & Inclusion",
+  "Global Citizenship",
+  "Humanitarian Technology",
+  "Nonprofit Management",
+  "Sustainability Solutions",
+
+  // Emerging Technologies
+  "Edge Computing",
+  "Robotics Engineering",
+  "Green Technology",
+  "Bioinformatics",
+  "Digital Transformation",
+  "Ethical Tech Design",
+  "Human-Computer Interaction",
+
+  // Cultural & Creative Domains
+  "World Cinema",
+  "Cross-Cultural Arts",
+  "Digital Music",
+  "Immersive Storytelling",
+  "Cultural Heritage Preservation",
+  "Global Pop Culture",
+  "Transmedia Storytelling",
+
+  // Interdisciplinary Skills
+  "Systems Design",
+  "Complexity Management",
+  "Interdisciplinary Research",
+  "Future Forecasting",
+  "Collaborative Innovation",
+
+  // Lifestyle & Personal Interests
   "Fitness & Wellness",
   "Travel",
   "Cooking",
@@ -20,147 +150,98 @@ export const skills = [
   "Podcasts",
   "Blogging",
 
-  // Weeby Interests
+  // Pop Culture & Entertainment
   "Anime",
   "Manga",
   "K-Drama",
   "K-Pop",
-  "Drama",
-  "Books",
-  "Writing",
+  "Korean Pop Culture",
+  "J-Pop",
+  "Cosplay",
+  "Comic Conventions",
+  "Video Game Streaming",
+  "Movie Critique",
+  "TV Series Binge",
 
-  // Academic Disciplines
-  "Arts & Humanities",
-  "Social Sciences",
-  "Natural Sciences",
-  "Engineering",
-  "Computer Science",
-  "Business & Management",
-  "Health Sciences",
-  "Environmental Studies",
-  "Communication Studies",
-  "Education",
-  "International Relations",
-
-  // Professional Skills
-  "Data Analysis",
-  "Research Methods",
-  "Project Management",
-  "Public Speaking",
-  "Technical Writing",
-  "Digital Marketing",
-  "Content Creation",
-  "Graphic Design",
-  "UI/UX Design",
-  "Web Development",
-  "Mobile App Development",
-  "Cybersecurity",
-  "Cloud Computing",
-  "Machine Learning",
-  "Artificial Intelligence",
-  "Data Visualization",
-  "Digital Photography",
-  "Video Production",
-  "Podcasting",
-  "Translation Services",
-
-  // Technical Skills
-  "Programming Languages",
-  "Database Management",
-  "Network Administration",
-  "Software Testing",
-  "Version Control",
-  "Blockchain Technology",
-  "Internet of Things (IoT)",
-  "Robotics",
-  "3D Printing",
-  "CAD Design",
-  "Web Design",
-  "Game Development",
-  "Virtual Reality (VR)",
-  "Augmented Reality (AR)",
-  "Cybersecurity",
-  "Cloud Computing",
-  "Web Development",
-  "Front-End Development", 
-
-
-
-  // Creative Skills
-  "Creative Writing",
-  "Music Composition",
+  // Arts & Creative Interests
+  "Painting",
+  "Drawing",
+  "Sketching",
   "Digital Art",
-  "Animation",
+  "Sculpture",
+  "Pottery",
+  "Graphic Design",
+  "Street Photography",
+  "Portrait Photography",
+  "Landscape Photography",
+  "Music Production",
+  "Songwriting",
+  "Instrument Playing",
+
+  // Media & Entertainment
   "Film Making",
-  "Theater Arts",
-  "Photography",
-  "Illustration",
-  "Sound Design",
-  "Performance Arts",
+  "Video Editing",
+  "Vlogging",
+  "Podcasting",
+  "Stand-Up Comedy",
+  "Theater",
+  "Musical Theater",
+  "Content Creation",
+  "Social Media Influencing",
 
-  // Research & Academic Interests
-  "Scientific Research",
-  "Academic Writing",
-  "Literature Review",
-  "Statistical Analysis",
-  "Experimental Design",
-  "Literature Criticism",
-  "Qualitative Research",
-  "Quantitative Analysis",
-
-  // Soft Skills
-  "Leadership",
-  "Team Collaboration",
-  "Conflict Resolution",
-  "Cross-Cultural Communication",
-  "Critical Thinking",
-  "Problem Solving",
-  "Emotional Intelligence",
-  "Adaptive Learning",
-  "Time Management",
-  "Networking",
-
-  // Personal Development
-  "Mental Health Awareness",
-  "Stress Management",
-  "Financial Literacy",
-  "Personal Branding",
-  "Career Planning",
-  "Professional Networking",
+  // Cultural Interests
   "Language Learning",
+  "International Cuisine",
   "Cultural Exchange",
+  "World Cinema",
+  "Global Music",
+  "Traditional Dance",
+  "Historical Research",
 
-  // Community & Social Engagement
-  "Social Entrepreneurship",
-  "Non-Profit Management",
-  "Community Organizing",
-  "Sustainability Initiatives",
-  "Environmental Advocacy",
-  "Social Justice",
-  "Diversity & Inclusion",
-  "Volunteer Management",
+  // Digital & Tech Hobbies
+  "Game Development",
+  "Coding",
+  "3D Modeling",
+  "Digital Illustration",
+  "Streaming",
+  "Meme Culture",
+  "Tech Gadgets",
 
-  // Wellness & Lifestyle
-  "Fitness & Nutrition",
-  "Mental Wellness",
-  "Mindfulness",
+  // Sports & Physical Activities
+  "Football",
+  "Basketball",
+  "Volleyball",
+  "Cricket",
+  "Running",
   "Yoga",
-  "Meditation",
-  "Outdoor Recreation",
-  "Sports Management",
-  "Health & Wellness Coaching",
+  "Hiking",
+  "Swimming",
+  "Cycling",
+  "Fitness Training",
+  "Martial Arts",
 
-  // Hobbies & Interests
-  "Gaming",
-  "Board Games",
+  // Intellectual Pursuits
   "Chess",
-  "E-Sports",
-  "Cooking",
+  "Puzzles",
+  "Quiz Competitions",
+  "Debate",
+  "Public Speaking",
+  "Writing",
+  "Poetry",
+  "Book Clubs",
+  "Philosophy",
+
+  // Unique Interests
+  "Board Games",
+  "Escape Rooms",
+  "Urban Exploration",
   "Gardening",
-  "DIY Projects",
-  "Travel Planning",
-  "Photography",
-  "Blogging"
+  "DIY Crafts",
+  "Sustainable Living",
+  "Minimalism",
+  "Vintage Collecting",
+  "Thrifting"
+
 ];
 
 export const getRandomSkills = (numSkills: number) => {

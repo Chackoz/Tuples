@@ -174,6 +174,7 @@ const Projects: React.FC<ProjectsProps> = ({
 
       <ProjectCreationModal
         isOpen={isProjectModalOpen}
+        userId={user.userId||""}
         onClose={() => setIsProjectModalOpen(false)}
         currentUserId={currentUserId}
         userName={user.name || ""}

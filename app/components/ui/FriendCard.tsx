@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
@@ -18,6 +18,7 @@ import { db } from "../../lib/firebaseConfig";
 import { RiUserAddLine, RiUserUnfollowLine } from "react-icons/ri";
 import { User } from "@/app/types";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Friend {
   name: string;
@@ -40,14 +41,8 @@ interface FriendCardProps {
 }
 
 const colors = [
-  "bg-red-200",
-  "bg-blue-200",
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-purple-200",
-  "bg-pink-200",
-  "bg-indigo-200",
-  "bg-teal-200"
+  "bg-red-200", "bg-blue-200", "bg-green-200", "bg-yellow-200", 
+  "bg-purple-200", "bg-pink-200", "bg-indigo-200", "bg-teal-200"
 ];
 
 function FriendCard({
@@ -62,13 +57,20 @@ function FriendCard({
   setstate
 }: FriendCardProps) {
   const [profileColor, setProfileColor] = useState<string>("");
-  const [isPending, setIsPending] = useState<boolean>(false);
+  const [requestStatus, setRequestStatus] = useState<'none' | 'sent' | 'received' | 'pending'>('none');
   const [user, setUser] = useState<User | null>(null);
-  const { toast } = useToast()
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const navigateToProfile = () => {
+    if (friend.id) {
+      router.push(`/profile?id=${friend.id}`);
+    }
+  };
 
   useEffect(() => {
     setProfileColor(getRandomColor(prevColor));
-    checkPendingRequest();
+    checkFriendRequestStatus();
     getUserById(currentUserId);
   }, [prevColor, currentUserId, friend.id]);
 
@@ -77,12 +79,28 @@ function FriendCard({
     return availableColors[Math.floor(Math.random() * availableColors.length)];
   };
 
-  const checkPendingRequest = async () => {
+  const checkFriendRequestStatus = async () => {
     if (!currentUserId || !friend.id) return;
 
-    const requestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
-    const requestSnap = await getDoc(requestRef);
-    setIsPending(requestSnap.exists());
+    try {
+      // Check if a request was sent from current user to friend
+      const sentRequestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
+      const sentRequestSnap = await getDoc(sentRequestRef);
+
+      // Check if a request was sent from friend to current user
+      const receivedRequestRef = doc(db, "friendRequests", `${friend.id}_${currentUserId}`);
+      const receivedRequestSnap = await getDoc(receivedRequestRef);
+
+      if (sentRequestSnap.exists()) {
+        setRequestStatus('sent');
+      } else if (receivedRequestSnap.exists()) {
+        setRequestStatus('received');
+      } else {
+        setRequestStatus('none');
+      }
+    } catch (error) {
+      console.error("Error checking friend request status:", error);
+    }
   };
 
   const getUserById = useCallback(async (userId: string) => {
@@ -132,10 +150,10 @@ function FriendCard({
         name: user?.name,
         toname: friend.name
       });
-      setIsPending(true);
+      setRequestStatus('sent');
       toast({
         title: "Success",
-        description: `Friend request sent to ${friend.name}!`,
+        description: `Friend request sent to ${friend.name}!`
       });
 
       onRequestSent();
@@ -145,6 +163,51 @@ function FriendCard({
       toast({
         title: "Error",
         description: `Failed to send friend request: ${(error as Error).message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const acceptFriendRequest = async () => {
+    if (!currentUserId || !friend.id) {
+      toast({
+        title: "Error",
+        description: "User ID is missing. Please log in again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const requestRef = doc(db, "friendRequests", `${friend.id}_${currentUserId}`);
+      
+      // Update friends list for both users
+      const currentUserRef = doc(db, "users", currentUserId);
+      const friendUserRef = doc(db, "users", friend.id);
+
+      await updateDoc(currentUserRef, {
+        friends: arrayUnion(friend.name)
+      });
+
+      await updateDoc(friendUserRef, {
+        friends: arrayUnion(user?.name)
+      });
+
+      // Delete the friend request
+      await deleteDoc(requestRef);
+
+      setRequestStatus('none');
+      toast({
+        title: "Success",
+        description: `You are now friends with ${friend.name}!`
+      });
+
+      setstate(!state);
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      toast({
+        title: "Error",
+        description: `Failed to accept friend request: ${(error as Error).message}`,
         variant: "destructive"
       });
     }
@@ -161,14 +224,25 @@ function FriendCard({
     }
 
     try {
-      const requestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
-      await deleteDoc(requestRef);
-      setIsPending(false);
+      // Try to delete request from current user to friend
+      const sentRequestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
+      
+      // Also try to delete request from friend to current user
+      const receivedRequestRef = doc(db, "friendRequests", `${friend.id}_${currentUserId}`);
+
+      // Delete both possible request documents
+      await Promise.all([
+        deleteDoc(sentRequestRef),
+        deleteDoc(receivedRequestRef)
+      ]);
+
+      setRequestStatus('none');
       toast({
         title: "Request Cancelled",
-        description: `Friend request to ${friend.name} cancelled!`,
+        description: `Friend request with ${friend.name} cancelled!`
       });
       onRequestCancelled();
+      setstate(!state);
     } catch (error) {
       console.error("Error cancelling friend request:", error);
       toast({
@@ -177,7 +251,6 @@ function FriendCard({
         variant: "destructive"
       });
     }
-    setstate(!state);
   };
 
   const removeFriend = async () => {
@@ -189,7 +262,7 @@ function FriendCard({
       });
       return;
     }
-  
+
     try {
       // Find and delete the chat between the two users
       const chatsRef = collection(db, "chats");
@@ -199,25 +272,25 @@ function FriendCard({
         where("type", "==", "private")
       );
       const userChatsSnapshot = await getDocs(userChatsQuery);
-  
-      const chatToDelete = userChatsSnapshot.docs.find(chatDoc => {
+
+      const chatToDelete = userChatsSnapshot.docs.find((chatDoc) => {
         const participants = chatDoc.data().participants;
         return participants.includes(friend.id);
       });
-  
+
       if (chatToDelete) {
         // Delete the specific chat document
         await deleteDoc(doc(db, "chats", chatToDelete.id));
-  
+
         // Remove chat reference from both users
         const currentUserRef = doc(db, "users", currentUserId);
         const friendUserRef = doc(db, "users", friend.id);
-  
+
         await updateDoc(currentUserRef, {
           friends: arrayRemove(friend.name),
           chats: arrayRemove(chatToDelete.id)
         });
-  
+
         await updateDoc(friendUserRef, {
           friends: arrayRemove(user?.name),
           chats: arrayRemove(chatToDelete.id)
@@ -226,19 +299,19 @@ function FriendCard({
         // Fallback if no chat found - just remove from friends list
         const currentUserRef = doc(db, "users", currentUserId);
         const friendUserRef = doc(db, "users", friend.id);
-  
+
         await updateDoc(currentUserRef, {
           friends: arrayRemove(friend.name)
         });
-  
+
         await updateDoc(friendUserRef, {
           friends: arrayRemove(user?.name)
         });
       }
-  
+
       toast({
         title: "Friend Removed",
-        description: `${friend.name} has been removed from your friends list.`,
+        description: `${friend.name} has been removed from your friends list.`
       });
       setstate(!state);
     } catch (error) {
@@ -259,7 +332,7 @@ function FriendCard({
           alt={`${friend.name}'s profile`}
           width={48}
           height={48}
-          className="rounded-full object-cover h-[40px] w-[40px] md:h-[50px] md:w-[50px] "
+          className="h-[40px] w-[40px] rounded-full object-cover md:h-[50px] md:w-[50px] "
         />
       );
     }
@@ -284,7 +357,10 @@ function FriendCard({
       {friend.name && (
         <div className="flex h-fit w-full max-w-md rounded-2xl bg-white shadow-md transition-all duration-300 hover:shadow-lg">
           <div className="flex w-full items-center justify-between p-4">
-            <div className="flex w-full items-center gap-4">
+            <div 
+              onClick={navigateToProfile} 
+              className="flex w-full items-center gap-4 cursor-pointer"
+            >
               {renderProfilePicture()}
               <div className="flex w-[75%] flex-col justify-start">
                 <h1 className="text-[14px] font-medium">{friend.name}</h1>
@@ -307,7 +383,7 @@ function FriendCard({
                 >
                   <RiUserUnfollowLine size={20} />
                 </button>
-              ) : showAddButton && !isPending ? (
+              ) : requestStatus === 'none' && showAddButton ? (
                 <button
                   onClick={sendFriendRequest}
                   className="rounded-full bg-blue-500 p-2 text-white transition-colors duration-300 hover:bg-blue-600"
@@ -315,13 +391,21 @@ function FriendCard({
                 >
                   <RiUserAddLine size={20} />
                 </button>
-              ) : isPending ? (
+              ) : requestStatus === 'sent' ? (
                 <button
                   onClick={cancelFriendRequest}
                   className="rounded-full bg-yellow-500 p-2 text-white transition-colors duration-300 hover:bg-yellow-600"
                   aria-label="Cancel friend request"
                 >
                   <RiUserUnfollowLine size={20} />
+                </button>
+              ) : requestStatus === 'received' ? (
+                <button
+                  onClick={acceptFriendRequest}
+                  className="rounded-full bg-green-500 p-2 text-white transition-colors duration-300 hover:bg-green-600"
+                  aria-label="Accept friend request"
+                >
+                  <RiUserAddLine size={20} />
                 </button>
               ) : null}
             </div>

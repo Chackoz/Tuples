@@ -9,6 +9,19 @@
 ## What is Tuples?
 Tuples is our mini-project for Semester 6 of B.Tech in CSE 🚶‍♀️. It's a vibrant online community for engineers to share knowledge, collaborate on projects, and network with peers.
 
+
+## Screenshots
+
+![image](https://github.com/user-attachments/assets/8eee0e79-066d-4c8b-9535-d6dd6fd1ef55)
+
+![image](https://github.com/user-attachments/assets/a6224c9b-783a-4116-af25-e3ff8b87a3c4)
+
+![image](https://github.com/user-attachments/assets/6598c9e9-641d-411a-8d55-06e54f2434a2)
+
+![image](https://github.com/user-attachments/assets/be784dec-be13-49fc-ba6c-dfbd9f19b8ae)
+
+
+
 ## Technical Stuffs
 
 ### Website

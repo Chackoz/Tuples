@@ -15,6 +15,11 @@ interface ProjectManagementProps {
   onProjectUpdate: () => void;
 }
 
+interface MemberDetail {
+  name: string;
+  userId: string;
+}
+
 const ProjectManagement: React.FC<ProjectManagementProps> = ({
   project,
   currentUserId,
@@ -23,14 +28,33 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
 }) => {
   const isOwner = project.owner === currentUserId;
 
+  // Create a more robust mapping of members to their user IDs
+  const memberDetails: MemberDetail[] = project.members.map((name) => {
+    // Find the corresponding userId for this member name
+    const userIdIndex = project.members.indexOf(name);
+    return {
+      name: name,
+      userId: project.userIds[userIdIndex] || ''
+    };
+  });
+
   const removeMember = async (memberToRemove: string) => {
     if (!isOwner) return;
 
     try {
       const projectRef = doc(db, "projects", project.id);
+      
+      // Remove both the member name and corresponding user ID
+      const updatedMembers = project.members.filter(m => m !== memberToRemove);
+      const updatedUserIds = project.userIds.filter((_, index) => 
+        project.members[index] !== memberToRemove
+      );
+
       await updateDoc(projectRef, {
-        members: arrayRemove(memberToRemove)
+        members: updatedMembers,
+        userIds: updatedUserIds
       });
+      
       onProjectUpdate();
     } catch (error) {
       console.error("Error removing member:", error);
@@ -64,19 +88,20 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
           </div>
           <div>
             <h4 className="font-medium mb-2">Members</h4>
-            {project.members.map((member, index) => (
+            {memberDetails.map((member) => (
               <div 
-                key={index} 
+                key={member.userId || member.name} 
                 className="flex justify-between items-center mb-2 bg-gray-100 p-2 rounded"
               >
-                <div>
-                  <span className="font-medium">{member}</span>
-                  <span className="font-medium">     {project.userIds[index-1]}</span>
-            
+                <div className="flex flex-col justify-start items-start">
+                  <span className="font-medium">{member.name}</span>
+                  {member.userId && (
+                    <div className="text-sm text-gray-500 ">({member.userId})</div >
+                  )}
                 </div>
-                {member !== userName && (
+                {member.name !== userName && (
                   <button 
-                    onClick={() => removeMember(member)}
+                    onClick={() => removeMember(member.name)}
                     className="rounded bg-red-600 px-2 py-1 text-white text-sm"
                   >
                     Remove

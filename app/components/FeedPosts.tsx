@@ -305,12 +305,17 @@ function PostsList({
           }`}
         >
           <h3 className="text-lg font-bold">{post.title}</h3>
-          <p className="mb-2 text-gray-600">
+         <div className="w-full flex justify-between items-center">
+         <p className="mb-2 text-gray-600">
             By {post.userName}
             {post.userId === "ai-generated" && (
               <span className="ml-2 text-xs text-blue-500">(AI Generated)</span>
             )}
           </p>
+          <div className="text-sm text-gray-500">
+                    Posted on {post.createdAt?.toDate().toLocaleDateString()}
+                  </div>
+          </div>
           <p>{post.content}</p>
           <div className="mt-2 flex gap-2">
             {post.interests.map((interest) => (
