@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 
 import { jakartasmall } from "../utils/fonts";
 import { auth } from "../lib/firebaseConfig";
+import Marquee from "react-fast-marquee";
 
 function NavBar() {
   const router = useRouter();
@@ -30,14 +31,18 @@ function NavBar() {
       className={`${jakartasmall.className} relative flex w-[95vw] items-center justify-between p-5`}
     >
       {/* Mobile Development Warning */}
-      <div className="absolute left-0 top-0 z-50 w-full bg-yellow-200 p-2 text-center md:hidden">
-        MOBILE VIEW IS STILL IN DEV
+     
+      <div className="absolute left-0 top-0 z-50 w-full bg-orange-200 text-black p-1 text-center md:hidden">
+      <Marquee>
+        ! MOBILE VIEW IS STILL IN DEVELOPMENT !
+        </Marquee>
       </div>
+    
 
       <div className="flex w-full items-center justify-between pt-5">
-        <div className="z-50 flex items-center justify-center  text-4xl">
+        <a href="/" className="z-50 flex items-center justify-center  text-4xl">
           <h1 className="flex flex-row">Tuples</h1>
-        </div>
+        </a>
 
         <button className="z-50 md:hidden hidden" onClick={toggleMenu}>
           {isMenuOpen ? <X /> : <Menu />}
@@ -56,10 +61,10 @@ function NavBar() {
             Interests
           </a>
           <a
-            href="/stats"
+            href="/credits"
             className="text-sm transition-all duration-300 hover:underline"
           >
-            Stats
+            Credits
           </a>
         </nav>
         <button
@@ -78,8 +83,8 @@ function NavBar() {
           <a href="/interests" className="text-2xl hover:underline" onClick={toggleMenu}>
             Interests
           </a>
-          <a href="/stats" className="text-2xl hover:underline" onClick={toggleMenu}>
-            Stats
+          <a href="/credits" className="text-2xl hover:underline" onClick={toggleMenu}>
+          Credits
           </a>
           <button
             onClick={() => {
