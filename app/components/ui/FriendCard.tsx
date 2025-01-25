@@ -1,3 +1,4 @@
+"use client"
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
@@ -16,6 +17,7 @@ import {
 import { db } from "../../lib/firebaseConfig";
 import { RiUserAddLine, RiUserUnfollowLine } from "react-icons/ri";
 import { User } from "@/app/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface Friend {
   name: string;
@@ -62,6 +64,7 @@ function FriendCard({
   const [profileColor, setProfileColor] = useState<string>("");
   const [isPending, setIsPending] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
+  const { toast } = useToast()
 
   useEffect(() => {
     setProfileColor(getRandomColor(prevColor));
@@ -91,19 +94,32 @@ function FriendCard({
         setUser(userData);
         return userData;
       } else {
-        console.log("Document does not exist!");
+        toast({
+          title: "Error",
+          description: "Document does not exist!",
+          variant: "destructive"
+        });
         setstate(!state);
         return null;
       }
     } catch (error) {
       console.error("Error fetching user:", error);
+      toast({
+        title: "Error",
+        description: `Failed to fetch user: ${(error as Error).message}`,
+        variant: "destructive"
+      });
       return null;
     }
   }, []);
 
   const sendFriendRequest = async () => {
     if (!currentUserId || !friend.id) {
-      alert("User ID is missing. Please log in again.");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Please log in again.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -117,18 +133,30 @@ function FriendCard({
         toname: friend.name
       });
       setIsPending(true);
-      alert(`Friend request sent to ${friend.name}!`);
+      toast({
+        title: "Success",
+        description: `Friend request sent to ${friend.name}!`,
+      });
+
       onRequestSent();
       setstate(!state);
     } catch (error) {
       console.error("Error sending friend request:", error);
-      alert(`Failed to send friend request: ${(error as Error).message}`);
+      toast({
+        title: "Error",
+        description: `Failed to send friend request: ${(error as Error).message}`,
+        variant: "destructive"
+      });
     }
   };
 
   const cancelFriendRequest = async () => {
     if (!currentUserId || !friend.id) {
-      alert("User ID is missing. Please log in again.");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Please log in again.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -136,18 +164,29 @@ function FriendCard({
       const requestRef = doc(db, "friendRequests", `${currentUserId}_${friend.id}`);
       await deleteDoc(requestRef);
       setIsPending(false);
-      alert(`Friend request to ${friend.name} cancelled!`);
+      toast({
+        title: "Request Cancelled",
+        description: `Friend request to ${friend.name} cancelled!`,
+      });
       onRequestCancelled();
     } catch (error) {
       console.error("Error cancelling friend request:", error);
-      alert(`Failed to cancel friend request: ${(error as Error).message}`);
+      toast({
+        title: "Error",
+        description: `Failed to cancel friend request: ${(error as Error).message}`,
+        variant: "destructive"
+      });
     }
     setstate(!state);
   };
 
   const removeFriend = async () => {
     if (!currentUserId || !friend.id) {
-      alert("User ID is missing. Please log in again.");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Please log in again.",
+        variant: "destructive"
+      });
       return;
     }
   
@@ -197,16 +236,23 @@ function FriendCard({
         });
       }
   
-      alert(`${friend.name} has been removed from your friends list.`);
+      toast({
+        title: "Friend Removed",
+        description: `${friend.name} has been removed from your friends list.`,
+      });
       setstate(!state);
     } catch (error) {
       console.error("Error removing friend:", error);
-      alert(`Failed to remove friend: ${(error as Error).message}`);
+      toast({
+        title: "Error",
+        description: `Failed to remove friend: ${(error as Error).message}`,
+        variant: "destructive"
+      });
     }
   };
+
   const renderProfilePicture = () => {
     if (friend.profilePicUrl) {
-      console.log();
       return (
         <Image
           src={friend.profilePicUrl}
@@ -253,7 +299,6 @@ function FriendCard({
               </div>
             </div>
             <div className="flex items-center justify-center">
-              {/* Existing button logic remains the same */}
               {isFriend ? (
                 <button
                   onClick={removeFriend}
