@@ -30,7 +30,7 @@ import Projects from "@/app/components/ProjectSection";
 
 function Home() {
   const router = useRouter();
-  const { allProjects, fetchAllProjects, joinProject } = useProject();
+  const { allProjects, fetchAllProjects } = useProject();
   const { friends, myFriends, refreshFriends } = useFriends();
 
   // State Hooks
@@ -132,8 +132,6 @@ function Home() {
       await updateDoc(friendUserRef1, {
         chats: arrayUnion(newChatRef.id)
       });
-
-      // Trigger state update and refresh
       setState((prev) => !prev);
       await fetchFriendRequests();
       await getUserById(currentUserId);
@@ -149,16 +147,12 @@ function Home() {
         status: "rejected"
       });
       await deleteDoc(requestRef);
-
-      // Trigger state update and refresh
       setState((prev) => !prev);
       await fetchFriendRequests();
     } catch (error) {
       console.error("Error rejecting friend request:", error);
     }
   };
-
- 
 
   useEffect(() => {
     const cookieValue = document.cookie
@@ -185,11 +179,7 @@ function Home() {
     }
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
 
-  useEffect(() => {
-    if (currentUserId) {
-      fetchFriendRequests();
-    }
-  }, [currentUserId, state]);
+ 
 
   return (
     <div
@@ -290,7 +280,7 @@ function Home() {
         </div>
         {currentView !== "Chat" && (
           <div className="custom-scrollbar mt-5 hidden h-[80vh] overflow-y-auto rounded-lg bg-white p-5 md:mt-0 md:block md:w-[23vw]">
-            {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Add Friends</h1>}
+            {currentView !== "Friends" && <h1 className="pb-5 text-2xl ">Suggested Friends</h1>}
             {currentView === "Friends" && <h1 className="pb-5 text-2xl">My Friends</h1>}
             <div className="flex w-full flex-col items-center justify-center gap-4 "></div>
             {currentView === "Friends" && myFriends.length >= 0 && (

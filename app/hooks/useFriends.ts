@@ -1,8 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import axios from "axios";
-import { 
-  collection, query, where, getDocs, doc, getDoc 
-} from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
 import { User, Friend } from "@/app/types";
 import { db } from "../lib/firebaseConfig";
@@ -47,38 +45,37 @@ export const useFriends = () => {
     async (user: User) => {
       const fetchMethod = async () => {
         try {
-          
-          const userInterests = user.interests?.length ? user.interests.join(", ") : "";
-          const response = await axios.post(
-            "https://tuplesai.onrender.com:5000/api/similar_users",
-            { user_interests: userInterests },
-            { timeout: 3000 }
-          );
+          // const userInterests = user.interests?.length ? user.interests.join(", ") : "";
+          // const response = await axios.post(
+          //   "https://tuplesai.onrender.com:5000/api/similar_users",
+          //   { user_interests: userInterests },
+          //   { timeout: 3000 }
+          // );
 
-          const { similar_users } = response.data;
+          // const { similar_users } = response.data;
 
-          if (
-            Array.isArray(similar_users) &&
-            similar_users.every(
-              (user) =>
-                typeof user.name === "string" &&
-                Array.isArray(user.interests) &&
-                typeof user.userId === "string" &&
-                typeof user.id === "string"
-            )
-          ) {
-            const formattedFriends = similar_users
-              .map(({ id, name, interests, userId }) => ({ id, name, interests, userId }))
-              .filter(
-                (friend) =>
-                  friend.name !== user.name && !user.friends.includes(friend.name)
-              );
-            
-            if (formattedFriends.length > 0) {
-              setFriends(formattedFriends);
-              return;
-            }
-          }
+          // if (
+          //   Array.isArray(similar_users) &&
+          //   similar_users.every(
+          //     (user) =>
+          //       typeof user.name === "string" &&
+          //       Array.isArray(user.interests) &&
+          //       typeof user.userId === "string" &&
+          //       typeof user.id === "string"
+          //   )
+          // ) {
+          //   const formattedFriends = similar_users
+          //     .map(({ id, name, interests, userId }) => ({ id, name, interests, userId }))
+          //     .filter(
+          //       (friend) =>
+          //         friend.name !== user.name && !user.friends.includes(friend.name)
+          //     );
+
+          //   if (formattedFriends.length > 0) {
+          //     setFriends(formattedFriends);
+          //     return;
+          //   }
+          // }
 
           await fetchSimilarUsersGemini(user);
         } catch (error) {
@@ -92,64 +89,93 @@ export const useFriends = () => {
     [lastFetchTime]
   );
 
-  const fetchSimilarUsersGemini = useCallback(
-    async (user: User) => {
-      try {
-        const usersRef = collection(db, "users");
-        const usersSnapshot = await getDocs(usersRef);
-        const allUsers = usersSnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            name: doc.data().name,
-            interests: doc.data().interests || [],
-            userId: doc.data().userId,
-            profilePicUrl: doc.data().profilePicUrl
-          }))
-          .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
+  const fetchSimilarUsersGemini = useCallback(async (user: User) => {
+    try {
+      const usersRef = collection(db, "users");
+      const usersSnapshot = await getDocs(usersRef);
+      const allUsers = usersSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          name: doc.data().name,
+          interests: doc.data().interests || [],
+          userId: doc.data().userId,
+          profilePicUrl: doc.data().profilePicUrl
+        }))
+        .filter((u) => u.name !== user.name && !user.friends.includes(u.name));
 
-        const userInterests = user.interests?.length ? user.interests.join(", ") : "";
-        const allUsersData = allUsers
-          .map((u) => `${u.name}: ${u.interests.join(", ")}`)
-          .join("\n");
+      const userInterests = user.interests?.length ? user.interests.join(", ") : "";
+      const allUsersData = allUsers
+        .map((u) => `${u.name}: ${u.interests.join(", ")}`)
+        .join("\n");
 
-        const API_KEY = process.env.GEMINI_API_KEY;
-        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+      const API_KEY = process.env.GEMINI_API_KEY;
+      const API_URL =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
-        const prompt = `Rank the top 5 most similar users to a user with interests: ${userInterests}
-        Users data:
-        ${allUsersData}
-        
-        Return top 5 user names, one per line, with only the name.if less than total 5 users are there then return only those many users but in similarity order. like if only 2 users are there then return the most similar user first and then the second most similar user.`;
+      const prompt = `Task: Find the most similar users based on interest overlap and relevance.
 
-        const response = await axios.post(`${API_URL}?key=${API_KEY}`, {
+Criteria for Similarity:
+1. Maximum number of matching interests
+2. Specific interest type alignment
+3. Depth of interest match
+
+Input User Interests: ${userInterests}
+
+Users Data:
+${allUsersData}
+
+Detailed Instructions:
+- Compare each user's interests against the input user's interests
+- Calculate similarity using:
+  a) Number of shared interests
+  b) Semantic relevance of interests
+  c) Potential collaboration or connection potential
+- Rank users from most to least similar
+- Return top 5 usernames, strictly one per line
+- If fewer than 5 users exist, return all available users in descending similarity order
+
+Output Format Example:
+name1
+name2
+name3
+...
+
+Response Requirements:
+- Only user names
+- No additional text or explanations
+- Strictly first 5 most similar users`;
+
+      const response = await axios.post(
+        `${API_URL}?key=${API_KEY}`,
+        {
           contents: [{ parts: [{ text: prompt }] }]
-        }, { timeout: 5000 });
+        },
+        { timeout: 5000 }
+      );
 
-        const generatedText = response.data.candidates[0].content.parts[0].text;
-        const similarUserNames = generatedText
-          .split("\n")
-          .map((line: string) => line.trim())
-          .filter((name: string) => name.length > 0);
+      const generatedText = response.data.candidates[0].content.parts[0].text;
+      const similarUserNames = generatedText
+        .split("\n")
+        .map((line: string) => line.trim())
+        .filter((name: string) => name.length > 0);
 
-        const similarUsers = similarUserNames
-          .map((name: string) => allUsers.find((u) => u.name === name))
-          .filter((user: Friend | undefined): user is Friend => user !== undefined)
-          .slice(0, 5);
+      const similarUsers = similarUserNames
+        .map((name: string) => allUsers.find((u) => u.name === name))
+        .filter((user: Friend | undefined): user is Friend => user !== undefined)
+        .slice(0, 5);
 
-        if (similarUsers.length > 0) {
-          setFriends(similarUsers);
-          console.log("Gemini recommendation successful.");
-        } else {
-          console.log("Gemini recommendation returned 0.");
-          await fetchRandomUsers(user);
-        }
-      } catch (error) {
-        console.warn("Gemini recommendation failed. Falling back to random users.");
+      if (similarUsers.length > 0) {
+        setFriends(similarUsers);
+        console.log("Gemini recommendation successful.");
+      } else {
+        console.log("Gemini recommendation returned 0.");
         await fetchRandomUsers(user);
       }
-    },
-    []
-  );
+    } catch (error) {
+      console.warn("Gemini recommendation failed. Falling back to random users.");
+      await fetchRandomUsers(user);
+    }
+  }, []);
 
   const fetchRandomUsers = useCallback(async (user: User) => {
     try {
@@ -160,26 +186,26 @@ export const useFriends = () => {
         .map((doc) => ({
           id: doc.id,
           name: doc.data().name,
-          interests: doc.data().interests || [], // Ensure interests is always an array
+          interests: doc.data().interests || [], 
           userId: doc.data().userId,
           profilePicUrl: doc.data().profilePicUrl
         }))
-        .filter((u) => 
-          u.name !== user.name && 
-          !user.friends.includes(u.name) &&
-          u.interests // Ensure interests exist
+        .filter(
+          (u) => u.name !== user.name && !user.friends.includes(u.name) && u.interests 
         );
 
       // Safely check interest overlap
-      const usersWithInterestOverlap = allUsers.filter(u => 
-        u.interests.length > 0 && 
-        user.interests?.length && 
-        u.interests.some((interest: string) => user.interests.includes(interest))
+      const usersWithInterestOverlap = allUsers.filter(
+        (u) =>
+          u.interests.length > 0 &&
+          user.interests?.length &&
+          u.interests.some((interest: string) => user.interests.includes(interest))
       );
 
-      const recommendedUsers = usersWithInterestOverlap.length > 0
-        ? usersWithInterestOverlap.sort(() => 0.5 - Math.random()).slice(0, 5)
-        : allUsers.sort(() => 0.5 - Math.random()).slice(0, 5);
+      const recommendedUsers =
+        usersWithInterestOverlap.length > 0
+          ? usersWithInterestOverlap.sort(() => 0.5 - Math.random()).slice(0, 5)
+          : allUsers.sort(() => 0.5 - Math.random()).slice(0, 5);
 
       setFriends(recommendedUsers);
       return recommendedUsers;
