@@ -36,12 +36,12 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Tuples - Collaborative BTech Student Community",
-    description: "Join a vibrant community of tech students creating innovative projects together.",
+    description: "Join a vibrant community of MBCET btech students creating innovative projects together.",
     type: "website",
     url: "https://tuples.vercel.app",
     images: [
       {
-        url: "/Tuples.png",
+        url: "https://tuples.vercel.app/Tuples.png",
         width: 1200,
         height: 630,
         alt: "Tuples - Collaborative Tech Projects"
@@ -52,7 +52,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tuples | Tech Project Collaboration",
     description: "Connect, collaborate, and innovate with fellow tech students.",
-    images: ["/Tuples.png"]
+    images: ["https://tuples.vercel.app/Tuples.png"]
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/Tuples.png",
+    shortcut: "/Tuples.png",
   },
   robots: {
     index: true,

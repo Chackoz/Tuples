@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { Menu, X } from "lucide-react";
-
 import { jakartasmall } from "../utils/fonts";
 import { auth } from "../lib/firebaseConfig";
 import Marquee from "react-fast-marquee";
