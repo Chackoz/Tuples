@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -16,8 +16,10 @@ import { useToast } from '@/hooks/use-toast';
 import { jakartasmall } from "@/app/utils/fonts";
 import NavBar from "@/app/components/NavBar";
 import FriendCard from "@/app/components/ui/FriendCard";
+import { Spinner } from '@/app/components/ui/Spinner';
 
-const UserProfilePage: React.FC = () => {
+
+const ProfileContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -51,7 +53,7 @@ const UserProfilePage: React.FC = () => {
     try {
       const userRef = doc(db, "users", userId);
       const userSnapshot = await getDoc(userRef);
-
+      
       if (userSnapshot.exists()) {
         const userData = userSnapshot.data() as User;
         setProfileUser(userData);
@@ -88,10 +90,8 @@ const UserProfilePage: React.FC = () => {
 
   const fetchMutualFriends = async (profileUser: User) => {
     if (!currentUser) return;
-
     const currentUserFriends = currentUser.friends || [];
     const profileUserFriends = profileUser.friends || [];
-
     const mutualFriendNames = currentUserFriends.filter(
       name => profileUserFriends.includes(name) && name !== profileUser.name
     );
@@ -131,7 +131,9 @@ const UserProfilePage: React.FC = () => {
     return (
       <div className={`min-h-screen bg-[#ebebeb] ${jakartasmall.className}`}>
         <NavBar />
-        <div className="flex justify-center items-center h-screen">Loading...</div>
+        <div className="flex justify-center items-center h-screen">
+          <Spinner />
+        </div>
       </div>
     );
   }
@@ -163,7 +165,6 @@ const UserProfilePage: React.FC = () => {
               <p className="text-gray-600">{profileUser.userId}</p>
             </div>
           </div>
-
           {/* Profile Details */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
@@ -183,7 +184,6 @@ const UserProfilePage: React.FC = () => {
                 <p className="text-gray-500">No interests added</p>
               )}
             </div>
-
             <div>
               <h2 className="text-xl font-semibold mb-4">Friends</h2>
               {profileUser.friends && profileUser.friends.length > 0 ? (
@@ -193,7 +193,6 @@ const UserProfilePage: React.FC = () => {
               )}
             </div>
           </div>
-
           {/* Mutual Friends */}
           {mutualFriends.length > 0 && (
             <div className="mb-6">
@@ -215,7 +214,6 @@ const UserProfilePage: React.FC = () => {
               </div>
             </div>
           )}
-
           {/* User Posts */}
           {userPosts.length > 0 && (
             <div>
@@ -226,7 +224,7 @@ const UserProfilePage: React.FC = () => {
                     key={post.id} 
                     className="bg-gray-100 p-4 rounded-lg"
                   >
-                     <h1 className='text-xl font-semibold'>{post.title}</h1>
+                    <h1 className='text-xl font-semibold'>{post.title}</h1>
                     <p>{post.content}</p>
                    
                     <div className="text-sm text-gray-500 mt-2">
@@ -240,6 +238,14 @@ const UserProfilePage: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const UserProfilePage: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 };
 
