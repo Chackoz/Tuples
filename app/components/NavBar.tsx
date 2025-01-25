@@ -33,7 +33,10 @@ function NavBar() {
      
       <div className="absolute left-0 top-0 z-50 w-full bg-orange-200 text-black p-1 text-center md:hidden">
       <Marquee>
-        ! MOBILE VIEW IS STILL IN DEVELOPMENT !
+        <div className="w-full text-nowrap justify-center leading-5 gap-4">
+        !  MOBILE VIEW IS STILL IN DEVELOPMENT  !
+      
+        </div>
         </Marquee>
       </div>
     

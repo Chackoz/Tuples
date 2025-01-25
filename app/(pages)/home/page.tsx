@@ -273,6 +273,39 @@ function Home() {
                   </div>
                 </div>
               ))}
+              {friendRequests.length === 0 && (<div>No friend requests</div>)}
+              <h2 className="my-4 text-xl font-bold">Suggested Friends</h2>
+                <div className="flex w-full flex-col items-center justify-center gap-4 md:hidden">
+                  {friends.map((friend, index) => (
+                    <FriendCard
+                      key={friend.id || index}
+                      friend={friend}
+                      currentUserId={currentUserId}
+                      onRequestSent={() => {}}
+                      onRequestCancelled={() => {}}
+                      showAddButton={true}
+                      isFriend={false}
+                      state={state}
+                      setstate={setState}
+                    />
+                  ))}
+                </div>
+                <h2 className="my-4 text-xl font-bold">My Friends</h2>
+                <div className="flex w-full flex-col items-center justify-center gap-4 md:hidden">
+                {myFriends.map((friend, index) => (
+                  <FriendCard
+                    key={friend.id || index}
+                    friend={friend}
+                    currentUserId={currentUserId}
+                    onRequestSent={() => {}}
+                    onRequestCancelled={() => {}}
+                    showAddButton={false}
+                    isFriend={true}
+                    state={state}
+                    setstate={setState}
+                  />
+                ))}
+                </div>
             </div>
           )}
         </div>
@@ -298,6 +331,7 @@ function Home() {
                     setstate={setState}
                   />
                 ))}
+              
               </div>
             )}
             {currentView !== "Friends" && (
