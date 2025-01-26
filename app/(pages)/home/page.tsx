@@ -274,7 +274,7 @@ function Home() {
                 </div>
               ))}
               {friendRequests.length === 0 && (<div>No friend requests</div>)}
-              <h2 className="my-4 text-xl font-bold">Suggested Friends</h2>
+              <h2 className="my-4 text-xl font-bold md:hidden">Suggested Friends</h2>
                 <div className="flex w-full flex-col items-center justify-center gap-4 md:hidden">
                   {friends.map((friend, index) => (
                     <FriendCard
@@ -290,7 +290,7 @@ function Home() {
                     />
                   ))}
                 </div>
-                <h2 className="my-4 text-xl font-bold">My Friends</h2>
+                <h2 className="my-4 text-xl font-bold md:hidden">My Friends</h2>
                 <div className="flex w-full flex-col items-center justify-center gap-4 md:hidden">
                 {myFriends.map((friend, index) => (
                   <FriendCard
