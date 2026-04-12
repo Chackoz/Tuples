@@ -32,6 +32,20 @@ service cloud.firestore {
         !(request.auth.uid in resource.data.participants);
     }
 
+    function isPostOwner() {
+      return signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function validPostCreate() {
+      return signedIn() &&
+        request.resource.data.userId is string &&
+        request.resource.data.userName is string &&
+        request.resource.data.title is string &&
+        request.resource.data.content is string &&
+        request.resource.data.interests is list &&
+        (request.resource.data.userId == request.auth.uid || isPlatformAdmin());
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow write: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
@@ -58,6 +72,12 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read: if signedIn();
       allow create, update, delete: if signedIn();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if validPostCreate();
+      allow update, delete: if isPostOwner() || isPlatformAdmin();
     }
 
     // Key history stays server-only via Admin SDK API routes.
