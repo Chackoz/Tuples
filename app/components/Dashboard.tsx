@@ -104,7 +104,7 @@ function Dashboard({
       <div className="flex items-center justify-between py-4 lg:hidden">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-none border-2 border-black bg-white p-2 shadow-[2px_2px_0px_#3b82f6]"
+          className="rounded-none border border-gray-200 bg-white p-2 shadow-sm"
         >
           <RiMenuLine />
         </button>
@@ -115,7 +115,7 @@ function Dashboard({
               alt="User profile"
               width={50}
               height={50}
-              className="object-cover w-[60px] h-[60px] border-2 border-black shadow-[4px_4px_0px_#3b82f6]"
+              className="object-cover w-[60px] h-[60px] border border-gray-200 shadow-sm"
             />
           )}
           <h1 className="heading-brutal text-lg">{user?.name || "Username"}</h1>
@@ -124,7 +124,7 @@ function Dashboard({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-[#f0f0f0] p-4 lg:hidden bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:32px_32px]">
+        <div className="fixed inset-0 z-50 bg-gray-50 p-4 lg:hidden bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:32px_32px]">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="heading-brutal text-2xl">Menu</h2>
             <button onClick={() => setMobileMenuOpen(false)} className="btn-secondary px-3 py-1 text-2xl">
@@ -140,8 +140,8 @@ function Dashboard({
                   setCurrentView(item.view);
                   setMobileMenuOpen(false);
                 }}
-                className={`block p-4 border-2 border-black subheading-brutal text-lg transition-all ${
-                  currentView === item.view ? "bg-blue-500 text-white shadow-[4px_4px_0px_#000]" : "bg-white shadow-[4px_4px_0px_#3b82f6]"
+                className={`block p-4 border border-gray-200 subheading-brutal text-lg transition-all ${
+                  currentView === item.view ? "bg-blue-500 text-white shadow-sm" : "bg-white shadow-sm"
                 }`}
               >
                 {item.label}
@@ -176,26 +176,26 @@ function Dashboard({
               </Link>
             ))}
           </nav>
-          <div className="flex w-[10vw] flex-col items-center justify-center gap-4 bg-[#f0f0f0] border-2 border-black p-4 shadow-[4px_4px_0px_#3b82f6]">
+          <div className="flex w-[10vw] flex-col items-center justify-center gap-4 bg-gray-50 border border-gray-200 p-4 shadow-sm">
             {profilePicUrl && (
               <Image
                 src={profilePicUrl}
                 alt="User profile"
                 width={100}
                 height={100}
-                className="w-full h-auto aspect-square object-cover border-2 border-black"
+                className="w-full h-auto aspect-square object-cover border border-gray-200"
               />
             )}
             <h1 className="heading-brutal text-center break-words w-full">{user?.name || "Username"}</h1>
           </div>
         </div>
 
-        <div className="flex w-full items-center justify-between pt-6 border-t-2 border-black mt-4">
+        <div className="flex w-full items-center justify-between pt-6 border-t border-gray-200 mt-4">
           <div className="flex flex-col items-start justify-center gap-0 leading-none">
             <h1 className="w-full text-start heading-brutal text-3xl">
               {user?.friends?.length - 1 || 0}
             </h1>
-            <h2 className="label-brutal text-black/50 mt-1">Friends</h2>
+            <h2 className="label-brutal text-gray-900/50 mt-1">Friends</h2>
           </div>
           <button
             onClick={toggleFriendsView}
@@ -209,7 +209,7 @@ function Dashboard({
 
       {/* Communities Section */}
       <div className="card-brutal my-8 w-full gap-4 md:flex flex-col hidden relative">
-        <div className="mb-4 flex items-center justify-between pb-4 border-b-2 border-black">
+        <div className="mb-4 flex items-center justify-between pb-4 border-b border-gray-200">
           <h1 className="subheading-brutal text-lg">My Communities</h1>
           <button
             onClick={() => setShowModal(true)}
@@ -222,21 +222,21 @@ function Dashboard({
           {communities.length > 0 ? communities.map((community) => (
             <CommunityBox key={community.id} community={community} />
           )) : (
-            <p className="label-brutal text-black/50 border-2 border-dashed border-black/20 w-full p-4 text-center">No communities yet.</p>
+            <p className="label-brutal text-gray-900/50 border border-dashed border-gray-200/20 w-full p-4 text-center">No communities yet.</p>
           )}
         </div>
       </div>
 
       {/* Projects Section */}
       <div className="card-brutal mt-8 w-full gap-4 md:flex flex-col hidden relative">
-        <div className="mb-4 flex items-center justify-between pb-4 border-b-2 border-black">
+        <div className="mb-4 flex items-center justify-between pb-4 border-b border-gray-200">
           <h1 className="subheading-brutal text-lg">My Projects</h1>
         </div>
         <div className="flex flex-wrap gap-4 py-2">
           {projects.length > 0 ? projects.map((project) => (
             <CommunityBox key={project.id} project={project} />
           )) : (
-            <p className="label-brutal text-black/50 border-2 border-dashed border-black/20 w-full p-4 text-center">No projects yet.</p>
+            <p className="label-brutal text-gray-900/50 border border-dashed border-gray-200/20 w-full p-4 text-center">No projects yet.</p>
           )}
         </div>
       </div>

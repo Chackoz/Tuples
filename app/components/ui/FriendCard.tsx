@@ -368,13 +368,13 @@ function FriendCard({
                   alt={`${friend.name}'s profile`}
                   width={48}
                   height={48}
-                  className="h-12 w-12 rounded-none border-2 border-black object-cover shadow-[2px_2px_0px_#3b82f6] shrink-0"
+                  className="h-12 w-12 rounded-none border border-gray-200 object-cover shadow-sm shrink-0"
                 />
               ) : (
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-none border-2 border-black shadow-[2px_2px_0px_#3b82f6] ${profileColor} shrink-0`}
+                  className={`flex h-12 w-12 items-center justify-center rounded-none border border-gray-200 shadow-sm ${profileColor} shrink-0`}
                 >
-                  <span className="heading-brutal text-black text-xl">{friend.name[0]?.toUpperCase()}</span>
+                  <span className="heading-brutal text-gray-900 text-xl">{friend.name[0]?.toUpperCase()}</span>
                 </div>
               )}
               
@@ -392,7 +392,7 @@ function FriendCard({
                     )}
                   </div>
                 ) : (
-                  <p className="label-brutal text-black/50 mt-1">NO INTERESTS</p>
+                  <p className="label-brutal text-gray-900/50 mt-1">NO INTERESTS</p>
                 )}
               </div>
             </div>
@@ -409,7 +409,7 @@ function FriendCard({
               ) : requestStatus === 'none' && showAddButton ? (
                 <button
                   onClick={sendFriendRequest}
-                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-blue-500 hover:bg-blue-600 shadow-[2px_2px_0px_#000] text-white"
+                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-blue-500 hover:bg-blue-600 shadow-sm text-white"
                   aria-label="Send friend request"
                 >
                   <RiUserAddLine size={20} />
@@ -417,7 +417,7 @@ function FriendCard({
               ) : requestStatus === 'sent' ? (
                 <button
                   onClick={cancelFriendRequest}
-                  className="btn-secondary h-10 w-10 p-0 flex items-center justify-center bg-black text-white hover:bg-gray-800"
+                  className="btn-secondary h-10 w-10 p-0 flex items-center justify-center bg-gray-800 text-white hover:bg-gray-800"
                   aria-label="Cancel friend request"
                 >
                   <RiUserUnfollowLine size={16} />
@@ -425,7 +425,7 @@ function FriendCard({
               ) : requestStatus === 'received' ? (
                 <button
                   onClick={acceptFriendRequest}
-                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-green-500 text-white shadow-[2px_2px_0px_#000] hover:bg-green-600"
+                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-green-500 text-white shadow-sm hover:bg-green-600"
                   aria-label="Accept friend request"
                 >
                   <RiUserAddLine size={20} />

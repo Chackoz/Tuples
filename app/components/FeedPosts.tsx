@@ -60,7 +60,7 @@ function PostCreationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800 bg-opacity-50 backdrop-blur-sm">
       <div className="w-[500px] card-brutal bg-white p-6 relative">
         <h2 className="heading-brutal mb-6 text-2xl">CREATE A POST</h2>
         <input
@@ -91,8 +91,8 @@ function PostCreationModal({
                 }
                 className={`tag-brutal cursor-pointer transition-transform hover:-translate-y-1 ${
                   selectedInterests.includes(interest)
-                    ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000]"
-                    : "bg-white text-black hover:shadow-[2px_2px_0px_#3b82f6]"
+                    ? "bg-blue-500 text-white shadow-sm"
+                    : "bg-white text-gray-900 hover:shadow-sm"
                 }`}
               >
                 {interest}
@@ -293,7 +293,7 @@ function PostsList({
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-12 w-12 border-4 border-black border-t-blue-500 animate-spin shadow-[4px_4px_0px_#000]"></div>
+        <div className="h-12 w-12 border border-gray-200 border-t-blue-500 animate-spin shadow-sm"></div>
       </div>
     );
   }
@@ -304,27 +304,27 @@ function PostsList({
         <div
           key={post.id}
           className={`card-brutal bg-white p-6 ${
-            post.userId === "ai-generated" ? "border-4 border-blue-500 shadow-[6px_6px_0px_#000]" : ""
+            post.userId === "ai-generated" ? "border border-gray-200 border-blue-500 shadow-sm" : ""
           }`}
         >
           <h3 className="heading-brutal text-2xl mb-3">{post.title?.toUpperCase()}</h3>
-          <div className="w-full flex justify-between items-center mb-6 border-b-2 border-black pb-4">
-            <p className="subheading-brutal text-black/70 flex items-center">
+          <div className="w-full flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+            <p className="subheading-brutal text-gray-900/70 flex items-center">
               BY {post.userName?.toUpperCase() || "UNKNOWN"}
               {post.userId === "ai-generated" && (
                 <span className="ml-3 tag-brutal bg-blue-500 text-white text-[10px] py-0.5 px-2">AI GENERATED</span>
               )}
             </p>
-            <div className="label-brutal text-black/50">
+            <div className="label-brutal text-gray-900/50">
               {post.createdAt?.toDate ? `POSTED ON ${post.createdAt.toDate().toLocaleDateString()}` : 'JUST NOW'}
             </div>
           </div>
-          <p className="text-black font-medium leading-relaxed mb-6">{post.content}</p>
+          <p className="text-gray-900 font-medium leading-relaxed mb-6">{post.content}</p>
           <div className="flex flex-wrap gap-2">
             {post.interests.map((interest) => (
               <span
                 key={interest}
-                className="tag-brutal bg-yellow-300"
+                className="tag-brutal bg-blue-100 text-blue-800"
               >
                 {interest}
               </span>
@@ -333,8 +333,8 @@ function PostsList({
         </div>
       ))}
       {posts.length === 0 && (
-        <div className="py-16 card-brutal flex flex-col items-center justify-center bg-[#f0f0f0] border-dashed border-4 border-black mt-8">
-          <p className="heading-brutal text-black/40 text-center px-4">NO POSTS FOUND. TRY EXPLORING DIFFERENT INTERESTS!</p>
+        <div className="py-16 card-brutal flex flex-col items-center justify-center bg-gray-50 border-dashed border border-gray-200 mt-8">
+          <p className="heading-brutal text-gray-900/40 text-center px-4">NO POSTS FOUND. TRY EXPLORING DIFFERENT INTERESTS!</p>
         </div>
       )}
     </div>

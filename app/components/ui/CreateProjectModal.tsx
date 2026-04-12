@@ -153,23 +153,22 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-xl card-brutal bg-white p-8 relative max-h-[90vh] overflow-y-auto">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-red-400 transition-colors shadow-[2px_2px_0px_#000]"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center border border-gray-200 bg-white hover:bg-red-400 transition-colors shadow-sm"
         >
           ✕
         </button>
         <h2 className="mb-6 heading-brutal text-2xl flex items-center gap-2">
-          <span className="bg-yellow-300 w-4 h-4 border-2 border-black inline-block"></span>
           CREATE NEW PROJECT
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block label-brutal text-sm mb-2">
               PROJECT TITLE
-              {errors.title && <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.title}</span>}
+              {errors.title && <span className="ml-2 text-red-500 bg-red-100 px-1 border border-gray-200">{errors.title}</span>}
             </label>
             <input
               type="text"
@@ -187,7 +186,7 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
             <label className="block label-brutal text-sm mb-2">
               DESCRIPTION
               {errors.description && (
-                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.description}</span>
+                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-gray-200">{errors.description}</span>
               )}
             </label>
             <textarea
@@ -206,7 +205,7 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
             <label className="block label-brutal text-sm mb-2">
               TECHNOLOGIES (COMMA-SEPARATED)
               {errors.technologies && (
-                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.technologies}</span>
+                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-gray-200">{errors.technologies}</span>
               )}
             </label>
             <input
@@ -237,11 +236,11 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
 
               {/* Skill Suggestions */}
               {suggestions.length > 0 && (
-                <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-2 border-black bg-white shadow-[4px_4px_0px_#000]">
+                <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border border-gray-200 bg-white shadow-sm">
                   {suggestions.map((skill, index) => (
                     <li
                       key={skill}
-                      className={`cursor-pointer px-4 py-2 border-b-2 border-black last:border-b-0 hover:bg-[#f0f0f0] transition-colors ${
+                      className={`cursor-pointer px-4 py-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors ${
                         index === selectedSuggestion ? "bg-yellow-200" : ""
                       }`}
                       onClick={() => handleAddSkill(skill)}
@@ -268,7 +267,7 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
                     <button
                       type="button"
                       onClick={() => removeSkill(skill)}
-                      className="hover:text-red-900 font-bold bg-white/50 w-5 h-5 flex items-center justify-center border border-black"
+                      className="hover:text-red-900 font-bold bg-white/50 w-5 h-5 flex items-center justify-center border border-gray-200"
                     >
                       ×
                     </button>
@@ -312,7 +311,7 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4 pt-6 border-t-2 border-black mt-8">
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-8">
             <button
               type="button"
               onClick={onClose}

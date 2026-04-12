@@ -54,7 +54,7 @@ function Page() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mx-auto w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="mx-auto w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
               placeholder="johndoe@mbcet.ac.in"
             />
 
@@ -98,7 +98,7 @@ function Page() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
             />
             <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
               Confirm Password
@@ -111,7 +111,7 @@ function Page() {
               required
               value={conpassword}
               onChange={(e) => setConPassword(e.target.value)}
-              className="w-full rounded-xl border-2 border-transparent bg-[#f0f6ff] p-3 text-xl text-black transition-all focus:border-primary focus:outline-none"
+              className="w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
             />
 
             <button

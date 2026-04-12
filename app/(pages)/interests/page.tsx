@@ -117,14 +117,8 @@ const Interests: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center bg-[#f0f0f0]">
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
+    <div className="relative flex min-h-screen w-full flex-col items-center bg-gray-50">
+      
       <div className="z-10 w-full p-4 md:p-8  mx-auto">
         <NavBar />
       </div>
@@ -140,7 +134,7 @@ const Interests: React.FC = () => {
           CHOOSE YOUR INTERESTS
         </h1>
 
-        <div className="mb-8 card-brutal p-6 bg-[#f8f8f8]">
+        <div className="mb-8 card-brutal p-6 bg-white">
           <div className="flex flex-wrap items-center gap-3">
             {selectedSkills.map((skill, index) => (
               <Pill
@@ -163,7 +157,7 @@ const Interests: React.FC = () => {
               {suggestions.length > 0 && (
                 <ul
                   ref={scrollableContainer}
-                  className="custom-scrollbar absolute left-0 top-full z-20 max-h-[40vh] w-full overflow-y-auto card-brutal bg-white mt-2 p-0 shadow-[4px_4px_0px_#3b82f6]"
+                  className="custom-scrollbar absolute left-0 top-full z-20 max-h-[40vh] w-full overflow-y-auto card-brutal bg-white mt-2 p-0 shadow-sm"
                 >
                   {suggestions.map(
                     (skill, index) =>
@@ -172,8 +166,8 @@ const Interests: React.FC = () => {
                           ref={(el) => {
                             suggestionRef.current[index] = el;
                           }}
-                          className={`cursor-pointer px-4 py-3 border-b-2 border-black last:border-b-0 hover:bg-black/5 heading-brutal block text-sm ${
-                            selectedSuggestion === index ? "bg-blue-300 text-white" : ""
+                          className={`cursor-pointer px-4 py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-800/5 heading-brutal block text-sm ${
+                            selectedSuggestion === index ? "bg-cyan-100 text-cyan-800 text-white" : ""
                           }`}
                           key={index}
                           onClick={() => handleSelectSkill(skill)}

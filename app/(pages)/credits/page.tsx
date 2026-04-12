@@ -45,14 +45,8 @@ const creators = [
 
 const CreatorsPage: React.FC = () => {
   return (
-    <div className={`relative flex min-h-screen flex-col items-center bg-[#f0f0f0]`}>
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
+    <div className={`relative flex min-h-screen flex-col items-center bg-gray-50`}>
+      
       <div className="z-10 w-full p-4 md:p-8 mx-auto">
         <NavBar />
         
@@ -64,7 +58,7 @@ const CreatorsPage: React.FC = () => {
           <div className="hero-corner-br" />
           
           <h1 className="heading-brutal text-4xl md:text-5xl mb-6">TUPLES: CONNECTING BASELIANS</h1>
-          <p className="text-black font-medium leading-relaxed max-w-3xl mx-auto text-lg">
+          <p className="text-gray-900 font-medium leading-relaxed max-w-3xl mx-auto text-lg">
             A COLLABORATIVE PLATFORM DESIGNED TO BRIDGE KNOWLEDGE GAPS, FOSTER PROJECT COLLABORATIONS, 
             AND CREATE MEANINGFUL CONNECTIONS AMONG ENGINEERING STUDENTS.
           </p>
@@ -88,14 +82,14 @@ const CreatorsPage: React.FC = () => {
           {creators.map((creator, index) => (
             <div 
               key={index} 
-              className="card-brutal bg-white p-6 text-center transform transition-all hover:-translate-y-2 hover:shadow-[8px_8px_0px_#3b82f6]"
+              className="card-brutal bg-white p-6 text-center transform transition-all hover:-translate-y-2 hover:shadow-sm"
             >
               <Image 
                 src={creator.avatar} 
                 alt={creator.name} 
                 width={120} 
                 height={120} 
-                className="rounded-none mx-auto mb-6 border-4 border-black shadow-[4px_4px_0px_#3b82f6]"
+                className="rounded-none mx-auto mb-6 border border-gray-200 shadow-sm"
               />
               <h2 className="heading-brutal text-xl mb-2">{creator.name}</h2>
               <p className="subheading-brutal text-blue-600 mb-6">{creator.role}</p>
@@ -104,7 +98,7 @@ const CreatorsPage: React.FC = () => {
                 <a 
                   href={creator.github} 
                   target="_blank" 
-                  className="btn-secondary p-3 hover:bg-black hover:text-white"
+                  className="btn-secondary p-3 hover:bg-gray-800 hover:text-white"
                 >
                   <GithubIcon size={24} />
                 </a>
@@ -115,20 +109,20 @@ const CreatorsPage: React.FC = () => {
 
         {/* Project Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center mb-12">
-          <div className="card-brutal bg-white p-8 hover:bg-yellow-300 transition-colors group">
-            <StarIcon size={48} className="mx-auto text-black mb-6 group-hover:scale-110 transition-transform" />
+          <div className="card-brutal bg-white p-8 hover:bg-blue-100 text-blue-800 transition-colors group">
+            <StarIcon size={48} className="mx-auto text-gray-900 mb-6 group-hover:scale-110 transition-transform" />
             <h3 className="heading-brutal text-4xl mb-2">13</h3>
-            <p className="subheading-brutal text-black/70">TOTAL REPOSITORIES</p>
+            <p className="subheading-brutal text-gray-900/70">TOTAL REPOSITORIES</p>
           </div>
-          <div className="card-brutal bg-white p-8 hover:bg-green-400 transition-colors group">
-            <UsersIcon size={48} className="mx-auto text-black mb-6 group-hover:scale-110 transition-transform" />
+          <div className="card-brutal bg-white p-8 hover:bg-green-100 text-green-800 transition-colors group">
+            <UsersIcon size={48} className="mx-auto text-gray-900 mb-6 group-hover:scale-110 transition-transform" />
             <h3 className="heading-brutal text-4xl mb-2">4</h3>
-            <p className="subheading-brutal text-black/70">TEAM MEMBERS</p>
+            <p className="subheading-brutal text-gray-900/70">TEAM MEMBERS</p>
           </div>
           <div className="card-brutal bg-white p-8 hover:bg-purple-400 transition-colors group">
-            <CodeIcon size={48} className="mx-auto text-black mb-6 group-hover:scale-110 transition-transform" />
+            <CodeIcon size={48} className="mx-auto text-gray-900 mb-6 group-hover:scale-110 transition-transform" />
             <h3 className="heading-brutal text-4xl mb-2">7+</h3>
-            <p className="subheading-brutal text-black/70">TECHNOLOGIES USED</p>
+            <p className="subheading-brutal text-gray-900/70">TECHNOLOGIES USED</p>
           </div>
         </div>
       </div>

@@ -206,7 +206,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   if (!user) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-12 w-12 border-4 border-black border-t-blue-500 animate-spin shadow-[4px_4px_0px_#000]"></div>
+        <div className="h-12 w-12 border border-gray-200 border-t-blue-500 animate-spin shadow-sm"></div>
       </div>
     );
   }
@@ -220,13 +220,13 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
         <div className="hero-corner-br" />
 
         {/* Profile Picture Section */}
-        <div className="mb-10 flex flex-col items-center sm:flex-row pb-8 border-b-2 border-black">
+        <div className="mb-10 flex flex-col items-center sm:flex-row pb-8 border-b border-gray-200">
           <div
-            className="group relative mb-6 h-32 w-32 cursor-pointer sm:mb-0 sm:mr-8 border-4 border-black shadow-[4px_4px_0px_#3b82f6] shrink-0 bg-white overflow-hidden hover:scale-105 transition-transform"
+            className="group relative mb-6 h-32 w-32 cursor-pointer sm:mb-0 sm:mr-8 border border-gray-200 shadow-sm shrink-0 bg-white overflow-hidden hover:scale-105 transition-transform"
             onClick={handleProfilePicClick}
           >
             {isLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800/80 z-10">
                 <span className="heading-brutal text-white text-[10px]">UPLOADING...</span>
               </div>
             ) : profilePicUrl ? (
@@ -236,13 +236,13 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#f0f0f0]">
-                <span className="heading-brutal text-black/50 text-sm">ADD PHOTO</span>
+              <div className="flex h-full w-full items-center justify-center bg-gray-50">
+                <span className="heading-brutal text-gray-900/50 text-sm">ADD PHOTO</span>
               </div>
             )}
 
             {/* Camera Icon Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-800/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -283,8 +283,8 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           </div>
           
           {isEditing ? (
-            <div className="card-brutal p-6 bg-[#f8f8f8]">
-              <div className="mb-6 flex flex-wrap gap-3 border-b-2 border-black pb-6">
+            <div className="card-brutal p-6 bg-white">
+              <div className="mb-6 flex flex-wrap gap-3 border-b border-gray-200 pb-6">
                 {editedInterests.map((interest, index) => (
                   <Pill
                     key={index}
@@ -304,12 +304,12 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   className="input-brutal w-full py-3"
                 />
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-20 mt-2 max-h-40 w-full overflow-y-auto card-brutal bg-white p-0 shadow-[4px_4px_0px_#000]">
+                  <ul className="absolute z-20 mt-2 max-h-40 w-full overflow-y-auto card-brutal bg-white p-0 shadow-sm">
                     {suggestions.map((skill, index) => (
                       <li
                         key={index}
-                        className={`cursor-pointer px-4 py-3 border-b border-black last:border-b-0 subheading-brutal hover:bg-black/5 ${
-                          index === selectedSuggestion ? "bg-blue-300 text-white hover:bg-blue-400 hover:text-white" : ""
+                        className={`cursor-pointer px-4 py-3 border-b border-gray-200 last:border-b-0 subheading-brutal hover:bg-gray-800/5 ${
+                          index === selectedSuggestion ? "bg-cyan-100 text-cyan-800 text-white hover:bg-cyan-100 text-cyan-800 hover:text-white" : ""
                         }`}
                         onClick={() => handleAddInterest(skill)}
                         ref={(el: HTMLLIElement | null) => {
@@ -338,7 +338,7 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
               </div>
             </div>
           ) : (
-            <div className="card-brutal p-6 bg-[#f0f0f0]">
+            <div className="card-brutal p-6 bg-gray-50">
               {user.interests && user.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-3">
                   {user.interests.map((interest, index) => (
@@ -346,8 +346,8 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 flex items-center justify-center border-2 border-dashed border-black/30">
-                  <p className="heading-brutal text-black/40 text-center">NO INTERESTS ADDED YET</p>
+                <div className="py-8 flex items-center justify-center border border-dashed border-gray-200/30">
+                  <p className="heading-brutal text-gray-900/40 text-center">NO INTERESTS ADDED YET</p>
                 </div>
               )}
             </div>
@@ -355,18 +355,18 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
 
           {/* User Posts Section */}
           {userPosts.length > 0 && (
-            <div className="mt-12 pt-10 border-t-2 border-black">
+            <div className="mt-12 pt-10 border-t border-gray-200">
               <h3 className="heading-brutal text-2xl uppercase mb-6">YOUR POSTS</h3>
               <div className="grid gap-6 md:grid-cols-2">
                 {userPosts.map(post => (
                   <div 
                     key={post.id} 
-                    className="card-brutal bg-white p-6 hover:-translate-y-1 hover:shadow-[4px_4px_0px_#3b82f6] transition-all"
+                    className="card-brutal bg-white p-6 hover:-translate-y-1 hover:shadow-sm transition-all"
                   >
                     <h4 className="heading-brutal text-xl uppercase mb-3 line-clamp-1">{post.title}</h4>
-                    <p className="text-black font-medium mb-6 line-clamp-3">{post.content}</p>
-                    <div className="flex justify-between items-center mt-auto border-t-2 border-black pt-4">
-                      <div className="label-brutal text-black/50">
+                    <p className="text-gray-900 font-medium mb-6 line-clamp-3">{post.content}</p>
+                    <div className="flex justify-between items-center mt-auto border-t border-gray-200 pt-4">
+                      <div className="label-brutal text-gray-900/50">
                         POSTED ON {post.createdAt?.toDate().toLocaleDateString()}
                       </div>
                     </div>

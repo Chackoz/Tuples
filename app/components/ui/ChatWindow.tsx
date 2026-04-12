@@ -23,7 +23,8 @@ import {
   Search,
   UserCircle,
   Users,
-  MessageCircle
+  MessageCircle,
+  Briefcase
 } from "lucide-react";
 
 // Typescript interfaces
@@ -46,7 +47,8 @@ interface Chat {
   };
   participantNames?: string[];
   name?: string;
-  type?: "private" | "community";
+  type?: "private" | "community" | "project";
+  projectId?: string;
   unreadCounts: { [userId: string]: number };
 }
 
@@ -69,7 +71,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
-  const [chatType, setChatType] = useState<"all" | "private" | "community">("all");
+  const [chatType, setChatType] = useState<"all" | "private" | "community" | "project">("all");
 
   // Refs
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -352,11 +354,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
         className={`
           flex 
           cursor-pointer items-center 
-          p-4 border-b-2 border-black transition-all duration-150
-          ${selectedChatId === chat.id ? "bg-blue-500 text-white" : "bg-white hover:bg-[#f0f0f0] text-black"}
+          p-4 border-b border-gray-200 transition-all duration-150
+          ${selectedChatId === chat.id ? "bg-blue-500 text-white" : "bg-white hover:bg-gray-50 text-gray-900"}
         `}
       >
-        <div className={`mr-4 ${selectedChatId === chat.id ? "text-white" : "text-black"}`}>
+        <div className={`mr-4 ${selectedChatId === chat.id ? "text-white" : "text-gray-900"}`}>
           {chat.type === "community" ? (
             <Users />
           ) : (
@@ -367,13 +369,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           <div className="flex items-center justify-between w-full">
             <span className="subheading-brutal text-sm truncate pr-2 w-full">{getChatName(chat)}</span>
             {chat.unreadCounts?.[currentUserId] > 0 && (
-              <div className="rounded-none bg-black px-2 py-0.5 text-xs text-white font-bold shadow-[2px_2px_0px_#3b82f6]">
+              <div className="rounded-none bg-gray-800 px-2 py-0.5 text-xs text-white font-bold shadow-sm">
                 {chat.unreadCounts[currentUserId]}
               </div>
             )}
           </div>
           {chat.lastMessage && (
-            <div className={`mt-1 truncate text-xs font-bold w-full ${selectedChatId === chat.id ? "text-white/80" : "text-black/50"}`}>
+            <div className={`mt-1 truncate text-xs font-bold w-full ${selectedChatId === chat.id ? "text-white/80" : "text-gray-900/50"}`}>
               {chat.lastMessage.content}
             </div>
           )}
@@ -384,7 +386,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
   // Render Search Bar
   const renderSearchBar = () => (
-    <div className="border-b-2 border-black bg-white p-4">
+    <div className="border-b border-gray-200 bg-white p-4">
       <div className="flex flex-col gap-4">
         <div className="relative w-full">
           <input
@@ -395,28 +397,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
             className="input-brutal pl-10 h-10 py-1 text-sm bg-white"
           />
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-900/50"
             size={16}
           />
         </div>
         <div className="flex space-x-2 w-full">
           <button
             onClick={() => setChatType("all")}
-            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "all" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "all" ? "bg-blue-500 text-white shadow-sm border-gray-200" : "shadow-none hover:shadow-sm border-gray-200/20 text-gray-900/50"}`}
           >
             <MessageCircle size={16} />
           </button>
           <button
             onClick={() => setChatType("private")}
-            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "private" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "private" ? "bg-blue-500 text-white shadow-sm border-gray-200" : "shadow-none hover:shadow-sm border-gray-200/20 text-gray-900/50"}`}
           >
             <UserCircle size={16} />
           </button>
           <button
             onClick={() => setChatType("community")}
-            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "community" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "community" ? "bg-blue-500 text-white shadow-sm border-gray-200" : "shadow-none hover:shadow-sm border-gray-200/20 text-gray-900/50"}`}
           >
             <Users size={16} />
+          </button>
+          <button
+            onClick={() => setChatType("project")}
+            title="Projects"
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "project" ? "bg-blue-500 text-white shadow-sm border-gray-200" : "shadow-none hover:shadow-sm border-gray-200/20 text-gray-900/50"}`}
+          >
+            <Briefcase size={16} />
           </button>
         </div>
       </div>
@@ -425,11 +434,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
   return (
     <div
-      className={`flex card-brutal w-full p-0 flex-row overflow-hidden shadow-[4px_4px_0px_#3b82f6] ${isMobileView ? "flex-col border-r-0 md:h-[70vh] h-[80vh]" : "h-full"}`}
+      className={`flex card-brutal w-full p-0 flex-row overflow-hidden shadow-sm ${isMobileView ? "flex-col border-r-0 md:h-[70vh] h-[80vh]" : "h-full"}`}
     >
       {/* Mobile Header for Chat Selection */}
       {isMobileView && !isChatListView && selectedChatId && (
-        <div className="flex items-center justify-between border-b-2 border-black bg-[#f0f0f0] p-4 text-black w-full shrink-0 h-[60px]">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4 text-gray-900 w-full shrink-0 h-[60px]">
           <button onClick={() => setIsChatListView(true)} className="btn-secondary w-8 h-8 p-0 flex items-center justify-center">
             <ArrowLeft size={16} />
           </button>
@@ -447,7 +456,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
         className={`custom-scrollbar ${
           isMobileView
             ? `${isChatListView ? "flex" : "hidden"} w-full h-full border-r-0 flex-col`
-            : "flex w-1/3 border-r-2 border-black bg-white flex-col h-full shrink-0"
+            : "flex w-1/3 border-r border-gray-200 bg-white flex-col h-full shrink-0"
         } overflow-y-auto`}
       >
         <div className="shrink-0">{renderSearchBar()}</div>
@@ -456,14 +465,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
       {/* Message Window - Responsive */}
       <div
-        className={`flex-col bg-[#f0f0f0] relative
+        className={`flex-col bg-gray-50 relative
       ${isMobileView ? `${!isChatListView ? "flex" : "hidden"} w-full h-[calc(100%-60px)]` : "flex w-2/3 h-full"}
     `}
       >
         {selectedChatId ? (
           <>
             {!isMobileView && (
-               <div className="flex items-center border-b-2 border-black bg-white p-4 h-[75px] shrink-0">
+               <div className="flex items-center border-b border-gray-200 bg-white p-4 h-[75px] shrink-0">
                  <span className="subheading-brutal text-lg truncate flex-1">
                    {getChatName(chats.find((c) => c.id === selectedChatId)!)}
                  </span>
@@ -474,18 +483,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
               className="custom-scrollbar flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative"
             >
               {/* Texture for Chat background */}
-              <div
-                className="pointer-events-none fixed inset-0 z-0 opacity-50"
-                style={{
-                  backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-                  backgroundSize: "32px 32px",
-                }}
-              />
+              
               {messages.length > 0 ? (
                 <div className="flex flex-col z-10 w-full">
                   <button
                     onClick={() => loadMessages(selectedChatId, true)}
-                    className="mb-8 p-2 rounded-full border-2 border-black bg-white self-center shadow-[2px_2px_0px_#3b82f6] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0px_#3b82f6] transition-all text-xs font-bold"
+                    className="mb-8 p-2 rounded-full border border-gray-200 bg-white self-center shadow-sm hover:-translate-y-1 hover:-translate-x-1 hover:shadow-sm transition-all text-xs font-bold"
                   >
                     Load Older
                   </button>
@@ -497,32 +500,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                       }`}
                     >
                       <div
-                        className={`inline-block p-3 border-2 border-black font-medium text-sm leading-relaxed ${
+                        className={`inline-block p-3 border border-gray-200 font-medium text-sm leading-relaxed ${
                           message.senderId === currentUserId
-                            ? "bg-blue-500 text-white shadow-[4px_4px_0px_#000]"
-                            : "bg-white text-black shadow-[4px_4px_0px_#3b82f6]"
+                            ? "bg-blue-500 text-white shadow-sm"
+                            : "bg-white text-gray-900 shadow-sm"
                         }`}
                       >
                         {message.content}
                       </div>
                       {chats.find((chat) => chat.id === selectedChatId)?.type === "community" && message.senderId !== currentUserId && (
-                        <div className="mt-2 label-brutal text-black/50 px-1">
+                        <div className="mt-2 label-brutal text-gray-900/50 px-1">
                           {message.senderName || "User"}
                         </div>
                       )}
-                      <div className="mt-1 label-brutal text-black/40 px-1">
+                      <div className="mt-1 label-brutal text-gray-900/40 px-1">
                         {message.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex h-full items-center justify-center label-brutal text-black/50 z-10">
+                <div className="flex h-full items-center justify-center label-brutal text-gray-900/50 z-10">
                   Start your conversation
                 </div>
               )}
             </div>
-            <form onSubmit={sendMessage} className="border-t-2 border-black bg-white p-4 h-[80px] shrink-0 z-10">
+            <form onSubmit={sendMessage} className="border-t border-gray-200 bg-white p-4 h-[80px] shrink-0 z-10">
               <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-50 right-2">
                 {showEmojiPicker && <EmojiPicker onEmojiClick={handleEmojiClick} />}
               </div>
@@ -538,7 +541,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="input-brutal h-full m-0 shadow-none border-2 border-black flex-1 focus:shadow-none bg-[#f0f0f0]"
+                  className="input-brutal h-full m-0 shadow-none border border-gray-200 flex-1 focus:shadow-none bg-gray-50"
                   placeholder="Type a message..."
                 />
                 <button

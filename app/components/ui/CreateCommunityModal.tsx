@@ -101,7 +101,7 @@ function CreateJoinCommunityModal({
   const [priv, setpriv] = useState(false);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50 backdrop-blur-sm">
       <div className="w-full max-w-md card-brutal bg-white p-8">
         <h2 className="heading-brutal mb-6 text-2xl uppercase">{isCreating ? "CREATE" : "JOIN"} COMMUNITY</h2>
         <form onSubmit={handleCreateOrJoin}>
@@ -134,13 +134,13 @@ function CreateJoinCommunityModal({
                 {tags.map((tag, index) => (
                   <span
                     key={index}
-                    className="tag-brutal bg-blue-300 shadow-[2px_2px_0px_#000] flex items-center gap-2"
+                    className="tag-brutal bg-cyan-100 text-cyan-800 shadow-sm flex items-center gap-2"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="font-bold hover:text-black/50 text-base leading-none"
+                      className="font-bold hover:text-gray-900/50 text-base leading-none"
                     >
                       ×
                     </button>
@@ -152,28 +152,28 @@ function CreateJoinCommunityModal({
           
           <div className="mb-6 space-y-4">
             <label className="flex items-center cursor-pointer group">
-              <div className="relative flex items-center justify-center w-6 h-6 border-2 border-black mr-3 shadow-[2px_2px_0px_#3b82f6] group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
+              <div className="relative flex items-center justify-center w-6 h-6 border border-gray-200 mr-3 shadow-sm group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
                 <input
                   type="checkbox"
                   checked={isCreating}
                   onChange={() => setIsCreating(!isCreating)}
                   className="absolute opacity-0 w-full h-full cursor-pointer"
                 />
-                {isCreating && <div className="w-3 h-3 bg-black"></div>}
+                {isCreating && <div className="w-3 h-3 bg-gray-800"></div>}
               </div>
               <span className="subheading-brutal mt-1">{isCreating ? "CREATE NEW" : "JOIN EXISTING"}</span>
             </label>
             
             {isCreating && (
               <label className="flex items-center cursor-pointer group">
-                <div className="relative flex items-center justify-center w-6 h-6 border-2 border-black mr-3 shadow-[2px_2px_0px_#3b82f6] group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
+                <div className="relative flex items-center justify-center w-6 h-6 border border-gray-200 mr-3 shadow-sm group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
                   <input
                     type="checkbox"
                     checked={priv}
                     onChange={() => setpriv(!priv)}
                     className="absolute opacity-0 w-full h-full cursor-pointer"
                   />
-                  {priv && <div className="w-3 h-3 bg-black"></div>}
+                  {priv && <div className="w-3 h-3 bg-gray-800"></div>}
                 </div>
                 <span className="subheading-brutal mt-1">PRIVATE COMMUNITY</span>
               </label>

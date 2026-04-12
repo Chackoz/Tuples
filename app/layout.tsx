@@ -79,7 +79,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plusJakartaSans.className} text-black bg-[#f0f0f0] min-h-screen custom-scrollbar`}>
+      <body className={`${plusJakartaSans.className} text-gray-900 bg-gray-50 min-h-screen custom-scrollbar`}>
       <Toaster />
         <AuthProvider>{children}</AuthProvider>
       </body>

@@ -49,44 +49,20 @@ export default function Home() {
 
  if (isLoading) {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#f0f0f0] w-full">
-      {/* Grid texture */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gray-50 w-full">
 
-      {/* Corner accents */}
-      {[
-        "top-4 left-4 border-t-2 border-l-2",
-        "top-4 right-4 border-t-2 border-r-2",
-        "bottom-4 left-4 border-b-2 border-l-2",
-        "bottom-4 right-4 border-b-2 border-r-2",
-      ].map((cls, i) => (
-        <div key={i} className={`absolute w-5 h-5 border-blue-500 ${cls}`} />
-      ))}
 
       <div className="relative z-10 flex flex-col items-center gap-10">
         {/* Logo */}
         <div className="flex flex-col items-center gap-1">
           <div className="relative">
-            {/* Blue shadow layer */}
-            <span
-              className="absolute top-2 left-2 text-7xl md:text-9xl font-black tracking-tighter uppercase text-blue-500 select-none"
-              aria-hidden="true"
-            >
-              Tuples
-            </span>
             {/* Main text */}
-            <span className="relative text-7xl md:text-9xl font-black tracking-tighter uppercase text-black">
+            <span className="text-7xl md:text-9xl font-light tracking-tight text-gray-900 ">
               Tuples
             </span>
           </div>
-          <p className="text-[11px] font-bold tracking-[0.3em] uppercase text-black">
-            connect · collaborate · grow
+          <p className="text-sm font-medium tracking-wide text-gray-500 mt-6">
+            Connect · Collaborate · Grow
           </p>
         </div>
 
@@ -95,16 +71,15 @@ export default function Home() {
           {[0, 150, 300].map((delay) => (
             <div
               key={delay}
-              className="w-3 h-3 bg-black animate-bounce"
+              className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"
               style={{
-                animationDelay: `${delay}ms`,
-                boxShadow: "2px 2px 0px #3b82f6",
+                animationDelay: `${delay}ms`
               }}
             />
           ))}
         </div>
 
-        <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-black/30">
+        <p className="text-xs font-medium text-gray-400 mt-4">
           Checking session...
         </p>
       </div>

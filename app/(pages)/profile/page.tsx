@@ -129,14 +129,8 @@ const ProfileContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="relative flex min-h-screen flex-col bg-[#f0f0f0]">
-        <div
-          className="pointer-events-none fixed inset-0 z-0"
-          style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-            backgroundSize: "32px 32px",
-          }}
-        />
+      <div className="relative flex min-h-screen flex-col bg-gray-50">
+        
         <div className="z-10 w-full p-4 md:p-8 max-w-7xl mx-auto">
           <NavBar />
         </div>
@@ -150,14 +144,8 @@ const ProfileContent: React.FC = () => {
   if (!profileUser) return null;
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center bg-[#f0f0f0]">
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-          backgroundSize: "32px 32px",
-        }}
-      />
+    <div className="relative flex min-h-screen flex-col items-center bg-gray-50">
+      
       
       <div className="z-10 w-full max-w-4xl mx-auto p-4 md:p-8">
         <NavBar />
@@ -170,30 +158,29 @@ const ProfileContent: React.FC = () => {
           <div className="hero-corner-br" />
 
           {/* Profile Header */}
-          <div className="flex items-center mb-8 border-b-2 border-black pb-6">
+          <div className="flex items-center mb-8 border-b border-gray-200 pb-6">
             {profileUser.profilePicUrl ? (
               <Image 
                 src={profileUser.profilePicUrl} 
                 alt={`${profileUser.name}'s profile`} 
                 width={100} 
                 height={100} 
-                className="object-cover w-24 h-24 mr-6 border-2 border-black shadow-[4px_4px_0px_#3b82f6]" 
+                className="object-cover w-24 h-24 mr-6 border border-gray-200 shadow-sm" 
               />
             ) : (
-              <div className="w-24 h-24 bg-[#000] text-white flex items-center justify-center text-3xl font-black mr-6 border-2 border-black shadow-[4px_4px_0px_#3b82f6]">
+              <div className="w-24 h-24 bg-[#000] text-white flex items-center justify-center text-3xl font-black mr-6 border border-gray-200 shadow-sm">
                 {profileUser.name[0].toUpperCase()}
               </div>
             )}
             <div>
               <h1 className="heading-brutal text-4xl">{profileUser.name}</h1>
-              <p className="label-brutal text-black/50 mt-1">{profileUser.userId}</p>
+              <p className="label-brutal text-gray-900/50 mt-1">{profileUser.userId}</p>
             </div>
           </div>
           {/* Profile Details */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div className="card-brutal bg-[#f8f8f8] p-6 shadow-none hover:shadow-[4px_4px_0px_#facc15] transition-shadow">
+            <div className="card-brutal bg-white p-6 shadow-none hover:shadow-sm transition-shadow">
               <h2 className="heading-brutal text-xl mb-6 flex items-center gap-2">
-                <span className="bg-yellow-300 w-4 h-4 border-2 border-black inline-block"></span>
                 INTERESTS
               </h2>
               {profileUser.interests && profileUser.interests.length > 0 ? (
@@ -201,36 +188,35 @@ const ProfileContent: React.FC = () => {
                   {profileUser.interests.map((interest, index) => (
                     <span 
                       key={index} 
-                      className="tag-brutal bg-white hover:bg-yellow-300 hover:-translate-y-0.5 transition-all text-sm px-3 py-1.5"
+                      className="tag-brutal bg-white hover:bg-blue-100 text-blue-800 hover:-translate-y-0.5 transition-all text-sm px-3 py-1.5"
                     >
                       {interest}
                     </span>
                   ))}
                 </div>
               ) : (
-                <div className="py-6 border-2 border-dashed border-black/20 flex justify-center items-center h-full">
-                  <p className="heading-brutal text-black/40">NO INTERESTS</p>
+                <div className="py-6 border border-dashed border-gray-200/20 flex justify-center items-center h-full">
+                  <p className="heading-brutal text-gray-900/40">NO INTERESTS</p>
                 </div>
               )}
             </div>
             
-            <div className="card-brutal bg-[#f8f8f8] p-6 shadow-none hover:shadow-[4px_4px_0px_#4ade80] transition-shadow">
+            <div className="card-brutal bg-white p-6 shadow-none hover:shadow-sm transition-shadow">
               <h2 className="heading-brutal text-xl mb-6 flex items-center gap-2">
-                <span className="bg-green-400 w-4 h-4 border-2 border-black inline-block"></span>
                 NETWORK
               </h2>
               <div className="flex items-center gap-4">
-                <div className="text-center p-4 border-2 border-black bg-white shadow-[2px_2px_0px_#000] flex-1">
+                <div className="text-center p-4 border border-gray-200 bg-white shadow-sm flex-1">
                   <h3 className="heading-brutal text-4xl mb-1">
                     {profileUser.friends ? profileUser.friends.length - 1 : 0}
                   </h3>
-                  <p className="label-brutal text-black/60">CONNECTIONS</p>
+                  <p className="label-brutal text-gray-900/60">CONNECTIONS</p>
                 </div>
-                <div className="text-center p-4 border-2 border-black bg-white shadow-[2px_2px_0px_#000] flex-1">
+                <div className="text-center p-4 border border-gray-200 bg-white shadow-sm flex-1">
                   <h3 className="heading-brutal text-4xl mb-1">
                     {mutualFriends.length}
                   </h3>
-                  <p className="label-brutal text-black/60">MUTUAL FRIENDS</p>
+                  <p className="label-brutal text-gray-900/60">MUTUAL FRIENDS</p>
                 </div>
               </div>
             </div>
@@ -238,9 +224,8 @@ const ProfileContent: React.FC = () => {
           
           {/* Mutual Friends */}
           {mutualFriends.length > 0 && (
-            <div className="mb-8 pt-8 border-t-4 border-black">
+            <div className="mb-8 pt-8 border-t border-gray-200">
               <h2 className="heading-brutal text-2xl mb-6 flex items-center gap-3">
-                <span className="bg-pink-300 w-6 h-6 border-2 border-black inline-block"></span>
                 MUTUAL FRIENDS
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -263,21 +248,20 @@ const ProfileContent: React.FC = () => {
           
           {/* User Posts */}
           {userPosts.length > 0 && (
-            <div className="pt-8 border-t-4 border-black mt-8">
+            <div className="pt-8 border-t border-gray-200 mt-8">
               <h2 className="heading-brutal text-2xl mb-6 flex items-center gap-3">
-                <span className="bg-blue-400 w-6 h-6 border-2 border-black inline-block"></span>
                 RECENT POSTS
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {userPosts.map(post => (
                   <div 
                     key={post.id} 
-                    className="card-brutal p-6 bg-white hover:bg-[#f0f0f0] transition-colors flex flex-col hover:-translate-y-1 hover:shadow-[4px_4px_0px_#3b82f6]"
+                    className="card-brutal p-6 bg-white hover:bg-gray-50 transition-colors flex flex-col hover:-translate-y-1 hover:shadow-sm"
                   >
                     <h1 className='heading-brutal text-xl uppercase mb-3 line-clamp-2'>{post.title}</h1>
-                    <p className="font-medium text-black/80 mb-6 flex-1 line-clamp-4">{post.content}</p>
+                    <p className="font-medium text-gray-900/80 mb-6 flex-1 line-clamp-4">{post.content}</p>
                    
-                    <div className="label-brutal text-black/50 pt-4 border-t-2 border-black uppercase mt-auto">
+                    <div className="label-brutal text-gray-900/50 pt-4 border-t border-gray-200 uppercase mt-auto">
                       POSTED ON {new Date(post.createdAt?.toDate()).toLocaleDateString()}
                     </div>
                   </div>
