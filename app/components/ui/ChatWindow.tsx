@@ -623,6 +623,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                 <h4 className="heading-brutal text-sm mb-2 opacity-70">Current Admins</h4>
                 <div className="flex flex-col gap-2">
                   {(chats.find((c) => c.id === selectedChatId)?.admins || [chats.find((c) => c.id === selectedChatId)?.participants[0]])?.map((adminId) => {
+                    if (typeof adminId !== 'string') return null;
                     const adminUser = users[adminId];
                     if (!adminUser) return null;
                     return (
