@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { jakartasmall } from "./utils/fonts";
+import { Spinner } from "./components/ui/Spinner";
 
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./lib/firebaseConfig";
@@ -47,24 +47,70 @@ export default function Home() {
     checkAuthStatus();
   }, [router]);
 
-  if (isLoading) {
-    return (
-      <main className={`${jakartasmall.className} flex min-h-screen flex-col items-center justify-center bg-[#f0f0f0] w-full overflow-hidden`}>
-        <div className="text-center">
-          <h1 className="text-8xl font-bold text-blue-800 mb-8 
-            animate-gradient-text bg-gradient-to-r from-slate-950 via-slate-600 to-slate-900
-            bg-clip-text text-transparent animate-pulse">
-            Tuples
-          </h1>
-          <h1 className="text-3xl font-bold text-blue-800 mb-8 
-            animate-gradient-text bg-gradient-to-r from-slate-950 via-slate-600 to-slate-900
-            bg-clip-text text-transparent animate-pulse">
-            still in development
-          </h1>
+ if (isLoading) {
+  return (
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#f0f0f0] w-full">
+      {/* Grid texture */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      {/* Corner accents */}
+      {[
+        "top-4 left-4 border-t-2 border-l-2",
+        "top-4 right-4 border-t-2 border-r-2",
+        "bottom-4 left-4 border-b-2 border-l-2",
+        "bottom-4 right-4 border-b-2 border-r-2",
+      ].map((cls, i) => (
+        <div key={i} className={`absolute w-5 h-5 border-blue-500 ${cls}`} />
+      ))}
+
+      <div className="relative z-10 flex flex-col items-center gap-10">
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="relative">
+            {/* Blue shadow layer */}
+            <span
+              className="absolute top-2 left-2 text-7xl md:text-9xl font-black tracking-tighter uppercase text-blue-500 select-none"
+              aria-hidden="true"
+            >
+              Tuples
+            </span>
+            {/* Main text */}
+            <span className="relative text-7xl md:text-9xl font-black tracking-tighter uppercase text-black">
+              Tuples
+            </span>
+          </div>
+          <p className="text-[11px] font-bold tracking-[0.3em] uppercase text-black">
+            connect · collaborate · grow
+          </p>
         </div>
-      </main>
-    );
-  }
+
+        {/* Bouncing dots */}
+        <div className="flex gap-3">
+          {[0, 150, 300].map((delay) => (
+            <div
+              key={delay}
+              className="w-3 h-3 bg-black animate-bounce"
+              style={{
+                animationDelay: `${delay}ms`,
+                boxShadow: "2px 2px 0px #3b82f6",
+              }}
+            />
+          ))}
+        </div>
+
+        <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-black/30">
+          Checking session...
+        </p>
+      </div>
+    </main>
+  );
+}
 
   return null;
 }

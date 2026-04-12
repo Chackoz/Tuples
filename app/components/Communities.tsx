@@ -43,13 +43,13 @@ const Communities: React.FC<CommunitiesProps> = ({
   const renderCommunityCard = (community: Community, isJoined: boolean) => (
     <div
       key={community.id}
-      className="flex flex-col rounded-lg border bg-white shadow-md transition-shadow hover:shadow-lg"
+      className="card-brutal flex flex-col bg-white"
     >
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-bold text-gray-800">{community.name}</h2>
+      <div className="p-6 h-full flex flex-col">
+        <div className="flex justify-between items-start mb-4 border-b-2 border-black pb-4 gap-4">
+          <h2 className="heading-brutal text-xl uppercase break-words">{community.name}</h2>
           {isJoined ? (
-            <span className="text-green-600 font-semibold text-sm">Joined</span>
+            <span className="tag-brutal bg-green-400 text-black shadow-[2px_2px_0px_#000] shrink-0">JOINED</span>
           ) : (
             <button
               onClick={() =>
@@ -63,19 +63,19 @@ const Communities: React.FC<CommunitiesProps> = ({
                   state
                 )
               }
-              className="rounded bg-blue-500 px-3 py-1 text-sm font-bold text-white hover:bg-blue-600"
+              className="btn-primary py-2 px-6 shrink-0"
             >
-              Join
+              JOIN
             </button>
           )}
         </div>
-        <p className="text-sm text-gray-600 mb-2">Creator: {community.creator}</p>
-        <p className="text-sm text-gray-500 mb-2">Members: {community.members.length}</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="subheading-brutal text-black/70 mb-2 truncate">CREATOR: {community.creator?.toUpperCase()}</p>
+        <p className="label-brutal text-black/50 mb-6">MEMBERS: {community.members.length}</p>
+        <div className="flex flex-wrap gap-2 mt-auto">
           {community.tags.map((tag, index) => (
             <span
               key={index}
-              className="rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800"
+              className="tag-brutal bg-pink-300 shadow-[2px_2px_0px_#000]"
             >
               {tag}
             </span>
@@ -86,46 +86,46 @@ const Communities: React.FC<CommunitiesProps> = ({
   );
 
   return (
-    <div>
-      <div className="flex mb-6 border-b">
+    <div className="space-y-6">
+      <div className="flex border-b-4 border-black">
         <button
           onClick={() => setActiveTab('available')}
-          className={`px-4 py-2 ${activeTab === 'available' 
-            ? 'border-b-2 border-blue-500 text-blue-600' 
-            : 'text-gray-500'}`}
+          className={`heading-brutal px-6 md:px-8 py-4 transition-colors ${activeTab === 'available' 
+            ? 'bg-blue-500 text-white border-t-4 border-l-4 border-r-4 border-black' 
+            : 'text-black/50 hover:text-black border-transparent border-t-4 border-l-4 border-r-4 hover:bg-black/5'}`}
         >
-          Available Communities
+          AVAILABLE
         </button>
         <button
           onClick={() => setActiveTab('joined')}
-          className={`px-4 py-2 ${activeTab === 'joined' 
-            ? 'border-b-2 border-blue-500 text-blue-600' 
-            : 'text-gray-500'}`}
+          className={`heading-brutal px-6 md:px-8 py-4 transition-colors ${activeTab === 'joined' 
+            ? 'bg-blue-500 text-white border-t-4 border-l-4 border-r-4 border-black' 
+            : 'text-black/50 hover:text-black border-transparent border-t-4 border-l-4 border-r-4 hover:bg-black/5'}`}
         >
-          My Communities
+          MY COMMUNITIES
         </button>
       </div>
 
       {activeTab === 'available' && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {availableCommunities.length > 0 ? (
             availableCommunities.map(community => renderCommunityCard(community, false))
           ) : (
-            <p className="text-gray-500 col-span-full text-center">
-              No available communities to join
-            </p>
+            <div className="card-brutal bg-[#f0f0f0] border-dashed col-span-full py-16 flex items-center justify-center">
+              <p className="heading-brutal text-black/40 text-center">NO AVAILABLE COMMUNITIES</p>
+            </div>
           )}
         </div>
       )}
 
       {activeTab === 'joined' && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {myCommunities.length > 0 ? (
             myCommunities.map(community => renderCommunityCard(community, true))
           ) : (
-            <p className="text-gray-500 col-span-full text-center">
-              You haven&apos;t joined any communities yet
-            </p>
+            <div className="card-brutal bg-[#f0f0f0] border-dashed col-span-full py-16 flex items-center justify-center">
+              <p className="heading-brutal text-black/40 text-center">YOU HAVEN'T JOINED ANY COMMUNITIES YET</p>
+            </div>
           )}
         </div>
       )}

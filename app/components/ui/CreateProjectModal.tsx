@@ -153,51 +153,60 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-8">
-        <h2 className="mb-6 text-2xl font-bold">Create New Project</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Project Title
-              {errors.title && <span className="ml-2 text-red-500">{errors.title}</span>}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-xl card-brutal bg-white p-8 relative max-h-[90vh] overflow-y-auto">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-red-400 transition-colors shadow-[2px_2px_0px_#000]"
+        >
+          ✕
+        </button>
+        <h2 className="mb-6 heading-brutal text-2xl flex items-center gap-2">
+          <span className="bg-yellow-300 w-4 h-4 border-2 border-black inline-block"></span>
+          CREATE NEW PROJECT
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block label-brutal text-sm mb-2">
+              PROJECT TITLE
+              {errors.title && <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.title}</span>}
             </label>
             <input
               type="text"
               name="title"
               value={projectData.title}
               onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md border ${
-                errors.title ? "border-red-500" : "border-gray-300"
-              } p-2 shadow-sm`}
+              className={`input-brutal w-full ${
+                errors.title ? "border-red-500 bg-red-50" : ""
+              }`}
               placeholder="Enter project title"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Description
+          <div>
+            <label className="block label-brutal text-sm mb-2">
+              DESCRIPTION
               {errors.description && (
-                <span className="ml-2 text-red-500">{errors.description}</span>
+                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.description}</span>
               )}
             </label>
             <textarea
               name="description"
               value={projectData.description}
               onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md border ${
-                errors.description ? "border-red-500" : "border-gray-300"
-              } p-2 shadow-sm`}
+              className={`input-brutal w-full min-h-[100px] resize-y ${
+                errors.description ? "border-red-500 bg-red-50" : ""
+              }`}
               rows={4}
               placeholder="Describe your project goals and vision"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Technologies (comma-separated)
+          <div>
+            <label className="block label-brutal text-sm mb-2">
+              TECHNOLOGIES (COMMA-SEPARATED)
               {errors.technologies && (
-                <span className="ml-2 text-red-500">{errors.technologies}</span>
+                <span className="ml-2 text-red-500 bg-red-100 px-1 border border-black">{errors.technologies}</span>
               )}
             </label>
             <input
@@ -205,18 +214,16 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
               name="technologies"
               value={projectData.technologies}
               onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md border ${
-                errors.technologies ? "border-red-500" : "border-gray-300"
-              } p-2 shadow-sm`}
+              className={`input-brutal w-full ${
+                errors.technologies ? "border-red-500 bg-red-50" : ""
+              }`}
               placeholder="React, Node.js, Firebase"
             />
           </div>
 
-          
-            <h3 className="mb-2 text-lg font-semibold">Required Skills</h3>
+          <div>
+            <h3 className="label-brutal text-sm mb-2">REQUIRED SKILLS</h3>
             
-       
-
             {/* Skill Search Input */}
             <div className="relative">
               <input
@@ -225,17 +232,17 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Add project skills"
-                className="mb-2 w-full rounded border px-3 py-2"
+                className="input-brutal w-full mb-2"
               />
 
               {/* Skill Suggestions */}
               {suggestions.length > 0 && (
-                <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border bg-white shadow-lg">
+                <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-2 border-black bg-white shadow-[4px_4px_0px_#000]">
                   {suggestions.map((skill, index) => (
                     <li
                       key={skill}
-                      className={`cursor-pointer px-3 py-2 hover:bg-gray-100 ${
-                        index === selectedSuggestion ? "bg-gray-200" : ""
+                      className={`cursor-pointer px-4 py-2 border-b-2 border-black last:border-b-0 hover:bg-[#f0f0f0] transition-colors ${
+                        index === selectedSuggestion ? "bg-yellow-200" : ""
                       }`}
                       onClick={() => handleAddSkill(skill)}
                       ref={(el: HTMLLIElement | null) => {
@@ -250,21 +257,18 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
             </div>
 
           {projectData.skills.length > 0 && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">
-                Selected Skills
-              </label>
+            <div className="mt-4">
               <div className="flex flex-wrap gap-2">
                 {projectData.skills.map((skill) => (
                   <div 
                     key={skill} 
-                    className="flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm"
+                    className="tag-brutal bg-[#a78bfa] flex items-center gap-2"
                   >
-                    {skill}
+                    <span>{skill}</span>
                     <button
                       type="button"
                       onClick={() => removeSkill(skill)}
-                      className="ml-2 text-red-500 hover:text-red-700"
+                      className="hover:text-red-900 font-bold bg-white/50 w-5 h-5 flex items-center justify-center border border-black"
                     >
                       ×
                     </button>
@@ -273,49 +277,51 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
               </div>
             </div>
           )}
-
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Ideal Team Size
-            </label>
-            <input
-              type="number"
-              name="idealTeamSize"
-              value={projectData.idealTeamSize}
-              onChange={handleInputChange}
-              min={2}
-              max={10}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm"
-            />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Project Status
-            </label>
-            <select
-              name="status"
-              value={projectData.status}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm"
-            >
-              <option value="planning">Planning</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block label-brutal text-sm mb-2">
+                IDEAL TEAM SIZE
+              </label>
+              <input
+                type="number"
+                name="idealTeamSize"
+                value={projectData.idealTeamSize}
+                onChange={handleInputChange}
+                min={2}
+                max={10}
+                className="input-brutal w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block label-brutal text-sm mb-2">
+                PROJECT STATUS
+              </label>
+              <select
+                name="status"
+                value={projectData.status}
+                onChange={handleInputChange}
+                className="input-brutal w-full bg-white"
+              >
+                <option value="planning">PLANNING</option>
+                <option value="in-progress">IN PROGRESS</option>
+                <option value="completed">COMPLETED</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 pt-6 border-t-2 border-black mt-8">
             <button
               type="button"
               onClick={onClose}
-              className="rounded bg-gray-300 px-4 py-2 text-gray-700"
+              className="btn-secondary"
             >
-              Cancel
+              CANCEL
             </button>
-            <button type="submit" className="rounded bg-blue-500 px-4 py-2 text-white">
-              Create Project
+            <button type="submit" className="btn-primary">
+              CREATE PROJECT
             </button>
           </div>
         </form>

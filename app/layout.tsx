@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Tuples | Collaborative BTech Student Community ",
@@ -79,7 +79,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} custom-scrollbar`}>
+      <body className={`${plusJakartaSans.className} text-black bg-[#f0f0f0] min-h-screen custom-scrollbar`}>
       <Toaster />
         <AuthProvider>{children}</AuthProvider>
       </body>

@@ -163,16 +163,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     return () => window.removeEventListener("resize", checkMobileView);
   }, []);
 
-  // Get Chat Name
   const getChatName = useCallback(
     (chat: Chat) => {
+      // Small optimization: don't compute names if participants are empty
+      if (!chat) return "";
       return (
         chat.name ||
         chat.participants
           .filter((id) => id !== currentUserId)
-          .map((id) => users[id]?.name)
+          .map((id) => users[id]?.name || "Unknown")
           .join(", ") ||
-        "Loading..."
+        "Unnamed Chat"
       );
     },
     [currentUserId, users]
@@ -351,29 +352,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
         className={`
           flex 
           cursor-pointer items-center 
-          p-4 hover:bg-gray-100 
-          ${selectedChatId === chat.id ? "bg-blue-100" : ""}
-          border-b transition-colors duration-200
+          p-4 border-b-2 border-black transition-all duration-150
+          ${selectedChatId === chat.id ? "bg-blue-500 text-white" : "bg-white hover:bg-[#f0f0f0] text-black"}
         `}
       >
-        <div className="mr-4">
+        <div className={`mr-4 ${selectedChatId === chat.id ? "text-white" : "text-black"}`}>
           {chat.type === "community" ? (
-            <Users className="text-green-500" />
+            <Users />
           ) : (
             <UserCircle />
           )}
         </div>
-        <div className="flex-grow">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-800">{getChatName(chat)}</span>
+        <div className="flex-grow w-[60%]">
+          <div className="flex items-center justify-between w-full">
+            <span className="subheading-brutal text-sm truncate pr-2 w-full">{getChatName(chat)}</span>
             {chat.unreadCounts?.[currentUserId] > 0 && (
-              <div className="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">
+              <div className="rounded-none bg-black px-2 py-0.5 text-xs text-white font-bold shadow-[2px_2px_0px_#3b82f6]">
                 {chat.unreadCounts[currentUserId]}
               </div>
             )}
           </div>
           {chat.lastMessage && (
-            <div className="mt-1 truncate text-sm text-gray-500">
+            <div className={`mt-1 truncate text-xs font-bold w-full ${selectedChatId === chat.id ? "text-white/80" : "text-black/50"}`}>
               {chat.lastMessage.content}
             </div>
           )}
@@ -384,39 +384,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
   // Render Search Bar
   const renderSearchBar = () => (
-    <div className="border-b bg-white p-4">
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-grow">
+    <div className="border-b-2 border-black bg-white p-4">
+      <div className="flex flex-col gap-4">
+        <div className="relative w-full">
           <input
             type="text"
-            placeholder="Search chats..."
+            placeholder="search chats..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-md border py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-brutal pl-10 h-10 py-1 text-sm bg-white"
           />
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400"
-            size={20}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50"
+            size={16}
           />
         </div>
-        <div className="flex space-x-1">
+        <div className="flex space-x-2 w-full">
           <button
             onClick={() => setChatType("all")}
-            className={`rounded-md p-2 ${chatType === "all" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "all" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
           >
-            <MessageCircle size={20} />
+            <MessageCircle size={16} />
           </button>
           <button
             onClick={() => setChatType("private")}
-            className={`rounded-md p-2 ${chatType === "private" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "private" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
           >
-            <UserCircle size={20} />
+            <UserCircle size={16} />
           </button>
           <button
             onClick={() => setChatType("community")}
-            className={`rounded-md p-2 ${chatType === "community" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            className={`btn-secondary flex-1 py-1 px-0 flex justify-center items-center ${chatType === "community" ? "bg-blue-500 text-white shadow-[2px_2px_0px_#000] border-black" : "shadow-none hover:shadow-[2px_2px_0px_#3b82f6] border-black/20 text-black/50"}`}
           >
-            <Users size={20} />
+            <Users size={16} />
           </button>
         </div>
       </div>
@@ -425,100 +425,112 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
   return (
     <div
-      className={`flex rounded-lg border shadow-sm md:h-[70vh] ${isMobileView ? "flex-col" : ""}`}
+      className={`flex card-brutal w-full p-0 flex-row overflow-hidden shadow-[4px_4px_0px_#3b82f6] ${isMobileView ? "flex-col border-r-0 md:h-[70vh] h-[80vh]" : "h-full"}`}
     >
       {/* Mobile Header for Chat Selection */}
       {isMobileView && !isChatListView && selectedChatId && (
-        <div className="flex items-center bg-gray-100 p-4">
-          <button onClick={() => setIsChatListView(true)} className="mr-4">
-            <ArrowLeft />
+        <div className="flex items-center justify-between border-b-2 border-black bg-[#f0f0f0] p-4 text-black w-full shrink-0 h-[60px]">
+          <button onClick={() => setIsChatListView(true)} className="btn-secondary w-8 h-8 p-0 flex items-center justify-center">
+            <ArrowLeft size={16} />
           </button>
-          <span className="text-xl font-semibold">
+          <span className="subheading-brutal text-lg truncate w-[80%] text-center">
             {selectedChatId
               ? getChatName(chats.find((c) => c.id === selectedChatId)!)
               : ""}
           </span>
+          <div className="w-8"></div>
         </div>
       )}
 
+      {/* Sidebar List */}
       <div
-        className={`
-      custom-scrollbar 
-      ${
-        isMobileView
-          ? `${isChatListView ? "block" : "hidden"}`
-          : "w-1/3 border-r bg-gray-50"
-      } 
-      overflow-y-auto`}
+        className={`custom-scrollbar ${
+          isMobileView
+            ? `${isChatListView ? "flex" : "hidden"} w-full h-full border-r-0 flex-col`
+            : "flex w-1/3 border-r-2 border-black bg-white flex-col h-full shrink-0"
+        } overflow-y-auto`}
       >
-        {renderSearchBar()}
-        {renderChatList()}
+        <div className="shrink-0">{renderSearchBar()}</div>
+        <div className="flex-1 overflow-y-auto">{renderChatList()}</div>
       </div>
 
       {/* Message Window - Responsive */}
       <div
-        className={`
-      flex flex-col 
-      ${isMobileView ? `${!isChatListView ? "block" : "hidden"} w-full` : "w-2/3"}
+        className={`flex-col bg-[#f0f0f0] relative
+      ${isMobileView ? `${!isChatListView ? "flex" : "hidden"} w-full h-[calc(100%-60px)]` : "flex w-2/3 h-full"}
     `}
       >
         {selectedChatId ? (
           <>
+            {!isMobileView && (
+               <div className="flex items-center border-b-2 border-black bg-white p-4 h-[75px] shrink-0">
+                 <span className="subheading-brutal text-lg truncate flex-1">
+                   {getChatName(chats.find((c) => c.id === selectedChatId)!)}
+                 </span>
+               </div>
+            )}
             <div
               ref={messageContainerRef}
-              className="custom-scrollbar min-h-[50vh] flex-1 overflow-y-auto p-2 md:p-4"
+              className="custom-scrollbar flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative"
             >
+              {/* Texture for Chat background */}
+              <div
+                className="pointer-events-none fixed inset-0 z-0 opacity-50"
+                style={{
+                  backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+                  backgroundSize: "32px 32px",
+                }}
+              />
               {messages.length > 0 ? (
-                <>
+                <div className="flex flex-col z-10 w-full">
                   <button
                     onClick={() => loadMessages(selectedChatId, true)}
-                    className="mb-4 text-blue-500 hover:underline"
+                    className="mb-8 p-2 rounded-full border-2 border-black bg-white self-center shadow-[2px_2px_0px_#3b82f6] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0px_#3b82f6] transition-all text-xs font-bold"
                   >
-                    Load Older Messages
+                    Load Older
                   </button>
                   {messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()).map((message) => (
                     <div
                       key={message.id}
-                      className={`mb-4 ${
-                        message.senderId === currentUserId ? "text-right" : "text-left"
+                      className={`mb-4 flex flex-col max-w-[70%] ${
+                        message.senderId === currentUserId ? "self-end items-end" : "self-start items-start"
                       }`}
                     >
                       <div
-                        className={`inline-block max-w-[400px] rounded-lg p-2 text-justify ${
+                        className={`inline-block p-3 border-2 border-black font-medium text-sm leading-relaxed ${
                           message.senderId === currentUserId
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-gray-800"
+                            ? "bg-blue-500 text-white shadow-[4px_4px_0px_#000]"
+                            : "bg-white text-black shadow-[4px_4px_0px_#3b82f6]"
                         }`}
                       >
                         {message.content}
                       </div>
-                      {chats.find((chat) => chat.id === selectedChatId)?.type ===
-                        "community" && (
-                        <div className="mt-1 text-xs text-gray-500">
-                          {message.senderName}
+                      {chats.find((chat) => chat.id === selectedChatId)?.type === "community" && message.senderId !== currentUserId && (
+                        <div className="mt-2 label-brutal text-black/50 px-1">
+                          {message.senderName || "User"}
                         </div>
                       )}
-                      <div className="mt-1 text-xs text-gray-500">
-                        {message.timestamp.toDate().toLocaleString()}
+                      <div className="mt-1 label-brutal text-black/40 px-1">
+                        {message.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </div>
                     </div>
                   ))}
-                </>
+                </div>
               ) : (
-                <div className="flex h-full items-center justify-center text-gray-500">
+                <div className="flex h-full items-center justify-center label-brutal text-black/50 z-10">
                   Start your conversation
                 </div>
               )}
             </div>
-            <form onSubmit={sendMessage} className="border-t p-4">
-              <div ref={emojiPickerRef} className="absolute bottom-full mb-2">
+            <form onSubmit={sendMessage} className="border-t-2 border-black bg-white p-4 h-[80px] shrink-0 z-10">
+              <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-50 right-2">
                 {showEmojiPicker && <EmojiPicker onEmojiClick={handleEmojiClick} />}
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2 h-full">
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="mr-2 rounded bg-gray-200 px-2 py-1"
+                  className="btn-secondary h-full aspect-square flex items-center justify-center p-0"
                 >
                   <Smile size={20} />
                 </button>
@@ -526,13 +538,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="mr-2 flex-grow rounded border px-3 py-2"
-                  placeholder="Type a message"
-
-                  />
+                  className="input-brutal h-full m-0 shadow-none border-2 border-black flex-1 focus:shadow-none bg-[#f0f0f0]"
+                  placeholder="Type a message..."
+                />
                 <button
                   type="submit"
-                  className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                  className="btn-primary h-full aspect-square flex items-center justify-center p-0"
                 >
                   <Send size={20} />
                 </button>
@@ -540,8 +551,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
             </form>
           </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xl text-gray-500">
-            Select a chat to start conversation
+          <div className="flex h-full w-full flex-col items-center justify-center text-xl z-10">
+            <MessageCircle size={48} className="mb-4 text-blue-500 max-h-[10%]" />
+            <span className="heading-brutal text-center">Select a chat to start conversation</span>
           </div>
         )}
       </div>

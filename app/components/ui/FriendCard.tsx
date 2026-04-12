@@ -355,30 +355,53 @@ function FriendCard({
   return (
     <>
       {friend.name && (
-        <div className="flex h-fit w-full max-w-md rounded-2xl bg-white shadow-md transition-all duration-300 hover:shadow-lg">
-          <div className="flex w-full items-center justify-between p-4">
+        <div className="card-brutal flex h-fit w-full p-4 mb-2 cursor-pointer relative group">
+          
+          <div className="flex w-full items-center justify-between">
             <div 
               onClick={navigateToProfile} 
-              className="flex w-full items-center gap-4 cursor-pointer"
+              className="flex w-[80%] items-center gap-4 cursor-pointer"
             >
-              {renderProfilePicture()}
-              <div className="flex w-[75%] flex-col justify-start">
-                <h1 className="text-[14px] font-medium">{friend.name}</h1>
+              {friend.profilePicUrl ? (
+                <Image
+                  src={friend.profilePicUrl}
+                  alt={`${friend.name}'s profile`}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-none border-2 border-black object-cover shadow-[2px_2px_0px_#3b82f6] shrink-0"
+                />
+              ) : (
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-none border-2 border-black shadow-[2px_2px_0px_#3b82f6] ${profileColor} shrink-0`}
+                >
+                  <span className="heading-brutal text-black text-xl">{friend.name[0]?.toUpperCase()}</span>
+                </div>
+              )}
+              
+              <div className="flex flex-col justify-start min-w-0 pr-2">
+                <h1 className="subheading-brutal truncate text-base">{friend.name}</h1>
                 {friend.interests && friend.interests.length > 0 ? (
-                  <h2 className="text-[10px] text-gray-600">
-                    Interests:{" "}
-                    {friend.interests.join(", ").length > 60
-                      ? `${friend.interests.join(", ").slice(0, 60)}...`
-                      : friend.interests.join(", ")}
-                  </h2>
-                ) : null}
+                  <div className="flex gap-1 overflow-hidden mt-1">
+                    {friend.interests.slice(0, 2).map((interest, index) => (
+                      <span key={index} className="tag-brutal text-[9px] truncate max-w-[80px]">
+                        {interest}
+                      </span>
+                    ))}
+                    {friend.interests.length > 2 && (
+                      <span className="tag-brutal text-[9px]">+{friend.interests.length - 2}</span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="label-brutal text-black/50 mt-1">NO INTERESTS</p>
+                )}
               </div>
             </div>
-            <div className="flex items-center justify-center">
+
+            <div className="flex items-center justify-center shrink-0 z-10 relative">
               {isFriend ? (
                 <button
                   onClick={removeFriend}
-                  className="rounded-full bg-red-500 p-2 text-white transition-colors duration-300 hover:bg-red-600"
+                  className="btn-secondary h-10 w-10 p-0 flex items-center justify-center"
                   aria-label="Remove friend"
                 >
                   <RiUserUnfollowLine size={20} />
@@ -386,7 +409,7 @@ function FriendCard({
               ) : requestStatus === 'none' && showAddButton ? (
                 <button
                   onClick={sendFriendRequest}
-                  className="rounded-full bg-blue-500 p-2 text-white transition-colors duration-300 hover:bg-blue-600"
+                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-blue-500 hover:bg-blue-600 shadow-[2px_2px_0px_#000] text-white"
                   aria-label="Send friend request"
                 >
                   <RiUserAddLine size={20} />
@@ -394,15 +417,15 @@ function FriendCard({
               ) : requestStatus === 'sent' ? (
                 <button
                   onClick={cancelFriendRequest}
-                  className="rounded-full bg-yellow-500 p-2 text-white transition-colors duration-300 hover:bg-yellow-600"
+                  className="btn-secondary h-10 w-10 p-0 flex items-center justify-center bg-black text-white hover:bg-gray-800"
                   aria-label="Cancel friend request"
                 >
-                  <RiUserUnfollowLine size={20} />
+                  <RiUserUnfollowLine size={16} />
                 </button>
               ) : requestStatus === 'received' ? (
                 <button
                   onClick={acceptFriendRequest}
-                  className="rounded-full bg-green-500 p-2 text-white transition-colors duration-300 hover:bg-green-600"
+                  className="btn-primary h-10 w-10 p-0 flex items-center justify-center bg-green-500 text-white shadow-[2px_2px_0px_#000] hover:bg-green-600"
                   aria-label="Accept friend request"
                 >
                   <RiUserAddLine size={20} />

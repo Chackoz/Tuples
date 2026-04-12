@@ -118,14 +118,30 @@ const Interests: React.FC = () => {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center bg-[#f0f0f0]">
-      <NavBar />
-      <div className="w-full max-w-[70vw] px-4 py-8 md:px-6 lg:px-8">
-        <h1 className="mb-6 text-2xl font-semibold text-[#2b2b2b] md:text-3xl">
-          Choose Your Interests
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+      <div className="z-10 w-full p-4 md:p-8  mx-auto">
+        <NavBar />
+      </div>
+      
+      <div className="z-10 w-full max-w-[70vw] px-4 py-8 md:px-6 lg:px-8 card-brutal bg-white mt-8 relative">
+        {/* Corner accents */}
+        <div className="hero-corner-tl" />
+        <div className="hero-corner-tr" />
+        <div className="hero-corner-bl" />
+        <div className="hero-corner-br" />
+
+        <h1 className="heading-brutal mb-8 text-3xl md:text-4xl text-center uppercase">
+          CHOOSE YOUR INTERESTS
         </h1>
 
-        <div className="mb-6 rounded-xl border-2 border-[#d0d0d0] bg-white p-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-8 card-brutal p-6 bg-[#f8f8f8]">
+          <div className="flex flex-wrap items-center gap-3">
             {selectedSkills.map((skill, index) => (
               <Pill
                 key={index}
@@ -134,20 +150,20 @@ const Interests: React.FC = () => {
                 onClick={() => skill !== "MBCET" && handleRemoveSkill(skill)}
               />
             ))}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[200px]">
               <input
-                className="w-full bg-white outline-none"
+                className="input-brutal w-full bg-white text-base md:text-lg py-3 px-4"
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`${selectedSkills.length > 1 ? "" : "Type or Select from below"}`}
+                placeholder={`${selectedSkills.length > 1 ? "TYPE HERE..." : "TYPE OR SELECT FROM BELOW"}`}
                 onKeyDown={handleKeyDown}
               />
               {suggestions.length > 0 && (
                 <ul
                   ref={scrollableContainer}
-                  className="custom-scrollbar absolute left-0 top-full z-10 max-h-[40vh] w-full overflow-y-auto rounded-md border-2 border-[#d0d0d0] bg-white"
+                  className="custom-scrollbar absolute left-0 top-full z-20 max-h-[40vh] w-full overflow-y-auto card-brutal bg-white mt-2 p-0 shadow-[4px_4px_0px_#3b82f6]"
                 >
                   {suggestions.map(
                     (skill, index) =>
@@ -156,8 +172,8 @@ const Interests: React.FC = () => {
                           ref={(el) => {
                             suggestionRef.current[index] = el;
                           }}
-                          className={`cursor-pointer px-3 py-2 hover:bg-[#f0f0f0] ${
-                            selectedSuggestion === index ? "bg-[#f0f0f0]" : ""
+                          className={`cursor-pointer px-4 py-3 border-b-2 border-black last:border-b-0 hover:bg-black/5 heading-brutal block text-sm ${
+                            selectedSuggestion === index ? "bg-blue-300 text-white" : ""
                           }`}
                           key={index}
                           onClick={() => handleSelectSkill(skill)}
@@ -172,7 +188,7 @@ const Interests: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-6 hidden flex-wrap gap-2 md:flex">
+        <div className="mb-10 hidden flex-wrap gap-3 md:flex">
           {skillsSug
             .slice(0, 20)
             .filter((skill) => !selectedSkills.includes(skill))
@@ -186,7 +202,7 @@ const Interests: React.FC = () => {
             ))}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2 md:hidden">
+        <div className="mb-10 flex flex-wrap gap-3 md:hidden">
           {skillsSug
             .slice(0, 10)
             .filter((skill) => !selectedSkills.includes(skill))
@@ -200,11 +216,13 @@ const Interests: React.FC = () => {
             ))}
         </div>
 
-        <div
-          onClick={handleClick}
-          className="mx-auto w-full max-w-xs cursor-pointer rounded-full bg-[#3c82f5] px-6 py-3 text-center text-white transition-colors hover:bg-[#2c72e5]"
-        >
-          Confirm
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={handleClick}
+            className="btn-primary w-full md:w-auto px-16 py-4 text-xl mx-auto"
+          >
+            CONFIRM INTERESTS
+          </button>
         </div>
       </div>
     </div>

@@ -129,9 +129,18 @@ const ProfileContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen bg-[#ebebeb] ${jakartasmall.className}`}>
-        <NavBar />
-        <div className="flex justify-center items-center h-screen">
+      <div className="relative flex min-h-screen flex-col bg-[#f0f0f0]">
+        <div
+          className="pointer-events-none fixed inset-0 z-0"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+            backgroundSize: "32px 32px",
+          }}
+        />
+        <div className="z-10 w-full p-4 md:p-8 max-w-7xl mx-auto">
+          <NavBar />
+        </div>
+        <div className="flex justify-center items-center flex-grow z-10">
           <Spinner />
         </div>
       </div>
@@ -141,63 +150,100 @@ const ProfileContent: React.FC = () => {
   if (!profileUser) return null;
 
   return (
-    <div className={`min-h-screen w-full bg-[#ebebeb] ${jakartasmall.className}`}>
-      <NavBar />
-      <div className="flex w-full justify-center p-10">
-        <div className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-md">
+    <div className="relative flex min-h-screen flex-col items-center bg-[#f0f0f0]">
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+      
+      <div className="z-10 w-full max-w-4xl mx-auto p-4 md:p-8">
+        <NavBar />
+      
+        <div className="mt-8 card-brutal relative">
+          {/* Corner accents */}
+          <div className="hero-corner-tl" />
+          <div className="hero-corner-tr" />
+          <div className="hero-corner-bl" />
+          <div className="hero-corner-br" />
+
           {/* Profile Header */}
-          <div className="flex items-center mb-6">
+          <div className="flex items-center mb-8 border-b-2 border-black pb-6">
             {profileUser.profilePicUrl ? (
               <Image 
                 src={profileUser.profilePicUrl} 
                 alt={`${profileUser.name}'s profile`} 
                 width={100} 
                 height={100} 
-                className="rounded-full object-cover w-24 h-24 mr-6" 
+                className="object-cover w-24 h-24 mr-6 border-2 border-black shadow-[4px_4px_0px_#3b82f6]" 
               />
             ) : (
-              <div className="w-24 h-24 bg-blue-200 rounded-full flex items-center justify-center text-3xl font-bold mr-6">
+              <div className="w-24 h-24 bg-[#000] text-white flex items-center justify-center text-3xl font-black mr-6 border-2 border-black shadow-[4px_4px_0px_#3b82f6]">
                 {profileUser.name[0].toUpperCase()}
               </div>
             )}
             <div>
-              <h1 className="text-2xl font-bold">{profileUser.name}</h1>
-              <p className="text-gray-600">{profileUser.userId}</p>
+              <h1 className="heading-brutal text-4xl">{profileUser.name}</h1>
+              <p className="label-brutal text-black/50 mt-1">{profileUser.userId}</p>
             </div>
           </div>
           {/* Profile Details */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Interests</h2>
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <div className="card-brutal bg-[#f8f8f8] p-6 shadow-none hover:shadow-[4px_4px_0px_#facc15] transition-shadow">
+              <h2 className="heading-brutal text-xl mb-6 flex items-center gap-2">
+                <span className="bg-yellow-300 w-4 h-4 border-2 border-black inline-block"></span>
+                INTERESTS
+              </h2>
               {profileUser.interests && profileUser.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {profileUser.interests.map((interest, index) => (
                     <span 
                       key={index} 
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                      className="tag-brutal bg-white hover:bg-yellow-300 hover:-translate-y-0.5 transition-all text-sm px-3 py-1.5"
                     >
                       {interest}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500">No interests added</p>
+                <div className="py-6 border-2 border-dashed border-black/20 flex justify-center items-center h-full">
+                  <p className="heading-brutal text-black/40">NO INTERESTS</p>
+                </div>
               )}
             </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Friends</h2>
-              {profileUser.friends && profileUser.friends.length > 0 ? (
-                <p className="text-gray-600">{profileUser.friends.length - 1} friends connected</p>
-              ) : (
-                <p className="text-gray-500">No friends yet</p>
-              )}
+            
+            <div className="card-brutal bg-[#f8f8f8] p-6 shadow-none hover:shadow-[4px_4px_0px_#4ade80] transition-shadow">
+              <h2 className="heading-brutal text-xl mb-6 flex items-center gap-2">
+                <span className="bg-green-400 w-4 h-4 border-2 border-black inline-block"></span>
+                NETWORK
+              </h2>
+              <div className="flex items-center gap-4">
+                <div className="text-center p-4 border-2 border-black bg-white shadow-[2px_2px_0px_#000] flex-1">
+                  <h3 className="heading-brutal text-4xl mb-1">
+                    {profileUser.friends ? profileUser.friends.length - 1 : 0}
+                  </h3>
+                  <p className="label-brutal text-black/60">CONNECTIONS</p>
+                </div>
+                <div className="text-center p-4 border-2 border-black bg-white shadow-[2px_2px_0px_#000] flex-1">
+                  <h3 className="heading-brutal text-4xl mb-1">
+                    {mutualFriends.length}
+                  </h3>
+                  <p className="label-brutal text-black/60">MUTUAL FRIENDS</p>
+                </div>
+              </div>
             </div>
           </div>
+          
           {/* Mutual Friends */}
           {mutualFriends.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-4">Mutual Friends</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="mb-8 pt-8 border-t-4 border-black">
+              <h2 className="heading-brutal text-2xl mb-6 flex items-center gap-3">
+                <span className="bg-pink-300 w-6 h-6 border-2 border-black inline-block"></span>
+                MUTUAL FRIENDS
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mutualFriends.map(friend => (
                   <FriendCard
                     key={friend.id}
@@ -214,21 +260,25 @@ const ProfileContent: React.FC = () => {
               </div>
             </div>
           )}
+          
           {/* User Posts */}
           {userPosts.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Posts</h2>
-              <div className="space-y-4">
+            <div className="pt-8 border-t-4 border-black mt-8">
+              <h2 className="heading-brutal text-2xl mb-6 flex items-center gap-3">
+                <span className="bg-blue-400 w-6 h-6 border-2 border-black inline-block"></span>
+                RECENT POSTS
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {userPosts.map(post => (
                   <div 
                     key={post.id} 
-                    className="bg-gray-100 p-4 rounded-lg"
+                    className="card-brutal p-6 bg-white hover:bg-[#f0f0f0] transition-colors flex flex-col hover:-translate-y-1 hover:shadow-[4px_4px_0px_#3b82f6]"
                   >
-                    <h1 className='text-xl font-semibold'>{post.title}</h1>
-                    <p>{post.content}</p>
+                    <h1 className='heading-brutal text-xl uppercase mb-3 line-clamp-2'>{post.title}</h1>
+                    <p className="font-medium text-black/80 mb-6 flex-1 line-clamp-4">{post.content}</p>
                    
-                    <div className="text-sm text-gray-500 mt-2">
-                      Posted on {new Date(post.createdAt?.toDate()).toLocaleDateString()}
+                    <div className="label-brutal text-black/50 pt-4 border-t-2 border-black uppercase mt-auto">
+                      POSTED ON {new Date(post.createdAt?.toDate()).toLocaleDateString()}
                     </div>
                   </div>
                 ))}

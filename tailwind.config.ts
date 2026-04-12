@@ -9,6 +9,15 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+  		boxShadow: {
+  			brutal: '4px 4px 0px #3b82f6',
+  			'brutal-sm': '2px 2px 0px #3b82f6',
+  			'brutal-lg': '6px 6px 0px #3b82f6',
+  			'brutal-focus': '4px 4px 0px #3b82f6',
+  			'brutal-active': '2px 2px 0px #3b82f6',
+  			'brutal-hover': '6px 6px 0px #3b82f6',
+  			'brutal-tag-active': '2px 2px 0px #000',
+  		},
   		colors: {
   			
   			background: 'hsl(var(--background))',

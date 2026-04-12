@@ -42,46 +42,51 @@ const Projects: React.FC<ProjectsProps> = ({
   const renderProjectCard = (project: Project, isJoined: boolean) => (
     <div
       key={project.id}
-      className="flex flex-col rounded-lg border bg-white shadow-md transition-shadow hover:shadow-lg w-fit md:min-w-[300px]"
+      className="card-brutal p-6 bg-white flex flex-col w-full hover:-translate-y-1 hover:shadow-[4px_4px_0px_#3b82f6] transition-all"
     >
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-bold text-gray-800">{project.title}</h2>
+      <div>
+        <div className="flex justify-between items-center mb-4 border-b-2 border-black pb-4">
+          <h2 className="heading-brutal text-2xl text-black">{project.title}</h2>
           {isJoined ? (
-            <span className="text-green-600 font-semibold text-sm">Joined</span>
+            <span className="tag-brutal bg-green-300 text-sm">JOINED</span>
           ) : (
             <button
               onClick={() => handleProjectJoin(project.id)}
-              className="rounded bg-blue-500 px-3 py-1 text-sm font-bold text-white hover:bg-blue-600"
+              className="btn-primary py-1 px-4 text-sm"
             >
-              Join Project
+              JOIN PROJECT
             </button>
           )}
         </div>
-        <p className="text-sm text-gray-600 mb-2">{project.description}</p>
+        <p className="font-medium text-black/80 mb-6">{project.description}</p>
         
-        <div className="mb-2">
-          <span className="text-sm text-gray-500">Status: </span>
-          <span className={`text-sm font-semibold ${
-            project.status === 'planning' ? 'text-yellow-600' :
-            project.status === 'in-progress' ? 'text-blue-600' :
-            'text-green-600'
-          }`}>
-            {project.status.replace('-', ' ')}
-          </span>
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="card-brutal bg-[#f0f0f0] p-3 shadow-none border-dashed border-2 flex-1 min-w-[120px]">
+            <span className="label-brutal text-black/50 block mb-1">STATUS</span>
+            <span className={`heading-brutal text-lg uppercase ${
+              project.status === 'planning' ? 'text-black' :
+              project.status === 'in-progress' ? 'text-blue-600' :
+              'text-green-600'
+            }`}>
+              {project.status.replace('-', ' ')}
+            </span>
+          </div>
+
+          <div className="card-brutal bg-[#f0f0f0] p-3 shadow-none border-dashed border-2 flex-1 min-w-[120px]">
+            <span className="label-brutal text-black/50 block mb-1">MEMBERS</span>
+            <span className="heading-brutal text-lg">
+              {project.members.length}/{project.idealTeamSize}
+            </span>
+          </div>
         </div>
 
-        <div className="mb-2">
-          <p className="text-sm text-gray-500">Members: {project.members.length}/{project.idealTeamSize}</p>
-        </div>
-
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Technologies:</h3>
+        <div className="mb-4">
+          <h3 className="label-brutal text-sm mb-2 text-black/60">TECHNOLOGIES</h3>
           <div className="flex flex-wrap gap-2">
             {project.technologies.map((tech, index) => (
               <span
                 key={index}
-                className="rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800"
+                className="tag-brutal bg-blue-300 text-xs"
               >
                 {tech}
               </span>
@@ -89,13 +94,13 @@ const Projects: React.FC<ProjectsProps> = ({
           </div>
         </div>
 
-        <div className="mb-2">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Skills Needed:</h3>
+        <div className="mb-6">
+          <h3 className="label-brutal text-sm mb-2 text-black/60">SKILLS NEEDED</h3>
           <div className="flex flex-wrap gap-2">
             {project.skills.map((skill, index) => (
               <span
                 key={index}
-                className="rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800"
+                className="tag-brutal bg-[#a78bfa] text-xs"
               >
                 {skill}
               </span>
@@ -104,47 +109,52 @@ const Projects: React.FC<ProjectsProps> = ({
         </div>
 
         {isJoined && user && (
-          <ProjectManagement
-            project={project}
-            currentUserId={currentUserId}
-            userName={user.name}
-            onProjectUpdate={() => {
-              fetchAllProjects();
-              setState(prev => !prev);
-            }}
-         
-          />
+          <div className="pt-4 border-t-2 border-black border-dashed mt-auto">
+            <ProjectManagement
+              project={project}
+              currentUserId={currentUserId}
+              userName={user.name}
+              onProjectUpdate={() => {
+                fetchAllProjects();
+                setState(prev => !prev);
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
   );
 
   return (
-    <div>
-      <div className="flex mb-6 justify-between items-center border-b">
-        <div className="flex">
+    <div className="w-full">
+      <div className="flex flex-col md:flex-row mb-8 justify-between items-start md:items-center gap-4 border-b-4 border-black pb-4">
+        <div className="flex gap-4">
           <button
             onClick={() => setActiveTab('my')}
-            className={`px-4 py-2 ${activeTab === 'my' 
-              ? 'border-b-2 border-blue-500 text-blue-600' 
-              : 'text-gray-500'}`}
+            className={`heading-brutal text-xl pb-2 transition-all ${
+              activeTab === 'my' 
+                ? 'border-b-4 border-black text-black' 
+                : 'text-black/40 hover:text-black/70'
+            }`}
           >
-            My Projects
+            MY PROJECTS
           </button>
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 ${activeTab === 'all' 
-              ? 'border-b-2 border-blue-500 text-blue-600' 
-              : 'text-gray-500'}`}
+            className={`heading-brutal text-xl pb-2 transition-all ${
+              activeTab === 'all' 
+                ? 'border-b-4 border-black text-black' 
+                : 'text-black/40 hover:text-black/70'
+            }`}
           >
-            All Projects
+            ALL PROJECTS
           </button>
         </div>
         <button
           onClick={() => setIsProjectModalOpen(true)}
-          className="rounded bg-blue-500 px-4 py-2 text-white text-sm"
+          className="btn-primary"
         >
-          Create New Project
+          CREATE NEW PROJECT
         </button>
       </div>
 

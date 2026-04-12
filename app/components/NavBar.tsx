@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { Menu, X } from "lucide-react";
-import { jakartasmall } from "../utils/fonts";
 import { auth } from "../lib/firebaseConfig";
 import Marquee from "react-fast-marquee";
 
@@ -26,14 +25,12 @@ function NavBar() {
   };
 
   return (
-    <div
-      className={`${jakartasmall.className} relative flex w-[95vw] items-center justify-between p-5`}
-    >
+    <div className="relative flex w-full items-center justify-between py-5 border-b-2 border-black bg-[#f0f0f0]">
       {/* Mobile Development Warning */}
      
-      <div className="absolute left-0 top-0 z-50 w-full bg-orange-200 text-black p-1 text-center md:hidden">
+      <div className="absolute left-0 top-0 z-50 w-full bg-orange-200 border-b-2 border-black text-black p-1 text-center md:hidden">
       <Marquee>
-        <div className="w-full text-nowrap justify-center leading-5 gap-4">
+        <div className="w-full text-nowrap label-brutal justify-center leading-5 gap-4">
         !  MOBILE VIEW IS STILL IN DEVELOPMENT  !
       
         </div>
@@ -41,59 +38,62 @@ function NavBar() {
       </div>
     
 
-      <div className="flex w-full items-center justify-between pt-5">
-        <a href="/" className="z-50 flex items-center justify-center  text-4xl">
-          <h1 className="flex flex-row">Tuples</h1>
+      <div className="flex w-full items-center justify-between pt-5 md:pt-0">
+        <a href="/" className="z-50 flex items-center justify-center">
+          <div className="relative">
+            <span className="absolute top-1 left-1 heading-brutal text-3xl text-blue-500 select-none" aria-hidden="true">Tuples</span>
+            <span className="relative heading-brutal text-3xl text-black">Tuples</span>
+          </div>
         </a>
 
-        <button className="z-50 md:hidden hidden" onClick={toggleMenu}>
-          {isMenuOpen ? <X /> : <Menu />}
+        <button className="z-50 md:hidden flex justify-center items-center w-10 h-10 border-2 border-black bg-white shadow-[2px_2px_0px_#3b82f6]" onClick={toggleMenu}>
+          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
-      <div className="hidden items-center space-x-4 md:flex">
-        <nav className="flex space-x-4">
-          <a href="/home" className="text-sm transition-all duration-300 hover:underline">
+      <div className="hidden items-center space-x-6 md:flex mt-0">
+        <nav className="flex space-x-6">
+          <a href="/home" className="subheading-brutal text-sm hover:underline underline-offset-4 decoration-2 decoration-blue-500">
             Home
           </a>
           <a
             href="/interests"
-            className="text-sm transition-all duration-300 hover:underline"
+            className="subheading-brutal text-sm hover:underline underline-offset-4 decoration-2 decoration-blue-500"
           >
             Interests
           </a>
           <a
             href="/credits"
-            className="text-sm transition-all duration-300 hover:underline"
+            className="subheading-brutal text-sm hover:underline underline-offset-4 decoration-2 decoration-blue-500"
           >
             Credits
           </a>
         </nav>
         <button
           onClick={handleLogout}
-          className="rounded-md bg-red-500 px-3 py-1 text-sm text-white transition-colors hover:bg-red-600"
+          className="btn-secondary ml-4 px-4 py-2"
         >
           Logout
         </button>
       </div>
 
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center space-y-6 bg-white md:hidden ">
-          <a href="/home" className="text-2xl hover:underline" onClick={toggleMenu}>
+        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center space-y-8 bg-[#f0f0f0] bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)] bg-[size:32px_32px] md:hidden">
+          <a href="/home" className="heading-brutal text-3xl hover:underline decoration-blue-500 decoration-4 underline-offset-8" onClick={toggleMenu}>
             Home
           </a>
-          <a href="/interests" className="text-2xl hover:underline" onClick={toggleMenu}>
+          <a href="/interests" className="heading-brutal text-3xl hover:underline decoration-blue-500 decoration-4 underline-offset-8" onClick={toggleMenu}>
             Interests
           </a>
-          <a href="/credits" className="text-2xl hover:underline" onClick={toggleMenu}>
-          Credits
+          <a href="/credits" className="heading-brutal text-3xl hover:underline decoration-blue-500 decoration-4 underline-offset-8" onClick={toggleMenu}>
+            Credits
           </a>
           <button
             onClick={() => {
               handleLogout();
               toggleMenu();
             }}
-            className="rounded-md bg-red-500 px-6 py-2 text-lg text-white transition-colors hover:bg-red-600"
+            className="btn-secondary px-8 py-3 text-xl mt-8"
           >
             Logout
           </button>

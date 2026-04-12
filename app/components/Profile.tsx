@@ -204,21 +204,30 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-12 w-12 border-4 border-black border-t-blue-500 animate-spin shadow-[4px_4px_0px_#000]"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-6">
-      <div className="rounded-lg bg-white p-6 shadow-md">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="card-brutal bg-white p-8 relative">
+        <div className="hero-corner-tl" />
+        <div className="hero-corner-tr" />
+        <div className="hero-corner-bl" />
+        <div className="hero-corner-br" />
+
         {/* Profile Picture Section */}
-        <div className="mb-6 flex flex-col items-center sm:flex-row">
+        <div className="mb-10 flex flex-col items-center sm:flex-row pb-8 border-b-2 border-black">
           <div
-            className="group relative mb-4 h-32 w-32 cursor-pointer overflow-hidden rounded-full sm:mb-0 sm:mr-6"
+            className="group relative mb-6 h-32 w-32 cursor-pointer sm:mb-0 sm:mr-8 border-4 border-black shadow-[4px_4px_0px_#3b82f6] shrink-0 bg-white overflow-hidden hover:scale-105 transition-transform"
             onClick={handleProfilePicClick}
           >
             {isLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                <span className="text-white">Uploading...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+                <span className="heading-brutal text-white text-[10px]">UPLOADING...</span>
               </div>
             ) : profilePicUrl ? (
               <img
@@ -227,17 +236,17 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gray-200">
-                <span className="text-gray-500">Add Photo</span>
+              <div className="flex h-full w-full items-center justify-center bg-[#f0f0f0]">
+                <span className="heading-brutal text-black/50 text-sm">ADD PHOTO</span>
               </div>
             )}
 
             {/* Camera Icon Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 transition-all duration-300 group-hover:bg-opacity-30">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-0">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                className="h-8 w-8 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                className="h-8 w-8 text-white"
                 fill="currentColor"
               >
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5V13h4v1.5l3-3-3-3V10H10v1.5l-3 3z" />
@@ -254,16 +263,28 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
           />
 
           <div className="text-center sm:text-left">
-            <h2 className="text-xl font-bold">{user.name}</h2>
-            <p className="text-gray-600">User ID: {user.userId}</p>
+            <h2 className="heading-brutal text-4xl uppercase mb-2">{user.name}</h2>
+            <p className="subheading-brutal text-blue-600">USER ID: {user.userId}</p>
           </div>
         </div>
+
         {/* Interests Section */}
-        <div className="mt-6">
-          <h3 className="mb-4 text-lg font-semibold">Interests</h3>
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="heading-brutal text-2xl uppercase">INTERESTS</h3>
+            {!isEditing && (
+              <button
+                onClick={handleEditInterests}
+                className="btn-secondary px-6 shrink-0"
+              >
+                EDIT INTERESTS
+              </button>
+            )}
+          </div>
+          
           {isEditing ? (
-            <div>
-              <div className="mb-4 flex flex-wrap gap-2">
+            <div className="card-brutal p-6 bg-[#f8f8f8]">
+              <div className="mb-6 flex flex-wrap gap-3 border-b-2 border-black pb-6">
                 {editedInterests.map((interest, index) => (
                   <Pill
                     key={index}
@@ -273,22 +294,22 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   />
                 ))}
               </div>
-              <div className="relative">
+              <div className="relative mb-6">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Add new interest"
-                  className="mb-2 w-full rounded border px-3 py-2"
+                  placeholder="ADD NEW INTEREST (PRESS ENTER)"
+                  className="input-brutal w-full py-3"
                 />
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border bg-white shadow-lg">
+                  <ul className="absolute z-20 mt-2 max-h-40 w-full overflow-y-auto card-brutal bg-white p-0 shadow-[4px_4px_0px_#000]">
                     {suggestions.map((skill, index) => (
                       <li
                         key={index}
-                        className={`cursor-pointer px-3 py-2 hover:bg-gray-100 ${
-                          index === selectedSuggestion ? "bg-gray-200" : ""
+                        className={`cursor-pointer px-4 py-3 border-b border-black last:border-b-0 subheading-brutal hover:bg-black/5 ${
+                          index === selectedSuggestion ? "bg-blue-300 text-white hover:bg-blue-400 hover:text-white" : ""
                         }`}
                         onClick={() => handleAddInterest(skill)}
                         ref={(el: HTMLLIElement | null) => {
@@ -301,59 +322,59 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   </ul>
                 )}
               </div>
-              <div className="mt-4 flex space-x-2">
-                <button
-                  onClick={handleSaveInterests}
-                  className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
-                >
-                  Save Interests
-                </button>
+              <div className="flex justify-end gap-4 mt-6">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="rounded bg-gray-200 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-300"
+                  className="btn-secondary px-8 py-3"
                 >
-                  Cancel
+                  CANCEL
+                </button>
+                <button
+                  onClick={handleSaveInterests}
+                  className="btn-primary px-8 py-3"
+                >
+                  SAVE CHANGES
                 </button>
               </div>
             </div>
           ) : (
-            <div>
+            <div className="card-brutal p-6 bg-[#f0f0f0]">
               {user.interests && user.interests.length > 0 ? (
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {user.interests.map((interest, index) => (
                     <Pill key={index} text={interest} type="view" onClick={undefined} />
                   ))}
                 </div>
               ) : (
-                <p className="mb-4 text-gray-500">No interests added yet.</p>
+                <div className="py-8 flex items-center justify-center border-2 border-dashed border-black/30">
+                  <p className="heading-brutal text-black/40 text-center">NO INTERESTS ADDED YET</p>
+                </div>
               )}
-              <button
-                onClick={handleEditInterests}
-                className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                Edit Interests
-              </button>
             </div>
           )}
-           {userPosts.length > 0 && (
-          <div className="mt- 2border-t pt-6 overflow-y-auto md:max-h-[20vh] ">
-            <h3 className="mb-4 text-lg font-semibold">Your Posts</h3>
-            <div className="space-y-4">
-              {userPosts.map(post => (
-                <div 
-                  key={post.id} 
-                  className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <h4 className="text-xl font-semibold mb-2">{post.title}</h4>
-                  <p className="text-gray-700 mb-2">{post.content}</p>
-                  <div className="text-sm text-gray-500">
-                    Posted on {post.createdAt?.toDate().toLocaleDateString()}
+
+          {/* User Posts Section */}
+          {userPosts.length > 0 && (
+            <div className="mt-12 pt-10 border-t-2 border-black">
+              <h3 className="heading-brutal text-2xl uppercase mb-6">YOUR POSTS</h3>
+              <div className="grid gap-6 md:grid-cols-2">
+                {userPosts.map(post => (
+                  <div 
+                    key={post.id} 
+                    className="card-brutal bg-white p-6 hover:-translate-y-1 hover:shadow-[4px_4px_0px_#3b82f6] transition-all"
+                  >
+                    <h4 className="heading-brutal text-xl uppercase mb-3 line-clamp-1">{post.title}</h4>
+                    <p className="text-black font-medium mb-6 line-clamp-3">{post.content}</p>
+                    <div className="flex justify-between items-center mt-auto border-t-2 border-black pt-4">
+                      <div className="label-brutal text-black/50">
+                        POSTED ON {post.createdAt?.toDate().toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>

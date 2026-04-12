@@ -101,46 +101,46 @@ function CreateJoinCommunityModal({
   const [priv, setpriv] = useState(false);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
-      <div className="w-full max-w-md rounded-lg bg-white p-6">
-        <h2 className="mb-4 text-xl">{isCreating ? "Create" : "Join"} Community</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
+      <div className="w-full max-w-md card-brutal bg-white p-8">
+        <h2 className="heading-brutal mb-6 text-2xl uppercase">{isCreating ? "CREATE" : "JOIN"} COMMUNITY</h2>
         <form onSubmit={handleCreateOrJoin}>
           <input
             type="text"
             value={communityName}
             onChange={(e) => setCommunityName(e.target.value)}
-            placeholder={isCreating ? "New Community Name" : "Community ID to Join"}
-            className="mb-4 w-full rounded border p-2"
+            placeholder={isCreating ? "NEW COMMUNITY NAME" : "COMMUNITY ID TO JOIN"}
+            className="input-brutal mb-6 w-full"
           />
           {isCreating && (
-            <div className="mb-4">
-              <div className="mb-2 flex">
+            <div className="mb-6">
+              <div className="mb-3 flex gap-2">
                 <input
                   type="text"
                   value={currentTag}
                   onChange={(e) => setCurrentTag(e.target.value)}
-                  placeholder="Add a tag"
-                  className="flex-grow rounded-l border p-2"
+                  placeholder="ADD A TAG"
+                  className="input-brutal flex-grow"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
-                  className="rounded-r bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                  className="btn-primary px-6 shrink-0"
                 >
-                  Add
+                  ADD
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, index) => (
                   <span
                     key={index}
-                    className="flex items-center rounded bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800"
+                    className="tag-brutal bg-blue-300 shadow-[2px_2px_0px_#000] flex items-center gap-2"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 font-bold text-blue-800 hover:text-blue-900"
+                      className="font-bold hover:text-black/50 text-base leading-none"
                     >
                       ×
                     </button>
@@ -149,44 +149,50 @@ function CreateJoinCommunityModal({
               </div>
             </div>
           )}
-          <div className="mb-4 flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isCreating}
-                onChange={() => setIsCreating(!isCreating)}
-                className="mr-2"
-              />
-              {isCreating ? "Create New" : "Join Existing"}
-            </label>
-          </div>
-          {isCreating && (
-            <div className="mb-4 flex items-center justify-between">
-              <label className="flex items-center">
+          
+          <div className="mb-6 space-y-4">
+            <label className="flex items-center cursor-pointer group">
+              <div className="relative flex items-center justify-center w-6 h-6 border-2 border-black mr-3 shadow-[2px_2px_0px_#3b82f6] group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
                 <input
                   type="checkbox"
-                  checked={priv}
-                  onChange={() => setpriv(true)}
-                  className="mr-2"
+                  checked={isCreating}
+                  onChange={() => setIsCreating(!isCreating)}
+                  className="absolute opacity-0 w-full h-full cursor-pointer"
                 />
-                Private Community
+                {isCreating && <div className="w-3 h-3 bg-black"></div>}
+              </div>
+              <span className="subheading-brutal mt-1">{isCreating ? "CREATE NEW" : "JOIN EXISTING"}</span>
+            </label>
+            
+            {isCreating && (
+              <label className="flex items-center cursor-pointer group">
+                <div className="relative flex items-center justify-center w-6 h-6 border-2 border-black mr-3 shadow-[2px_2px_0px_#3b82f6] group-hover:-translate-y-0.5 transition-transform bg-white shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={priv}
+                    onChange={() => setpriv(!priv)}
+                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                  />
+                  {priv && <div className="w-3 h-3 bg-black"></div>}
+                </div>
+                <span className="subheading-brutal mt-1">PRIVATE COMMUNITY</span>
               </label>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4 mt-8">
             <button
               type="button"
               onClick={onClose}
-              className="mr-2 px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="btn-secondary px-8 py-3"
             >
-              Cancel
+              CANCEL
             </button>
             <button
               type="submit"
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              className="btn-primary px-8 py-3"
             >
-              {isCreating ? "Create" : "Join"}
+              {isCreating ? "CREATE" : "JOIN"}
             </button>
           </div>
         </form>

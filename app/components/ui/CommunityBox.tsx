@@ -29,62 +29,66 @@ function Modal({
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       {community && (
-        <div className="w-[30vw] rounded-lg bg-white p-4">
-          <h2 className="mb-2 text-2xl font-bold">{community.name}</h2>
-          <p>
-            <strong>Creator:</strong> {community.creator}
-          </p>
-          <p>
-            <strong>Invite Code:</strong> {community.id}
-          </p>
-          <p>
-            <strong>Members: {community.members.length}</strong>
-          </p>
-          <div className="">
-            <ul className="custom-scrollbar ml-5 max-h-[150px] list-disc overflow-y-auto">
+        <div className="w-[30vw] min-w-[300px] card-brutal bg-white p-6 relative">
+          <h2 className="heading-brutal mb-4 text-2xl uppercase border-b-2 border-black pb-2">{community.name}</h2>
+          <div className="space-y-3 mb-6">
+            <p className="subheading-brutal text-black/70">
+              <span className="text-black">CREATOR:</span> {community.creator}
+            </p>
+            <p className="subheading-brutal text-black/70">
+              <span className="text-black">INVITE CODE:</span> {community.id}
+            </p>
+            <div className="tag-brutal inline-block bg-pink-300 shadow-[2px_2px_0px_#000]">
+              MEMBERS: {community.members.length}
+            </div>
+          </div>
+          <div className="mb-6 card-brutal p-4 bg-[#f0f0f0]">
+            <ul className="custom-scrollbar ml-5 max-h-[150px] list-disc overflow-y-auto label-brutal text-black/70">
               {community.members.map((member, index) => (
-                <li key={index}>
-                  {index + 1} {member}
+                <li key={index} className="py-1 border-b border-black/10 last:border-0">
+                  {member}
                 </li>
               ))}
             </ul>
           </div>
           <button
-            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white"
+            className="btn-secondary w-full py-3"
             onClick={onClose}
           >
-            Close
+            CLOSE
           </button>
         </div>
       )}
       {project && (
-        <div className="w-[30vw] rounded-lg bg-white p-4">
-          <h2 className="mb-2 text-2xl font-bold">{project.title}</h2>
-          <p>
-            <strong>Creator:</strong> {project.description}
-          </p>
-          <p>
-            <strong>Invite Code:</strong> {project.id}
-          </p>
-          <p>
-            <strong>Members: {project.members.length}</strong>
-          </p>
-          <div className="">
-            <ul className="custom-scrollbar ml-5 max-h-[150px] list-disc overflow-y-auto">
+        <div className="w-[30vw] min-w-[300px] card-brutal bg-white p-6 relative">
+          <h2 className="heading-brutal mb-4 text-2xl uppercase border-b-2 border-black pb-2">{project.title}</h2>
+          <div className="space-y-3 mb-6">
+            <p className="subheading-brutal text-black/70 break-words">
+              <span className="text-black">DESCRIPTION:</span> {project.description}
+            </p>
+            <p className="subheading-brutal text-black/70">
+              <span className="text-black">INVITE CODE:</span> {project.id}
+            </p>
+            <div className="tag-brutal inline-block bg-blue-300 shadow-[2px_2px_0px_#000]">
+              MEMBERS: {project.members.length}
+            </div>
+          </div>
+          <div className="mb-6 card-brutal p-4 bg-[#f0f0f0]">
+            <ul className="custom-scrollbar ml-5 max-h-[150px] list-disc overflow-y-auto label-brutal text-black/70">
               {project.members.map((member, index) => (
-                <li key={index}>
-                  {index + 1} {member}
+                <li key={index} className="py-1 border-b border-black/10 last:border-0">
+                  {member}
                 </li>
               ))}
             </ul>
           </div>
           <button
-            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white"
+            className="btn-secondary w-full py-3"
             onClick={onClose}
           >
-            Close
+            CLOSE
           </button>
         </div>
       )}
@@ -108,16 +112,16 @@ function CommunityBox({ community, project }: CommunityBoxProps) {
   return (
     <>
       <div
-        className="flex h-[5vw] w-[5vw] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg bg-[#eeeeee] p-2"
+        className="flex h-24 w-24 md:h-32 md:w-32 cursor-pointer flex-col items-center justify-center overflow-hidden card-brutal bg-white hover:shadow-[4px_4px_0px_#3b82f6] hover:-translate-y-1 transition-all p-3 text-center shrink-0"
         onClick={handleBoxClick}
       >
         {community ? (
           <>
-            <h3 className="w-full truncate text-center text-[0.8vw] font-semibold">
+            <h3 className="w-full truncate text-[11px] md:text-sm heading-brutal uppercase text-black">
               {community.name}
             </h3>
-            <p className="text-[0.6vw] text-gray-500">
-              {community.members.length} members
+            <p className="text-[9px] md:text-xs label-brutal text-black/50 mt-2">
+              {community.members.length} MEMBERS
             </p>
           </>
         ) : (
@@ -125,10 +129,12 @@ function CommunityBox({ community, project }: CommunityBoxProps) {
         )}
         {project ? (
           <>
-            <h3 className="w-full truncate text-center text-[0.8vw] font-semibold">
+            <h3 className="w-full truncate text-[11px] md:text-sm heading-brutal uppercase text-black">
               {project.title}
             </h3>
-            <p className="text-[0.6vw] text-gray-500">{project.members.length} members</p>
+            <p className="text-[9px] md:text-xs label-brutal text-black/50 mt-2">
+              {project.members.length} MEMBERS
+            </p>
           </>
         ) : (
           <div></div>

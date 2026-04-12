@@ -180,12 +180,20 @@ function Home() {
   }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
 
   return (
-    <div
-      className={`flex min-h-screen w-full flex-col items-center justify-between bg-[#ebebeb] p-[5px] md:p-[10px] ${jakartasmall.className} custom-scrollbar`}
-    >
-      <NavBar />
+    <div className="flex min-h-screen w-full flex-col items-center bg-[#f0f0f0] p-4 md:p-8 relative">
+      {/* Grid Texture */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+      
+      <div className="z-10 w-full mx-auto">
+        <NavBar />
 
-      <div className="flex w-full flex-col justify-between p-4 md:flex-row md:p-10">
+        <div className="flex w-full flex-col gap-6 md:flex-row mt-8">
         {user && (
           <Dashboard
             state={state}
@@ -353,6 +361,7 @@ function Home() {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
