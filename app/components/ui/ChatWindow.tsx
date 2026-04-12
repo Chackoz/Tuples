@@ -220,10 +220,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
       );
 
       if (!response.ok) {
+        const payload = await response.json().catch(() => null);
         if (response.status === 503) {
+          console.warn("Encryption key service unavailable:", payload?.error || "Service unavailable");
           return null;
         }
-        throw new Error("Failed to fetch encryption key.");
+        throw new Error(payload?.error || payload?.details || `Failed to fetch encryption key (status ${response.status}).`);
       }
 
       const payload = (await response.json()) as ActiveChatKeyResponse;
@@ -288,7 +290,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     });
 
     return () => unsubscribe();
-  }, [currentUserId]);
+  }, [currentUserId, setIfUnread]);
 
   const getChatName = useCallback(
     (chat: Chat) => {

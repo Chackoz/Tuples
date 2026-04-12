@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createCipheriv } from "crypto";
 import { adminAuth, adminDb } from "@/app/lib/firebaseAdmin";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type KeyDoc = {
   activeVersion: number;
   versions: Record<string, string>;
@@ -10,6 +13,27 @@ type KeyDoc = {
 
 const jsonError = (message: string, status = 400) => {
   return NextResponse.json({ error: message }, { status });
+};
+
+const mapFirebaseAuthError = (error: any) => {
+  const code = String(error?.code || "");
+  const message = String(error?.message || "");
+
+  if (
+    code.includes("auth/id-token-expired") ||
+    code.includes("auth/argument-error") ||
+    message.includes("ID token has expired") ||
+    message.includes("Decoding Firebase ID token failed") ||
+    message.includes("Firebase ID token has incorrect")
+  ) {
+    return { status: 401, message: "Invalid or expired auth token" };
+  }
+
+  if (code.includes("auth/user-disabled")) {
+    return { status: 403, message: "User account is disabled" };
+  }
+
+  return null;
 };
 
 const getBearerToken = (request: NextRequest) => {
@@ -86,7 +110,35 @@ const ensureKeyDoc = async (chatId: string) => {
   const keySnapshot = await keyRef.get();
 
   if (keySnapshot.exists) {
-    return { keyRef, data: keySnapshot.data() as KeyDoc };
+    const existing = (keySnapshot.data() || {}) as Partial<KeyDoc>;
+    const activeVersion = Number(existing.activeVersion || 1);
+    const versions =
+      existing.versions && typeof existing.versions === "object"
+        ? (existing.versions as Record<string, string>)
+        : {};
+
+    const activeKey = versions[String(activeVersion)];
+    if (activeKey && typeof activeKey === "string") {
+      return {
+        keyRef,
+        data: {
+          activeVersion,
+          versions,
+          updatedAt: existing.updatedAt as any
+        }
+      };
+    }
+
+    // Repair malformed/legacy key documents so reads do not fail in production.
+    const repairedVersion = 1;
+    const repairedData: KeyDoc = {
+      activeVersion: repairedVersion,
+      versions: { [String(repairedVersion)]: randomBytes(32).toString("base64") },
+      updatedAt: new Date() as any
+    };
+
+    await keyRef.set(repairedData, { merge: true });
+    return { keyRef, data: repairedData };
   }
 
   const initialData: KeyDoc = {
@@ -136,6 +188,8 @@ export async function GET(request: NextRequest) {
     if (error?.message === "UNAUTHENTICATED") return jsonError("Unauthenticated", 401);
     if (error?.message === "CHAT_NOT_FOUND") return jsonError("Chat not found", 404);
     if (error?.message === "FORBIDDEN") return jsonError("Forbidden", 403);
+    const mappedAuthError = mapFirebaseAuthError(error);
+    if (mappedAuthError) return jsonError(mappedAuthError.message, mappedAuthError.status);
     const message = String(error?.message || "");
     if (message.includes("Missing Firebase Admin credentials")) {
       return jsonError("Encryption service unavailable: missing Firebase Admin credentials", 503);
@@ -254,6 +308,8 @@ export async function POST(request: NextRequest) {
     if (error?.message === "UNAUTHENTICATED") return jsonError("Unauthenticated", 401);
     if (error?.message === "CHAT_NOT_FOUND") return jsonError("Chat not found", 404);
     if (error?.message === "FORBIDDEN") return jsonError("Forbidden", 403);
+    const mappedAuthError = mapFirebaseAuthError(error);
+    if (mappedAuthError) return jsonError(mappedAuthError.message, mappedAuthError.status);
     const message = String(error?.message || "");
     if (message.includes("Missing Firebase Admin credentials")) {
       return jsonError("Encryption service unavailable: missing Firebase Admin credentials", 503);
