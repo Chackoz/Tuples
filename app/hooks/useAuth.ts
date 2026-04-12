@@ -36,7 +36,7 @@ export const useAuth = (): UseAuthReturn => {
   const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = () => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@mbcet.ac.in$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@(mbcet\.ac\.in|equifax\.com)$/;
     const validEmail = emailRegex.test(email);
 
     if (validEmail) {
@@ -54,7 +54,7 @@ export const useAuth = (): UseAuthReturn => {
       return true;
     } else {
       setIsValidEmail(false);
-      setError("Use valid college email id.");
+      setError("Use a valid @mbcet.ac.in email id.");
       return false;
     }
   };

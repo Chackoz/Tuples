@@ -19,16 +19,22 @@ const getBearerToken = (request: NextRequest) => {
 };
 
 const encryptWithRawKey = (plainText: string, keyBase64: string) => {
-  const key = Buffer.from(keyBase64, "base64");
-  const iv = randomBytes(12);
+  const key = Uint8Array.from(Buffer.from(keyBase64, "base64"));
+  const iv = Uint8Array.from(randomBytes(12));
   const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  const merged = Buffer.concat([encrypted, tag]);
+
+  const encryptedPart = Uint8Array.from(cipher.update(plainText, "utf8"));
+  const finalPart = Uint8Array.from(cipher.final());
+  const tag = Uint8Array.from(cipher.getAuthTag());
+
+  const merged = new Uint8Array(encryptedPart.length + finalPart.length + tag.length);
+  merged.set(encryptedPart, 0);
+  merged.set(finalPart, encryptedPart.length);
+  merged.set(tag, encryptedPart.length + finalPart.length);
 
   return {
-    cipherText: merged.toString("base64"),
-    iv: iv.toString("base64")
+    cipherText: Buffer.from(merged).toString("base64"),
+    iv: Buffer.from(iv).toString("base64")
   };
 };
 
@@ -36,6 +42,11 @@ const isChatAdmin = (chatData: any, uid: string) => {
   const ownerId = Array.isArray(chatData?.participants) ? chatData.participants[0] : null;
   const admins = Array.isArray(chatData?.admins) ? chatData.admins : [];
   return ownerId === uid || admins.includes(uid);
+};
+
+const isPlatformAdmin = async (uid: string) => {
+  const userSnapshot = await adminDb().collection("users").doc(uid).get();
+  return userSnapshot.exists && userSnapshot.data()?.role === "admin";
 };
 
 const assertParticipantAndGetContext = async (request: NextRequest, chatId: string) => {
@@ -56,15 +67,16 @@ const assertParticipantAndGetContext = async (request: NextRequest, chatId: stri
 
   const chatData = chatSnapshot.data() || {};
   const participants = Array.isArray(chatData.participants) ? chatData.participants : [];
+  const platformAdmin = await isPlatformAdmin(uid);
 
-  if (!participants.includes(uid)) {
+  if (!participants.includes(uid) && !platformAdmin) {
     throw new Error("FORBIDDEN");
   }
 
   return {
     uid,
     chatData,
-    isAdmin: isChatAdmin(chatData, uid),
+    isAdmin: platformAdmin || isChatAdmin(chatData, uid),
     chatRef
   };
 };

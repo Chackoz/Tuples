@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { handleJoinCommunity } from "../utils/dbUtils";
+import { handleJoinCommunity, handleLeaveCommunity } from "../utils/dbUtils";
 import { User } from "../types";
 
 interface Community {
@@ -30,15 +30,19 @@ const Communities: React.FC<CommunitiesProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'available' | 'joined'>('available');
 
+  const isCommunityMember = (community: Community) => {
+    const normalizedName = (user?.name || "").trim().toLowerCase();
+    return community.members.some((member) => {
+      const normalizedMember = (member || "").trim().toLowerCase();
+      return normalizedMember === normalizedName || member === currentUserId;
+    });
+  };
+
   // Communities the user has joined
-  const myCommunities = allCommunities.filter((community) => 
-    community.members.includes(user?.name || "")
-  );
+  const myCommunities = allCommunities.filter((community) => isCommunityMember(community));
 
   // Communities the user can join
-  const availableCommunities = allCommunities.filter((community) => 
-    !community.members.includes(user?.name || "")
-  );
+  const availableCommunities = allCommunities.filter((community) => !isCommunityMember(community));
 
   const renderCommunityCard = (community: Community, isJoined: boolean) => (
     <div
@@ -49,7 +53,25 @@ const Communities: React.FC<CommunitiesProps> = ({
         <div className="flex justify-between items-start mb-4 border-b border-gray-200 pb-4 gap-4">
           <h2 className="heading-brutal text-xl uppercase break-words">{community.name}</h2>
           {isJoined ? (
-            <span className="tag-brutal bg-green-100 text-green-800 text-gray-900 shadow-sm shrink-0">JOINED</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="tag-brutal bg-green-100 text-green-800 shadow-sm">JOINED</span>
+              <button
+                onClick={() =>
+                  handleLeaveCommunity(
+                    community.id,
+                    community.name,
+                    user.name,
+                    currentUserId,
+                    setAllCommunities,
+                    setstate,
+                    state
+                  )
+                }
+                className="btn-secondary py-2 px-4"
+              >
+                LEAVE
+              </button>
+            </div>
           ) : (
             <button
               onClick={() =>

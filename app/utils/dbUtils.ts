@@ -86,12 +86,13 @@ export const handleJoinCommunity = async (
     state: boolean
 ) => {
     try {
+        const normalizedUserName = userName.trim();
         const batch = writeBatch(db);
 
         // Update community
         const communityRef = doc(db, "communities", communityId);
         batch.update(communityRef, {
-            members: arrayUnion(userName)
+            members: arrayUnion(normalizedUserName)
         });
 
         // Update chat
@@ -116,7 +117,14 @@ export const handleJoinCommunity = async (
         setAllCommunities(prevCommunities =>
             prevCommunities.map(community =>
                 community.id === communityId
-                    ? { ...community, members: [...community.members, userName] }
+                    ? {
+                        ...community,
+                        members: community.members.some(
+                            member => member.trim().toLowerCase() === normalizedUserName.toLowerCase()
+                        )
+                            ? community.members
+                            : [...community.members, normalizedUserName]
+                      }
                     : community
             )
         );
@@ -124,13 +132,80 @@ export const handleJoinCommunity = async (
         // Update cache
         const cachedCommunity = communityCache.get(communityId);
         if (cachedCommunity) {
-            cachedCommunity.members.push(userName);
+            if (!cachedCommunity.members.some(member => member.trim().toLowerCase() === normalizedUserName.toLowerCase())) {
+                cachedCommunity.members.push(normalizedUserName);
+            }
         }
 
         setstate(!state);
     } catch (error) {
         console.error("Error joining community:", error);
         alert(`Failed to join community: ${(error as Error).message}`);
+    }
+};
+
+export const handleLeaveCommunity = async (
+    communityId: string,
+    communityName: string,
+    userName: string,
+    userId: string,
+    setAllCommunities: React.Dispatch<React.SetStateAction<Community[]>>,
+    setstate: React.Dispatch<React.SetStateAction<boolean>>,
+    state: boolean
+) => {
+    try {
+        const normalizedUserName = userName.trim();
+        const batch = writeBatch(db);
+
+        const communityRef = doc(db, "communities", communityId);
+        batch.update(communityRef, {
+            members: arrayRemove(normalizedUserName, userId)
+        });
+
+        const chatQuery = query(
+            collection(db, "chats"),
+            where("name", "==", communityName),
+            where("type", "==", "community")
+        );
+        const chatQuerySnapshot = await getDocs(chatQuery);
+        const chatDoc = chatQuerySnapshot.docs[0];
+
+        if (chatDoc) {
+            const chatRef = doc(db, "chats", chatDoc.id);
+            batch.update(chatRef, {
+                participants: arrayRemove(userId)
+            });
+        }
+
+        await batch.commit();
+
+        setAllCommunities(prevCommunities =>
+            prevCommunities.map(community =>
+                community.id === communityId
+                    ? {
+                        ...community,
+                        members: community.members.filter(member => {
+                            const normalizedMember = member.trim().toLowerCase();
+                            return normalizedMember !== normalizedUserName.toLowerCase() && member !== userId;
+                        })
+                      }
+                    : community
+            )
+        );
+
+        const cachedCommunity = communityCache.get(communityId);
+        if (cachedCommunity) {
+            cachedCommunity.members = cachedCommunity.members.filter(member => {
+                const normalizedMember = member.trim().toLowerCase();
+                return normalizedMember !== normalizedUserName.toLowerCase() && member !== userId;
+            });
+        }
+
+        setstate(!state);
+        alert(`You left ${communityName}.`);
+    } catch (error) {
+        console.error("Error leaving community:", error);
+        alert(`Failed to leave community: ${(error as Error).message}`);
     }
 };
 

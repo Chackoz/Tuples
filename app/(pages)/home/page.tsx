@@ -24,7 +24,7 @@ import Communities from "@/app/components/Communities";
 import ChatWindow from "@/app/components/ui/ChatWindow";
 import { jakartasmall } from "@/app/utils/fonts";
 import { Community, Friend, FriendRequest, User } from "@/app/types";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PostCreationModal, PostsList } from "@/app/components/FeedPosts";
 import { useProject } from "@/app/hooks/useProject";
 import { useFriends } from "@/app/hooks/useFriends";
@@ -32,6 +32,8 @@ import Projects from "@/app/components/ProjectSection";
 
 function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedViewAs = searchParams.get("viewAs")?.trim() || "";
   const { allProjects, fetchAllProjects } = useProject();
   const { friends, myFriends, refreshFriends } = useFriends();
 
@@ -45,6 +47,9 @@ function Home() {
   const [ifUnread, setIfUnread] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [perspectiveMode, setPerspectiveMode] = useState<{ active: boolean; targetUserId: string; adminUserId: string }>(
+    { active: false, targetUserId: "", adminUserId: "" }
+  );
 
   const getUserById = useCallback(
     async (userId: string) => {
@@ -163,22 +168,39 @@ function Home() {
         document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         setCurrentUserId("");
         setUser(null);
+        setPerspectiveMode({ active: false, targetUserId: "", adminUserId: "" });
         setAuthReady(true);
         router.replace("/login");
         return;
       }
 
+      let effectiveUserId = firebaseUser.uid;
+      let isAdminSession = false;
+      try {
+        const signedInUserDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        isAdminSession = signedInUserDoc.exists() && signedInUserDoc.data()?.role === "admin";
+      } catch (error) {
+        console.error("Failed to read signed-in user role:", error);
+      }
+
+      if (requestedViewAs && isAdminSession) {
+        effectiveUserId = requestedViewAs;
+        setPerspectiveMode({ active: true, targetUserId: requestedViewAs, adminUserId: firebaseUser.uid });
+      } else {
+        setPerspectiveMode({ active: false, targetUserId: "", adminUserId: "" });
+      }
+
       // Keep cookie synchronized so legacy cookie-based reads remain valid.
       const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      document.cookie = `userId=${firebaseUser.uid}; expires=${expires.toUTCString()}; path=/;`;
+      document.cookie = `userId=${effectiveUserId}; expires=${expires.toUTCString()}; path=/;`;
 
-      setCurrentUserId(firebaseUser.uid);
-      await getUserById(firebaseUser.uid);
+      setCurrentUserId(effectiveUserId);
+      await getUserById(effectiveUserId);
       setAuthReady(true);
     });
 
     return () => unsubscribe();
-  }, [getUserById, router]);
+  }, [getUserById, requestedViewAs, router]);
 
   useEffect(() => {
     if (currentView === "Communities") {
@@ -215,6 +237,19 @@ function Home() {
         <div
           className={`${currentView === "Chat" ? "md:w-[70%]" : "md:w-[40vw]"} custom-scrollbar h-[80vh] overflow-y-auto rounded-lg bg-white p-2 md:p-5`}
         >
+          {perspectiveMode.active && (
+            <div className="mb-4 flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <span>
+                Admin perspective mode: viewing as user {perspectiveMode.targetUserId}
+              </span>
+              <button
+                onClick={() => router.replace("/home")}
+                className="rounded border border-amber-300 bg-white px-2 py-1 font-semibold text-amber-900"
+              >
+                Exit Perspective
+              </button>
+            </div>
+          )}
           <h1 className="mb-5 text-2xl font-bold">{currentView}</h1>
           {currentView === "Explore" && user && (
             <div>

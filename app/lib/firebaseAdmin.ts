@@ -4,18 +4,52 @@ import { getFirestore } from "firebase-admin/firestore";
 
 let adminApp: App;
 
+const normalizePrivateKey = (value: string) => {
+  const trimmed = value.trim();
+  const unquoted =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+
+  return unquoted.replace(/\\n/g, "\n");
+};
+
 const getAdminProjectId = () => {
   return process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
 };
 
 const getServiceAccountFromEnv = () => {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON.trim();
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.private_key) {
+        parsed.private_key = normalizePrivateKey(String(parsed.private_key));
+      }
+      return parsed;
+    } catch {
+      try {
+        const decoded = Buffer.from(raw, "base64").toString("utf8");
+        const parsed = JSON.parse(decoded);
+        if (parsed?.private_key) {
+          parsed.private_key = normalizePrivateKey(String(parsed.private_key));
+        }
+        return parsed;
+      } catch {
+        throw new Error(
+          "Invalid FIREBASE_SERVICE_ACCOUNT_JSON. Provide valid JSON (or base64-encoded JSON) with project_id, client_email and private_key."
+        );
+      }
+    }
   }
 
   const projectId = getAdminProjectId();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ? normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY)
+    : "";
 
   if (!projectId) {
     throw new Error("Missing Firebase Admin FIREBASE_PROJECT_ID");
