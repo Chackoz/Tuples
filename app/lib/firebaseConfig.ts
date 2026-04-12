@@ -5,24 +5,16 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// const firebaseConfig: FirebaseOptions = {
-//   apiKey: process.env.FIREBASE_APIKEY,
-//   authDomain: process.env.FBASE_AUTH_DOMAIN,
-//   projectId: "dosth-ac312",
-//   storageBucket: "dosth-ac312.appspot.com",
-//   messagingSenderId: process.env.FBASE_MESSAGING_SENDER_ID,
-//   appId: process.env.FBASE_APP_ID,
-//   measurementId: "G-D7EP7G8YWY"
-// };
 
 const firebaseConfig :FirebaseOptions ={
-  apiKey: "AIzaSyAkFqN-nF1Ly95Bq4rLJ6rD6YnoH5BqMw0",
-  authDomain: "tuples-v2.firebaseapp.com",
-  projectId: "tuples-v2",
-  storageBucket: "tuples-v2.firebasestorage.app",
-  messagingSenderId: "309178583994",
-  appId: "1:309178583994:web:d6438a08114a59e1552b83",
-  measurementId: "G-L4NB34QJG2"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

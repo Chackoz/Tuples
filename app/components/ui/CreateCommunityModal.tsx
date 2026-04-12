@@ -55,6 +55,7 @@ function CreateJoinCommunityModal({
           createdAt: new Date(),
           type: "community",
           participants: [currentUserId],
+          admins: [currentUserId],
           creator: user.name,
           name: communityName,
           unreadCounts:{},

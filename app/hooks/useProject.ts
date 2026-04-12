@@ -68,8 +68,23 @@ export const useProject = () => {
       const projectRef = doc(db, "projects", projectId);
       await updateDoc(projectRef, {
         members: arrayUnion(user.name),
-        userIds:arrayUnion(user.userId)
+        userIds: arrayUnion(user.userId)
       });
+
+      // Join the project's dedicated chat
+      const chatsRef = collection(db, "chats");
+      const chatQuery = query(chatsRef, where("projectId", "==", projectId));
+      const chatSnapshot = await getDocs(chatQuery);
+      
+      if (!chatSnapshot.empty) {
+        const chatDoc = chatSnapshot.docs[0];
+        const unreadCountsKey = `unreadCounts.${user.userId}`;
+        await updateDoc(doc(db, "chats", chatDoc.id), {
+          participants: arrayUnion(user.userId),
+          participantNames: arrayUnion(user.name),
+          [unreadCountsKey]: 0
+        });
+      }
 
       // Update local state
       setAllProjects(prevProjects => 

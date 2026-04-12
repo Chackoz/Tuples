@@ -132,7 +132,19 @@ const ProjectCreationModal: React.FC<ProjectModalProps> = ({
         idealTeamSize: Number(projectData.idealTeamSize)
       };
 
-      await addDoc(collection(db, "projects"), projectToCreate);
+      const projectDocRef = await addDoc(collection(db, "projects"), projectToCreate);
+
+      // Create a dedicated chat for the project
+      await addDoc(collection(db, "chats"), {
+        name: `${projectData.title} (Project)`,
+        type: "project",
+        projectId: projectDocRef.id,
+        participants: [currentUserId],
+        participantNames: [userName],
+        admins: [currentUserId],
+        unreadCounts: { [currentUserId]: 0 },
+        createdAt: serverTimestamp()
+      });
 
       // Reset form
       setProjectData({

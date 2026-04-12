@@ -11,7 +11,10 @@ import {
   getDocs,
   limit,
   Timestamp,
-  writeBatch
+  writeBatch,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
@@ -24,7 +27,8 @@ import {
   UserCircle,
   Users,
   MessageCircle,
-  Briefcase
+  Briefcase,
+  Settings
 } from "lucide-react";
 
 // Typescript interfaces
@@ -49,6 +53,7 @@ interface Chat {
   name?: string;
   type?: "private" | "community" | "project";
   projectId?: string;
+  admins?: string[];
   unreadCounts: { [userId: string]: number };
 }
 
@@ -83,6 +88,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   // Responsive State
   const [isMobileView, setIsMobileView] = useState(false);
   const [isChatListView, setIsChatListView] = useState(true);
+
+  // Group Management State
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
 
   // Fetch Users
   useEffect(() => {
@@ -308,6 +317,97 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     }
   };
 
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail.trim() || !selectedChatId) return;
+
+    try {
+      const q = query(collection(db, "users"), where("email", "==", newAdminEmail.trim()));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        alert("User with this email not found.");
+        return;
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const newAdminId = userDoc.id;
+
+      const chatRef = doc(db, "chats", selectedChatId);
+      
+      // Update the document to include the new admin
+      // using arrayUnion to create the array if it doesn't exist
+      await updateDoc(chatRef, {
+        admins: arrayUnion(newAdminId),
+        participants: arrayUnion(newAdminId) // ensure they are also in the chat
+      });
+
+      setNewAdminEmail("");
+      alert("Admin added successfully.");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      alert("Failed to add admin.");
+    }
+  };
+
+  const handleRemoveAdmin = async (adminId: string) => {
+    if (!selectedChatId) return;
+    if (adminId === currentUserId) {
+      alert("You cannot remove yourself.");
+      return;
+    }
+
+    try {
+      const chatRef = doc(db, "chats", selectedChatId);
+      await updateDoc(chatRef, {
+        admins: arrayRemove(adminId)
+      });
+      alert("Admin removed successfully.");
+    } catch (error) {
+      console.error("Error removing admin:", error);
+      alert("Failed to remove admin.");
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!selectedChatId) return;
+    if (memberId === currentUserId) {
+      alert("You cannot remove yourself.");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to remove this member?")) return;
+
+    try {
+      const chatRef = doc(db, "chats", selectedChatId);
+      await updateDoc(chatRef, {
+        participants: arrayRemove(memberId),
+        admins: arrayRemove(memberId)
+      });
+      alert("Member removed successfully.");
+    } catch (error) {
+      console.error("Error removing member:", error);
+      alert("Failed to remove member.");
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!selectedChatId) return;
+    
+    if (!window.confirm("Are you sure you want to completely delete this group? This action cannot be undone.")) return;
+
+    try {
+      const chatRef = doc(db, "chats", selectedChatId);
+      await deleteDoc(chatRef);
+      setSelectedChatId(null);
+      setShowGroupManagement(false);
+      alert("Group deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      alert("Failed to delete group.");
+    }
+  };
+
   // Emoji Selection Handler
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
@@ -361,6 +461,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
         <div className={`mr-4 ${selectedChatId === chat.id ? "text-white" : "text-gray-900"}`}>
           {chat.type === "community" ? (
             <Users />
+          ) : chat.type === "project" ? (
+            <Briefcase />
           ) : (
             <UserCircle />
           )}
@@ -476,8 +578,96 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                  <span className="subheading-brutal text-lg truncate flex-1">
                    {getChatName(chats.find((c) => c.id === selectedChatId)!)}
                  </span>
+                 {(chats.find((c) => c.id === selectedChatId)?.type === "community" || chats.find((c) => c.id === selectedChatId)?.type === "project") &&
+                  (chats.find((c) => c.id === selectedChatId)?.admins?.includes(currentUserId) || chats.find((c) => c.id === selectedChatId)?.participants[0] === currentUserId) && (
+                   <button 
+                     onClick={() => setShowGroupManagement(true)} 
+                     className="btn-secondary h-10 w-10 flex items-center justify-center p-0 transition-transform hover:-translate-y-1 hover:shadow-sm relative"
+                     title="Manage Group"
+                   >
+                     <Settings size={18} />
+                   </button>
+                 )}
                </div>
             )}
+
+            {/* Group Management Overlay */}
+            {showGroupManagement && selectedChatId && (
+              <div className="absolute top-[75px] right-0 w-[300px] border-l border-b border-gray-200 bg-white shadow-lg p-4 z-50 flex flex-col custom-scrollbar overflow-y-auto max-h-[80%]">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="heading-brutal text-md">Manage Admins</h3>
+                  <button onClick={() => setShowGroupManagement(false)} className="text-gray-900 border border-gray-200 aspect-square w-8 hover:bg-gray-100 flex items-center justify-center font-bold text-xs shadow-sm bg-white">
+                    X
+                  </button>
+                </div>
+                
+                <form onSubmit={handleAddAdmin} className="flex gap-2 w-full mb-6">
+                  <input
+                    type="email"
+                    placeholder="User Email"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    className="input-brutal w-full h-[32px] py-1 text-sm shadow-none"
+                    required
+                  />
+                  <button type="submit" className="btn-primary py-1 px-3 text-sm h-[32px]">
+                    Add
+                  </button>
+                </form>
+
+                <h4 className="heading-brutal text-sm mb-2 opacity-70">Current Admins</h4>
+                <div className="flex flex-col gap-2">
+                  {(chats.find((c) => c.id === selectedChatId)?.admins || [chats.find((c) => c.id === selectedChatId)?.participants[0]])?.map((adminId) => {
+                    const adminUser = users[adminId];
+                    if (!adminUser) return null;
+                    return (
+                      <div key={adminId} className="flex justify-between items-center bg-gray-50 border border-gray-200 p-2 text-sm shadow-sm gap-2">
+                        <span className="truncate flex-1 font-bold">{adminUser.name}</span>
+                        {adminId !== currentUserId && (
+                          <button
+                            onClick={() => handleRemoveAdmin(adminId)}
+                            className="bg-red-500 text-white rounded-none font-bold text-[10px] px-2 py-1 hover:-translate-y-1 shadow-sm transition-transform shrink-0"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <h4 className="heading-brutal text-sm mb-2 mt-6 opacity-70">Current Members</h4>
+                <div className="flex flex-col gap-2 mb-6">
+                  {chats.find((c) => c.id === selectedChatId)?.participants.filter(id => !chats.find((c) => c.id === selectedChatId)?.admins?.includes(id)).map((memberId) => {
+                    const memberUser = users[memberId];
+                    if (!memberUser) return null;
+                    return (
+                      <div key={memberId} className="flex justify-between items-center bg-gray-50 border border-gray-200 p-2 text-sm shadow-sm gap-2">
+                        <span className="truncate flex-1 font-bold">{memberUser.name}</span>
+                        {memberId !== currentUserId && (
+                          <button
+                            onClick={() => handleRemoveMember(memberId)}
+                            className="bg-red-500 text-white rounded-none font-bold text-[10px] px-2 py-1 hover:-translate-y-1 shadow-sm transition-transform shrink-0"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-gray-200">
+                  <button 
+                    onClick={handleDeleteGroup}
+                    className="w-full bg-red-600 text-white font-bold py-2 border border-gray-200 shadow-sm hover:-translate-y-1 transition-transform text-sm"
+                  >
+                    Delete Group
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div
               ref={messageContainerRef}
               className="custom-scrollbar flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative"
@@ -492,32 +682,56 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   >
                     Load Older
                   </button>
-                  {messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()).map((message) => (
+                  {messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()).map((message, index, array) => {
+                    const prevMessage = array[index - 1];
+                    const nextMessage = array[index + 1];
+                    const isConsecutiveWithPrev = prevMessage && prevMessage.senderId === message.senderId && (message.timestamp.toMillis() - prevMessage.timestamp.toMillis() < 5 * 60 * 1000);
+                    const isConsecutiveWithNext = nextMessage && nextMessage.senderId === message.senderId && (nextMessage.timestamp.toMillis() - message.timestamp.toMillis() < 5 * 60 * 1000);
+                    const isMyMessage = message.senderId === currentUserId;
+                    const showSenderName = !isConsecutiveWithPrev && !isMyMessage && (chats.find((chat) => chat.id === selectedChatId)?.type === "community" || chats.find((chat) => chat.id === selectedChatId)?.type === "project");
+
+                    return (
                     <div
                       key={message.id}
-                      className={`mb-4 flex flex-col max-w-[70%] ${
-                        message.senderId === currentUserId ? "self-end items-end" : "self-start items-start"
-                      }`}
+                      className={`flex w-full mb-${isConsecutiveWithNext ? "1" : "4"} ${
+                        isMyMessage ? "justify-end" : "justify-start"
+                      } ${!isConsecutiveWithPrev ? "mt-2" : ""}`}
                     >
-                      <div
-                        className={`inline-block p-3 border border-gray-200 font-medium text-sm leading-relaxed ${
-                          message.senderId === currentUserId
-                            ? "bg-blue-500 text-white shadow-sm"
-                            : "bg-white text-gray-900 shadow-sm"
-                        }`}
-                      >
-                        {message.content}
-                      </div>
-                      {chats.find((chat) => chat.id === selectedChatId)?.type === "community" && message.senderId !== currentUserId && (
-                        <div className="mt-2 label-brutal text-gray-900/50 px-1">
-                          {message.senderName || "User"}
+                      {!isMyMessage && !isConsecutiveWithNext && (
+                        <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 flex items-center justify-center text-xs font-bold shrink-0 mt-auto">
+                          {(message.senderName || users[message.senderId]?.name || "U").charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="mt-1 label-brutal text-gray-900/40 px-1">
-                        {message.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {!isMyMessage && isConsecutiveWithNext && (
+                        <div className="w-8 h-8 mr-2 shrink-0"></div>
+                      )}
+                      <div className={`flex flex-col max-w-[70%] ${isMyMessage ? "items-end" : "items-start"}`}>
+                        {showSenderName && (
+                          <div className="mb-1 text-xs font-bold text-gray-500 ml-1">
+                            {message.senderName || users[message.senderId]?.name || "User"}
+                          </div>
+                        )}
+                        <div
+                          className={`inline-block px-4 py-2 text-sm leading-relaxed ${
+                            isMyMessage
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 text-gray-900 border border-gray-200"
+                          } ${
+                            isMyMessage 
+                              ? `rounded-l-2xl rounded-tr-2xl ${isConsecutiveWithNext ? "rounded-br-sm" : "rounded-br-2xl"} ${isConsecutiveWithPrev ? "rounded-tr-sm" : ""}`
+                              : `rounded-r-2xl rounded-tl-2xl ${isConsecutiveWithNext ? "rounded-bl-sm" : "rounded-bl-2xl"} ${isConsecutiveWithPrev ? "rounded-tl-sm" : ""}`
+                          }`}
+                        >
+                          {message.content}
+                        </div>
+                        {!isConsecutiveWithNext && (
+                          <div className={`mt-1 text-[10px] text-gray-400 ${isMyMessage ? "mr-1" : "ml-1"}`}>
+                            {message.timestamp.toDate().toLocaleString([], {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center label-brutal text-gray-900/50 z-10">

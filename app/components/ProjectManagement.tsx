@@ -3,7 +3,11 @@ import {
   doc, 
   updateDoc, 
   deleteDoc, 
-  arrayRemove 
+  arrayRemove,
+  collection,
+  query,
+  where,
+  getDocs
 } from "firebase/firestore";
 import { Project } from "../types";
 import { db } from "../lib/firebaseConfig";
@@ -54,6 +58,23 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
         members: updatedMembers,
         userIds: updatedUserIds
       });
+
+      // Remove member from project chat
+      const indexToRemove = project.members.indexOf(memberToRemove);
+      if (indexToRemove !== -1 && project.userIds[indexToRemove]) {
+        const userIdToRemove = project.userIds[indexToRemove];
+        const chatsRef = collection(db, "chats");
+        const chatQuery = query(chatsRef, where("projectId", "==", project.id));
+        const chatSnapshot = await getDocs(chatQuery);
+        
+        if (!chatSnapshot.empty) {
+          const chatDoc = chatSnapshot.docs[0];
+          await updateDoc(doc(db, "chats", chatDoc.id), {
+            participants: updatedUserIds,
+            participantNames: updatedMembers
+          });
+        }
+      }
       
       onProjectUpdate();
     } catch (error) {
@@ -67,6 +88,15 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
     try {
       const projectRef = doc(db, "projects", project.id);
       await deleteDoc(projectRef);
+
+      // delete corresponding project chat
+      const chatsRef = collection(db, "chats");
+      const chatQuery = query(chatsRef, where("projectId", "==", project.id));
+      const chatSnapshot = await getDocs(chatQuery);
+      if (!chatSnapshot.empty) {
+        await deleteDoc(doc(db, "chats", chatSnapshot.docs[0].id));
+      }
+
       onProjectUpdate();
     } catch (error) {
       console.error("Error deleting project:", error);
