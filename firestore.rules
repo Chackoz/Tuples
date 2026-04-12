@@ -23,6 +23,15 @@ service cloud.firestore {
       );
     }
 
+    function isSelfJoiningChat() {
+      return signedIn() &&
+        resource.data.type in ["community", "project"] &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(["participants"]) &&
+        request.resource.data.participants.hasAll(resource.data.participants) &&
+        request.auth.uid in request.resource.data.participants &&
+        !(request.auth.uid in resource.data.participants);
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow write: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
@@ -31,7 +40,8 @@ service cloud.firestore {
     match /chats/{chatId} {
       allow read: if isChatParticipant(chatId) || isPlatformAdmin();
       allow create: if signedIn();
-      allow update, delete: if isChatParticipant(chatId) || isPlatformAdmin();
+      allow update: if isChatParticipant(chatId) || isPlatformAdmin() || isSelfJoiningChat();
+      allow delete: if isChatParticipant(chatId) || isPlatformAdmin();
     }
 
     match /messages/{messageId} {
