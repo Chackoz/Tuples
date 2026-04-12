@@ -17,6 +17,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
+import { auth } from "../../lib/firebaseConfig";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { User } from "@/app/types";
 import {
@@ -39,6 +40,13 @@ interface Message {
   content: string;
   timestamp: Timestamp;
   senderName?: string;
+  encrypted?: boolean;
+  encryptionVersion?: number;
+  encryptionIv?: string;
+  encryption?: {
+    iv?: string;
+    version?: number;
+  };
 }
 
 interface Chat {
@@ -62,8 +70,85 @@ interface ChatWindowProps {
   setIfUnread: (unread: boolean) => void;
 }
 
+interface ChatEncryptionDoc {
+  activeVersion: number;
+  versions: Record<string, string>;
+  updatedAt?: Timestamp;
+}
+
+interface ActiveChatKeyResponse {
+  activeVersion: number;
+  key: string;
+  versions?: Record<string, string>;
+}
+
 const MESSAGES_PER_PAGE = 20;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
+const base64ToBytes = (value: string) => {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const randomKeyBase64 = () => {
+  const keyBytes = crypto.getRandomValues(new Uint8Array(32));
+  return bytesToBase64(keyBytes);
+};
+
+const encryptWithRawKey = async (plainText: string, keyBase64: string) => {
+  const keyBytes = base64ToBytes(keyBase64);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    "AES-GCM",
+    false,
+    ["encrypt"]
+  );
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    cryptoKey,
+    new TextEncoder().encode(plainText)
+  );
+
+  return {
+    cipherText: bytesToBase64(new Uint8Array(encrypted)),
+    iv: bytesToBase64(iv)
+  };
+};
+
+const decryptWithRawKey = async (cipherText: string, ivBase64: string, keyBase64: string) => {
+  const keyBytes = base64ToBytes(keyBase64);
+  const iv = base64ToBytes(ivBase64);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    "AES-GCM",
+    false,
+    ["decrypt"]
+  );
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    cryptoKey,
+    base64ToBytes(cipherText)
+  );
+
+  return new TextDecoder().decode(decrypted);
+};
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) => {
   // State Management
@@ -75,8 +160,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
   const [chatType, setChatType] = useState<"all" | "private" | "community" | "project">("all");
+  const [encryptNewMessages, setEncryptNewMessages] = useState(false);
+  const [chatKeyring, setChatKeyring] = useState<ChatEncryptionDoc | null>(null);
+  const [activeChatKey, setActiveChatKey] = useState<ActiveChatKeyResponse | null>(null);
+  const [decryptedMessageMap, setDecryptedMessageMap] = useState<{ [messageId: string]: string }>({});
+  const [bulkEncrypting, setBulkEncrypting] = useState(false);
+  const [rotatingKey, setRotatingKey] = useState(false);
 
   // Refs
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -92,6 +182,71 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   // Group Management State
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
+
+  // Memoized selected chat for dependency tracking
+  const selectedChat = useMemo(
+    () => chats.find((chat) => chat.id === selectedChatId) || null,
+    [chats, selectedChatId]
+  );
+
+  // Memoize sorted messages to avoid expensive re-sorts on every render
+  const sortedMessages = useMemo(() => {
+    return [...messages].sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+  }, [messages]);
+
+  const isCurrentUserAdmin = useMemo(() => {
+    if (!selectedChat) return false;
+    return selectedChat.admins?.includes(currentUserId) || selectedChat.participants?.[0] === currentUserId;
+  }, [selectedChat, currentUserId]);
+
+  const getIdTokenOrThrow = useCallback(async () => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error("User auth token not available.");
+    }
+    return token;
+  }, []);
+
+  const fetchActiveChatKey = useCallback(
+    async (chatId: string, includeHistory = false): Promise<ActiveChatKeyResponse | null> => {
+      const token = await getIdTokenOrThrow();
+      const response = await fetch(
+        `/api/chat/encryption/key?chatId=${encodeURIComponent(chatId)}${includeHistory ? "&includeHistory=1" : ""}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 503) {
+          return null;
+        }
+        throw new Error("Failed to fetch encryption key.");
+      }
+
+      const payload = (await response.json()) as ActiveChatKeyResponse;
+      setActiveChatKey(payload);
+
+      if (payload.versions) {
+        setChatKeyring({
+          activeVersion: payload.activeVersion,
+          versions: payload.versions
+        });
+      } else {
+        setChatKeyring({
+          activeVersion: payload.activeVersion,
+          versions: {
+            [String(payload.activeVersion)]: payload.key
+          }
+        });
+      }
+
+      return payload;
+    },
+    [getIdTokenOrThrow]
+  );
 
   // Fetch Users
   useEffect(() => {
@@ -135,45 +290,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     return () => unsubscribe();
   }, [currentUserId]);
 
-  // Chat Filtering
-  useEffect(() => {
-    let filtered = chats;
-
-    if (chatType !== "all") {
-      filtered = filtered.filter((chat) => chat.type === chatType);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter((chat) => {
-        const chatName = getChatName(chat).toLowerCase();
-        const lastMessageContent = chat.lastMessage?.content.toLowerCase() || "";
-        return (
-          chatName.includes(searchTerm.toLowerCase()) ||
-          lastMessageContent.includes(searchTerm.toLowerCase())
-        );
-      });
-    }
-
-    setFilteredChats(filtered);
-  }, [chats, searchTerm, chatType]);
-
-  // Update Page Title
-  useEffect(() => {
-    document.title =
-      totalUnreadCount > 0 ? `(${totalUnreadCount}) New Messages` : "Tuple";
-  }, [totalUnreadCount]);
-
-  // Responsive Check
-  useEffect(() => {
-    const checkMobileView = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-
-    checkMobileView();
-    window.addEventListener("resize", checkMobileView);
-    return () => window.removeEventListener("resize", checkMobileView);
-  }, []);
-
   const getChatName = useCallback(
     (chat: Chat) => {
       // Small optimization: don't compute names if participants are empty
@@ -189,6 +305,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     },
     [currentUserId, users]
   );
+
+  // Chat Filtering - memoized to prevent unnecessary re-renders
+  const filteredChats = useMemo(() => {
+    let filtered = chats;
+
+    if (chatType !== "all") {
+      filtered = filtered.filter((chat) => chat.type === chatType);
+    }
+
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter((chat) => {
+        const chatName = getChatName(chat).toLowerCase();
+        const lastMessageContent = chat.lastMessage?.content.toLowerCase() || "";
+        return (
+          chatName.includes(lowerSearchTerm) ||
+          lastMessageContent.includes(lowerSearchTerm)
+        );
+      });
+    }
+
+    return filtered;
+  }, [chats, searchTerm, chatType, getChatName]);
 
   // Load Messages
   const loadMessages = useCallback(
@@ -253,11 +392,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           } as Message;
 
           setMessages((prevMessages) => {
+            // Skip if message already exists
             if (prevMessages.some((msg) => msg.id === newMessage.id)) return prevMessages;
 
-            const updatedMessages = [newMessage, ...prevMessages]
-              .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
+            // Since Firestore is ordered by timestamp DESC, new messages come first
+            // Just prepend the new message without re-sorting entire list
+            const updatedMessages = [newMessage, ...prevMessages];
             messagesCache.current[selectedChatId] = updatedMessages;
             return updatedMessages;
           });
@@ -267,6 +407,96 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
     return () => unsubscribe();
   }, [selectedChatId, loadMessages]);
+
+  useEffect(() => {
+    if (!selectedChatId) return;
+
+    let cancelled = false;
+    const loadKeyring = async () => {
+      try {
+        const keyDoc = await fetchActiveChatKey(selectedChatId, isCurrentUserAdmin);
+        if (!cancelled) {
+          setActiveChatKey(keyDoc);
+        }
+      } catch (error) {
+        console.error("Failed to load chat keyring:", error);
+      }
+    };
+
+    loadKeyring();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChatId, fetchActiveChatKey, isCurrentUserAdmin]);
+
+  useEffect(() => {
+    if (!messages.length) {
+      setDecryptedMessageMap({});
+      return;
+    }
+
+    let cancelled = false;
+    const decryptMessages = async () => {
+      const nextMap: { [messageId: string]: string } = {};
+
+      // Decrypt in small batches to avoid blocking UI
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+        if (cancelled) return;
+
+        const batch = messages.slice(i, i + BATCH_SIZE);
+
+        // Allow UI updates between batches
+        await new Promise((resolve) => {
+          if (typeof requestIdleCallback !== "undefined") {
+            requestIdleCallback(resolve, { timeout: 100 });
+          } else {
+            setTimeout(resolve, 0);
+          }
+        });
+
+        for (const message of batch) {
+          if (cancelled) return;
+
+          if (!message.encrypted) {
+            nextMap[message.id] = message.content;
+            continue;
+          }
+
+          const version = message.encryptionVersion ?? message.encryption?.version ?? 1;
+          const versionKey = String(version);
+          const keyMaterial = chatKeyring?.versions?.[versionKey] || activeChatKey?.key;
+          const iv = message.encryptionIv || message.encryption?.iv;
+
+          if (!keyMaterial || !iv) {
+            nextMap[message.id] = "[Encrypted message: key unavailable]";
+            continue;
+          }
+
+          try {
+            nextMap[message.id] = await decryptWithRawKey(
+              message.content,
+              iv,
+              keyMaterial
+            );
+          } catch {
+            nextMap[message.id] = "[Encrypted message: failed to decrypt]";
+          }
+        }
+      }
+
+      if (!cancelled) {
+        setDecryptedMessageMap(nextMap);
+      }
+    };
+
+    decryptMessages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, chatKeyring, activeChatKey]);
 
   // Close group management when selected chat changes
   useEffect(() => {
@@ -278,15 +508,37 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     e.preventDefault();
     if (newMessage.trim() === "" || !selectedChatId) return;
 
+    let encryptedPayload: { cipherText: string; iv: string } | null = null;
+    let encryptionVersion: number | undefined;
+
+    if (encryptNewMessages) {
+      try {
+        const keyPayload = activeChatKey || (await fetchActiveChatKey(selectedChatId, false));
+        if (keyPayload) {
+          encryptionVersion = keyPayload.activeVersion;
+          encryptedPayload = await encryptWithRawKey(newMessage.trim(), keyPayload.key);
+        }
+      } catch (error) {
+        console.warn("Encryption unavailable, sending plaintext message:", error);
+      }
+    }
+
     const batch = writeBatch(db);
 
     const newMessageObj: Message = {
       id: Date.now().toString(),
       chatId: selectedChatId,
       senderId: currentUserId,
-      content: newMessage,
+      content: encryptedPayload?.cipherText || newMessage.trim(),
       timestamp: Timestamp.now(),
-      senderName: usersCache.current[currentUserId]?.name
+      senderName: usersCache.current[currentUserId]?.name,
+      ...(encryptedPayload
+        ? {
+            encrypted: true,
+            encryptionVersion,
+            encryptionIv: encryptedPayload.iv
+          }
+        : {})
     };
 
     const messageRef = doc(collection(db, "messages"));
@@ -295,7 +547,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     const chatRef = doc(db, "chats", selectedChatId);
     const updateData: any = {
       lastMessage: {
-        content: newMessage,
+        content: encryptedPayload ? "Encrypted message" : newMessage.trim(),
         senderId: currentUserId,
         timestamp: Timestamp.now()
       }
@@ -319,6 +571,70 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
       setNewMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
+    }
+  };
+
+  const rotateChatKey = async () => {
+    if (!selectedChatId || !isCurrentUserAdmin) return;
+
+    setRotatingKey(true);
+    try {
+      const token = await getIdTokenOrThrow();
+      const response = await fetch("/api/chat/encryption/key", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: "rotate",
+          chatId: selectedChatId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to rotate key.");
+      }
+
+      await fetchActiveChatKey(selectedChatId, true);
+      alert("Encryption key rotated.");
+    } catch (error) {
+      console.error("Failed to rotate key:", error);
+      alert("Failed to rotate encryption key.");
+    } finally {
+      setRotatingKey(false);
+    }
+  };
+
+  const encryptAllExistingMessages = async () => {
+    if (!selectedChatId || !isCurrentUserAdmin) return;
+
+    setBulkEncrypting(true);
+    try {
+      const token = await getIdTokenOrThrow();
+      const response = await fetch("/api/chat/encryption/key", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: "encryptExisting",
+          chatId: selectedChatId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to encrypt existing messages.");
+      }
+
+      const payload = (await response.json()) as { updatedCount: number };
+      alert(`Encrypted ${payload.updatedCount} existing messages.`);
+    } catch (error) {
+      console.error("Failed to encrypt existing messages:", error);
+      alert("Failed to encrypt existing messages.");
+    } finally {
+      setBulkEncrypting(false);
     }
   };
 
@@ -583,8 +899,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                  <span className="subheading-brutal text-lg truncate flex-1">
                    {getChatName(chats.find((c) => c.id === selectedChatId)!)}
                  </span>
-                 {(chats.find((c) => c.id === selectedChatId)?.type === "community" || chats.find((c) => c.id === selectedChatId)?.type === "project") &&
-                  (chats.find((c) => c.id === selectedChatId)?.admins?.includes(currentUserId) || chats.find((c) => c.id === selectedChatId)?.participants[0] === currentUserId) && (
+                 {(selectedChat?.type === "community" || selectedChat?.type === "project") &&
+                  isCurrentUserAdmin && (
                    <button 
                      onClick={() => setShowGroupManagement(true)} 
                      className="btn-secondary h-10 w-10 flex items-center justify-center p-0 transition-transform hover:-translate-y-1 hover:shadow-sm relative"
@@ -663,6 +979,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   })}
                 </div>
 
+                <h4 className="heading-brutal text-sm mb-2 mt-2 opacity-70">Encryption Controls</h4>
+                <div className="flex flex-col gap-2 mb-6">
+                  <div className="bg-gray-50 border border-gray-200 p-2 text-xs font-bold">
+                    Active Key Version: v{activeChatKey?.activeVersion || "-"}
+                  </div>
+                  <button
+                    onClick={rotateChatKey}
+                    disabled={rotatingKey}
+                    className="bg-blue-500 text-white rounded-none font-bold text-xs px-2 py-2 hover:-translate-y-1 shadow-sm transition-transform disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    {rotatingKey ? "Rotating..." : "Rotate Key"}
+                  </button>
+                  <button
+                    onClick={encryptAllExistingMessages}
+                    disabled={bulkEncrypting}
+                    className="bg-gray-900 text-white rounded-none font-bold text-xs px-2 py-2 hover:-translate-y-1 shadow-sm transition-transform disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    {bulkEncrypting ? "Encrypting..." : "Encrypt Existing Chat"}
+                  </button>
+                </div>
+
                 <div className="mt-auto pt-4 border-t border-gray-200">
                   <button 
                     onClick={handleDeleteGroup}
@@ -688,7 +1025,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                   >
                     Load Older
                   </button>
-                  {messages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis()).map((message, index, array) => {
+                  {sortedMessages.map((message, index, array) => {
                     const prevMessage = array[index - 1];
                     const nextMessage = array[index + 1];
                     const isConsecutiveWithPrev = prevMessage && prevMessage.senderId === message.senderId && (message.timestamp.toMillis() - prevMessage.timestamp.toMillis() < 5 * 60 * 1000);
@@ -728,7 +1065,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                               : `rounded-r-2xl rounded-tl-2xl ${isConsecutiveWithNext ? "rounded-bl-sm" : "rounded-bl-2xl"} ${isConsecutiveWithPrev ? "rounded-tl-sm" : ""}`
                           }`}
                         >
-                          {message.content}
+                          {decryptedMessageMap[message.id] || "Decrypting..."}
                         </div>
                         {!isConsecutiveWithNext && (
                           <div className={`mt-1 text-[10px] text-gray-400 ${isMyMessage ? "mr-1" : "ml-1"}`}>

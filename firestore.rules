@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isChatParticipant(chatId) {
+      return signedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    function isPlatformAdmin() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isChatAdmin(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId)).data;
+      return signedIn() && (
+        request.auth.uid == chat.participants[0] ||
+        (chat.admins != null && request.auth.uid in chat.admins)
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
+    }
+
+    match /chats/{chatId} {
+      allow read: if isChatParticipant(chatId) || isPlatformAdmin();
+      allow create: if signedIn();
+      allow update, delete: if isChatParticipant(chatId) || isPlatformAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn() && (isChatParticipant(resource.data.chatId) || isPlatformAdmin());
+      allow create: if signedIn() && (isChatParticipant(request.resource.data.chatId) || isPlatformAdmin());
+      allow update, delete: if signedIn() && (isChatParticipant(resource.data.chatId) || isPlatformAdmin());
+    }
+
+    match /communities/{communityId} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn();
+    }
+
+    match /projects/{projectId} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn();
+    }
+
+    // Key history stays server-only via Admin SDK API routes.
+    match /chatEncryptionKeys/{chatId} {
+      allow read, write: if false;
+    }
+
+    // Broadcasts are admin-managed from backend/admin pages.
+    match /adminBroadcasts/{broadcastId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && isPlatformAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
