@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
+import { Suspense } from "react";
 import {
   doc,
   getDoc,
@@ -30,7 +31,7 @@ import { useProject } from "@/app/hooks/useProject";
 import { useFriends } from "@/app/hooks/useFriends";
 import Projects from "@/app/components/ProjectSection";
 
-function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedViewAs = searchParams.get("viewAs")?.trim() || "";
@@ -409,4 +410,10 @@ function Home() {
   );
 }
 
-export default Home;
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}

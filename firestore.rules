@@ -36,6 +36,32 @@ service cloud.firestore {
       return signedIn() && resource.data.userId == request.auth.uid;
     }
 
+    function currentUserName() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name;
+    }
+
+    function isFriendLinkWrite(userId) {
+      return signedIn() &&
+        request.auth.uid != userId &&
+        resource.data != null &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(["friends", "chats"]) &&
+        request.resource.data.friends is list &&
+        (
+          (
+            request.resource.data.friends.hasAll(resource.data.friends) &&
+            currentUserName() in request.resource.data.friends
+          ) ||
+          (
+            resource.data.friends.hasAll(request.resource.data.friends) &&
+            currentUserName() in resource.data.friends
+          )
+        ) &&
+        (
+          !request.resource.data.diff(resource.data).changedKeys().hasAny(["chats"]) ||
+          request.resource.data.chats is list
+        );
+    }
+
     function validPostCreate() {
       return signedIn() &&
         request.resource.data.userId is string &&
@@ -48,7 +74,20 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn();
-      allow write: if signedIn() && (request.auth.uid == userId || isPlatformAdmin());
+      allow write: if signedIn() && (request.auth.uid == userId || isPlatformAdmin() || isFriendLinkWrite(userId));
+    }
+
+    match /friendRequests/{requestId} {
+      allow create: if signedIn() &&
+        request.resource.data.from == request.auth.uid &&
+        request.resource.data.to is string &&
+        request.resource.data.status == "pending";
+
+      allow read: if signedIn() &&
+        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid || isPlatformAdmin());
+
+      allow update, delete: if signedIn() &&
+        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid || isPlatformAdmin());
     }
 
     match /chats/{chatId} {
