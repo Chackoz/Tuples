@@ -439,6 +439,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     let cancelled = false;
     const decryptMessages = async () => {
       const nextMap: { [messageId: string]: string } = {};
+      const hasAnyKeyMaterial = Boolean(chatKeyring?.versions && Object.keys(chatKeyring.versions).length) || Boolean(activeChatKey?.key);
 
       // Decrypt in small batches to avoid blocking UI
       const BATCH_SIZE = 10;
@@ -469,8 +470,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           const keyMaterial = chatKeyring?.versions?.[versionKey] || activeChatKey?.key;
           const iv = message.encryptionIv || message.encryption?.iv;
 
-          if (!keyMaterial || !iv) {
+          if (!iv) {
             nextMap[message.id] = "[Encrypted message: key unavailable]";
+            continue;
+          }
+
+          // During initial load, avoid flashing failure states before keys arrive.
+          if (!keyMaterial) {
+            if (hasAnyKeyMaterial) {
+              nextMap[message.id] = "[Encrypted message: key unavailable]";
+            }
             continue;
           }
 

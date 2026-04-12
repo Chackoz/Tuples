@@ -14,6 +14,8 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
+import { auth } from "../../lib/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 import NavBar from "@/app/components/NavBar";
 import Dashboard from "@/app/components/Dashboard";
 import FriendCard from "@/app/components/ui/FriendCard";
@@ -42,6 +44,7 @@ function Home() {
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [ifUnread, setIfUnread] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   const getUserById = useCallback(
     async (userId: string) => {
@@ -155,16 +158,26 @@ function Home() {
   };
 
   useEffect(() => {
-    const cookieValue = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userId"))
-      ?.split("=")?.[1];
-    if (cookieValue) {
-      setCurrentUserId(cookieValue);
-      getUserById(cookieValue);
-    } else {
-      router.push("/login");
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        setCurrentUserId("");
+        setUser(null);
+        setAuthReady(true);
+        router.replace("/login");
+        return;
+      }
+
+      // Keep cookie synchronized so legacy cookie-based reads remain valid.
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      document.cookie = `userId=${firebaseUser.uid}; expires=${expires.toUTCString()}; path=/;`;
+
+      setCurrentUserId(firebaseUser.uid);
+      await getUserById(firebaseUser.uid);
+      setAuthReady(true);
+    });
+
+    return () => unsubscribe();
   }, [getUserById, router]);
 
   useEffect(() => {
@@ -177,7 +190,7 @@ function Home() {
     if (currentView === "Friends") {
       fetchFriendRequests();
     }
-  }, [currentView, state, fetchAllCommunities, fetchAllProjects]);
+  }, [currentView, state, fetchAllCommunities, fetchAllProjects, fetchFriendRequests]);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-gray-50 p-4 md:p-8 relative">
@@ -188,7 +201,7 @@ function Home() {
         <NavBar />
 
         <div className="flex w-full flex-col gap-6 md:flex-row mt-8">
-        {user && (
+        {authReady && user && (
           <Dashboard
             state={state}
             setstate={setState}
