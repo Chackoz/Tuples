@@ -124,7 +124,7 @@ const Communities: React.FC<CommunitiesProps> = ({
             myCommunities.map(community => renderCommunityCard(community, true))
           ) : (
             <div className="card-brutal bg-gray-50 border-dashed col-span-full py-16 flex items-center justify-center">
-              <p className="heading-brutal text-gray-900/40 text-center">YOU HAVEN'T JOINED ANY COMMUNITIES YET</p>
+              <p className="heading-brutal text-gray-900/40 text-center">YOU HAVEN&apos;T JOINED ANY COMMUNITIES YET</p>
             </div>
           )}
         </div>

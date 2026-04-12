@@ -268,6 +268,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     return () => unsubscribe();
   }, [selectedChatId, loadMessages]);
 
+  // Close group management when selected chat changes
+  useEffect(() => {
+    setShowGroupManagement(false);
+  }, [selectedChatId]);
+
   // Send Message Handler
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
