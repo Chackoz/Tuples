@@ -165,6 +165,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   const [chatKeyring, setChatKeyring] = useState<ChatEncryptionDoc | null>(null);
   const [activeChatKey, setActiveChatKey] = useState<ActiveChatKeyResponse | null>(null);
   const [decryptedMessageMap, setDecryptedMessageMap] = useState<{ [messageId: string]: string }>({});
+  const [encryptionQuotaMessage, setEncryptionQuotaMessage] = useState<string | null>(null);
   const [bulkEncrypting, setBulkEncrypting] = useState(false);
   const [rotatingKey, setRotatingKey] = useState(false);
 
@@ -225,10 +226,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           console.warn("Encryption key service unavailable:", payload?.error || "Service unavailable");
           return null;
         }
+        if (response.status === 429) {
+          console.warn("Encryption key service throttled:", payload?.error || "Quota exceeded");
+          setEncryptionQuotaMessage("Quota exceeded. We broke to buy Firebase premium.");
+          return null;
+        }
         throw new Error(payload?.error || payload?.details || `Failed to fetch encryption key (status ${response.status}).`);
       }
 
       const payload = (await response.json()) as ActiveChatKeyResponse;
+      setEncryptionQuotaMessage(null);
       setActiveChatKey(payload);
 
       if (payload.versions) {
@@ -416,7 +423,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     let cancelled = false;
     const loadKeyring = async () => {
       try {
-        const keyDoc = await fetchActiveChatKey(selectedChatId, isCurrentUserAdmin);
+        const keyDoc = await fetchActiveChatKey(selectedChatId, false);
         if (!cancelled) {
           setActiveChatKey(keyDoc);
         }
@@ -430,7 +437,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     return () => {
       cancelled = true;
     };
-  }, [selectedChatId, fetchActiveChatKey, isCurrentUserAdmin]);
+  }, [selectedChatId, fetchActiveChatKey]);
+
+  useEffect(() => {
+    setEncryptionQuotaMessage(null);
+  }, [selectedChatId]);
 
   useEffect(() => {
     if (!messages.length) {
@@ -921,6 +932,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
                    </button>
                  )}
                </div>
+            )}
+
+            {encryptionQuotaMessage && (
+              <div className="mx-4 mt-3 border border-red-300 bg-red-50 p-3 text-sm font-bold text-red-800">
+                {encryptionQuotaMessage}
+              </div>
             )}
 
             {/* Group Management Overlay */}

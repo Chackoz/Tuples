@@ -11,6 +11,12 @@ type KeyDoc = {
   updatedAt?: FirebaseFirestore.FieldValue | FirebaseFirestore.Timestamp;
 };
 
+const KEY_CACHE_TTL_MS = 30 * 1000;
+const ADMIN_ROLE_CACHE_TTL_MS = 60 * 1000;
+
+const keyDocCache = new Map<string, { expiresAt: number; data: KeyDoc }>();
+const adminRoleCache = new Map<string, { expiresAt: number; isAdmin: boolean }>();
+
 const jsonError = (message: string, status = 400) => {
   return NextResponse.json({ error: message }, { status });
 };
@@ -69,8 +75,20 @@ const isChatAdmin = (chatData: any, uid: string) => {
 };
 
 const isPlatformAdmin = async (uid: string) => {
+  const cached = adminRoleCache.get(uid);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.isAdmin;
+  }
+
   const userSnapshot = await adminDb().collection("users").doc(uid).get();
-  return userSnapshot.exists && userSnapshot.data()?.role === "admin";
+  const isAdmin = userSnapshot.exists && userSnapshot.data()?.role === "admin";
+  adminRoleCache.set(uid, {
+    isAdmin,
+    expiresAt: now + ADMIN_ROLE_CACHE_TTL_MS
+  });
+
+  return isAdmin;
 };
 
 const assertParticipantAndGetContext = async (request: NextRequest, chatId: string) => {
@@ -91,9 +109,10 @@ const assertParticipantAndGetContext = async (request: NextRequest, chatId: stri
 
   const chatData = chatSnapshot.data() || {};
   const participants = Array.isArray(chatData.participants) ? chatData.participants : [];
-  const platformAdmin = await isPlatformAdmin(uid);
+  const isParticipant = participants.includes(uid);
+  const platformAdmin = isParticipant ? false : await isPlatformAdmin(uid);
 
-  if (!participants.includes(uid) && !platformAdmin) {
+  if (!isParticipant && !platformAdmin) {
     throw new Error("FORBIDDEN");
   }
 
@@ -106,6 +125,13 @@ const assertParticipantAndGetContext = async (request: NextRequest, chatId: stri
 };
 
 const ensureKeyDoc = async (chatId: string) => {
+  const now = Date.now();
+  const cached = keyDocCache.get(chatId);
+  if (cached && cached.expiresAt > now) {
+    const keyRef = adminDb().collection("chatEncryptionKeys").doc(chatId);
+    return { keyRef, data: cached.data };
+  }
+
   const keyRef = adminDb().collection("chatEncryptionKeys").doc(chatId);
   const keySnapshot = await keyRef.get();
 
@@ -119,13 +145,19 @@ const ensureKeyDoc = async (chatId: string) => {
 
     const activeKey = versions[String(activeVersion)];
     if (activeKey && typeof activeKey === "string") {
+      const normalizedData: KeyDoc = {
+        activeVersion,
+        versions,
+        updatedAt: existing.updatedAt as any
+      };
+      keyDocCache.set(chatId, {
+        data: normalizedData,
+        expiresAt: now + KEY_CACHE_TTL_MS
+      });
+
       return {
         keyRef,
-        data: {
-          activeVersion,
-          versions,
-          updatedAt: existing.updatedAt as any
-        }
+        data: normalizedData
       };
     }
 
@@ -138,6 +170,10 @@ const ensureKeyDoc = async (chatId: string) => {
     };
 
     await keyRef.set(repairedData, { merge: true });
+    keyDocCache.set(chatId, {
+      data: repairedData,
+      expiresAt: now + KEY_CACHE_TTL_MS
+    });
     return { keyRef, data: repairedData };
   }
 
@@ -148,6 +184,10 @@ const ensureKeyDoc = async (chatId: string) => {
   };
 
   await keyRef.set(initialData);
+  keyDocCache.set(chatId, {
+    data: initialData,
+    expiresAt: now + KEY_CACHE_TTL_MS
+  });
   return { keyRef, data: initialData };
 };
 
@@ -193,6 +233,9 @@ export async function GET(request: NextRequest) {
     const message = String(error?.message || "");
     if (message.includes("Missing Firebase Admin credentials")) {
       return jsonError("Encryption service unavailable: missing Firebase Admin credentials", 503);
+    }
+    if (message.includes("RESOURCE_EXHAUSTED") || message.includes("Quota exceeded")) {
+      return jsonError("Encryption service temporarily throttled: quota exceeded", 429);
     }
     if (message.includes("Failed to determine project ID") || message.includes("metadata.google.internal")) {
       return jsonError("Encryption service unavailable: Firebase Admin project ID not configured", 503);
@@ -245,6 +288,8 @@ export async function POST(request: NextRequest) {
         },
         { merge: true }
       );
+
+      keyDocCache.delete(chatId);
 
       return NextResponse.json({ ok: true, activeVersion: nextVersion });
     }
@@ -313,6 +358,9 @@ export async function POST(request: NextRequest) {
     const message = String(error?.message || "");
     if (message.includes("Missing Firebase Admin credentials")) {
       return jsonError("Encryption service unavailable: missing Firebase Admin credentials", 503);
+    }
+    if (message.includes("RESOURCE_EXHAUSTED") || message.includes("Quota exceeded")) {
+      return jsonError("Encryption service temporarily throttled: quota exceeded", 429);
     }
     if (message.includes("Failed to determine project ID") || message.includes("metadata.google.internal")) {
       return jsonError("Encryption service unavailable: Firebase Admin project ID not configured", 503);
