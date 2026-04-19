@@ -25,20 +25,8 @@ function NavBar() {
   };
 
   return (
-    <div className="relative flex w-full items-center justify-between py-5 border-b border-gray-200 bg-gray-50">
-      {/* Mobile Development Warning */}
-     
-      <div className="absolute left-0 top-0 z-50 w-full bg-orange-100 border-b border-gray-200 text-gray-800 p-1 text-center md:hidden">
-      <Marquee>
-        <div className="w-full text-nowrap text-sm font-medium justify-center leading-5 gap-4">
-        !  MOBILE VIEW IS STILL IN DEVELOPMENT  !
-      
-        </div>
-        </Marquee>
-      </div>
-    
-
-      <div className="flex w-full items-center justify-between pt-5 md:pt-0">
+    <div className="relative flex w-full items-center justify-between py-5 border-b border-gray-200 bg-gray-50 flex-wrap md:flex-nowrap">
+      <div className="flex w-full items-center justify-between">
         <a href="/" className="z-50 flex items-center justify-center">
           <div className="relative">
             <span className="text-3xl font-light tracking-tight text-gray-900">Tuples</span>
@@ -50,7 +38,7 @@ function NavBar() {
         </button>
       </div>
 
-      <div className="hidden items-center space-x-6 md:flex mt-0">
+      <div className="hidden items-center space-x-6 md:flex mt-4 md:mt-0 w-full md:w-auto justify-end">
         <nav className="flex space-x-6">
           <a href="/home" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
             Home

@@ -27,18 +27,18 @@ export default function Home() {
             const userData = userDoc.data();
             
             // Route based on user's interests
-            userData.Interests && userData.interests.length > 1 
+            userData.interests && userData.interests.length > 1 
               ? router.push('/home')
               : router.push('/interests');
             return;
           }
         }
         
-        // No valid cookie or user, redirect to signup
-        router.push("/signup");
+        // No valid cookie or user, redirect to login
+        router.push("/login");
       } catch (error) {
         console.error("Authentication check failed:", error);
-        router.push("/signup");
+        router.push("/login");
       } finally {
         setIsLoading(false);
       }

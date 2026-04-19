@@ -85,6 +85,10 @@ interface ActiveChatKeyResponse {
 const MESSAGES_PER_PAGE = 20;
 const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
+// Global Key Caching to prevent quota limits
+const activeKeyCache = new Map<string, { expiresAt: number; data: ActiveChatKeyResponse }>();
+const activeKeyPromises = new Map<string, Promise<ActiveChatKeyResponse | null>>();
+
 const bytesToBase64 = (bytes: Uint8Array) => {
   let binary = "";
   for (let i = 0; i < bytes.length; i += 1) {
@@ -168,6 +172,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   const [encryptionQuotaMessage, setEncryptionQuotaMessage] = useState<string | null>(null);
   const [bulkEncrypting, setBulkEncrypting] = useState(false);
   const [rotatingKey, setRotatingKey] = useState(false);
+  const [messagesLimit, setMessagesLimit] = useState(MESSAGES_PER_PAGE);
 
   // Refs
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -175,10 +180,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   const messagesCache = useRef<{ [chatId: string]: Message[] }>({});
   const usersCache = useRef<{ [key: string]: User }>({});
   const lastFetchTimestamp = useRef<{ [chatId: string]: number }>({});
+  const activeChatIdRef = useRef<string | null>(null);
+  const activeListenersRef = useRef<{ [chatId: string]: { unsubscribe: () => void; limit: number } }>({});
 
   // Responsive State
   const [isMobileView, setIsMobileView] = useState(false);
   const [isChatListView, setIsChatListView] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    // Initial check
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Group Management State
   const [showGroupManagement, setShowGroupManagement] = useState(false);
@@ -210,49 +231,85 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
   const fetchActiveChatKey = useCallback(
     async (chatId: string, includeHistory = false): Promise<ActiveChatKeyResponse | null> => {
-      const token = await getIdTokenOrThrow();
-      const response = await fetch(
-        `/api/chat/encryption/key?chatId=${encodeURIComponent(chatId)}${includeHistory ? "&includeHistory=1" : ""}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const cacheKey = `${chatId}_${includeHistory}`;
+      const now = Date.now();
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        if (response.status === 503) {
-          console.warn("Encryption key service unavailable:", payload?.error || "Service unavailable");
-          return null;
+      // Check cache
+      if (activeKeyCache.has(cacheKey)) {
+        const cached = activeKeyCache.get(cacheKey)!;
+        if (now < cached.expiresAt) {
+          const payload = cached.data;
+          setActiveChatKey(payload);
+          if (payload.versions) {
+            setChatKeyring({ activeVersion: payload.activeVersion, versions: payload.versions });
+          } else {
+            setChatKeyring({ activeVersion: payload.activeVersion, versions: { [String(payload.activeVersion)]: payload.key } });
+          }
+          return payload;
         }
-        if (response.status === 429) {
-          console.warn("Encryption key service throttled:", payload?.error || "Quota exceeded");
-          setEncryptionQuotaMessage("Quota exceeded. We broke to buy Firebase premium.");
-          return null;
-        }
-        throw new Error(payload?.error || payload?.details || `Failed to fetch encryption key (status ${response.status}).`);
       }
 
-      const payload = (await response.json()) as ActiveChatKeyResponse;
-      setEncryptionQuotaMessage(null);
-      setActiveChatKey(payload);
-
-      if (payload.versions) {
-        setChatKeyring({
-          activeVersion: payload.activeVersion,
-          versions: payload.versions
-        });
-      } else {
-        setChatKeyring({
-          activeVersion: payload.activeVersion,
-          versions: {
-            [String(payload.activeVersion)]: payload.key
-          }
-        });
+      // Check if already fetching
+      if (activeKeyPromises.has(cacheKey)) {
+        return activeKeyPromises.get(cacheKey)!;
       }
 
-      return payload;
+      const fetchPromise = (async () => {
+        try {
+          const token = await getIdTokenOrThrow();
+          const response = await fetch(
+            `/api/chat/encryption/key?chatId=${encodeURIComponent(chatId)}${includeHistory ? "&includeHistory=1" : ""}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
+
+          if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            if (response.status === 503) {
+              console.warn("Encryption key service unavailable:", payload?.error || "Service unavailable");
+              return null;
+            }
+            if (response.status === 429) {
+              console.warn("Encryption key service throttled:", payload?.error || "Quota exceeded");
+              setEncryptionQuotaMessage("Quota exceeded. We broke to buy Firebase premium.");
+              return null;
+            }
+            throw new Error(payload?.error || payload?.details || `Failed to fetch encryption key (status ${response.status}).`);
+          }
+
+          const payload = (await response.json()) as ActiveChatKeyResponse;
+          setEncryptionQuotaMessage(null);
+
+          // Cache for 5 mins
+          activeKeyCache.set(cacheKey, { expiresAt: Date.now() + 5 * 60 * 1000, data: payload });
+
+          setActiveChatKey(payload);
+
+          if (payload.versions) {
+            setChatKeyring({
+              activeVersion: payload.activeVersion,
+              versions: payload.versions
+            });
+          } else {
+            setChatKeyring({
+              activeVersion: payload.activeVersion,
+              versions: {
+                [String(payload.activeVersion)]: payload.key
+              }
+            });
+          }
+
+          return payload;
+        } finally {
+          activeKeyPromises.delete(cacheKey);
+        }
+      })();
+
+      activeKeyPromises.set(cacheKey, fetchPromise);
+      return fetchPromise;
     },
     [getIdTokenOrThrow]
   );
@@ -341,81 +398,85 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
   // Load Messages
   const loadMessages = useCallback(
     async (chatId: string, loadMore = false) => {
-      const now = Date.now();
-
-      if (
-        !loadMore &&
-        messagesCache.current[chatId] &&
-        now - (lastFetchTimestamp.current[chatId] || 0) < CACHE_EXPIRY
-      ) {
-        setMessages(messagesCache.current[chatId]);
+      if (loadMore) {
+        setMessagesLimit((prev) => prev + MESSAGES_PER_PAGE);
         return;
       }
 
-      let messagesQuery = query(
-        collection(db, "messages"),
-        where("chatId", "==", chatId),
-        orderBy("timestamp", "desc"),
-        limit(MESSAGES_PER_PAGE)
-      );
-
-      const snapshot = await getDocs(messagesQuery);
-      const newMessages = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }) as Message)
-        .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-      const updatedMessages = loadMore
-        ? [...newMessages, ...(messagesCache.current[chatId] || [])]
-        : newMessages;
-
-      setMessages(updatedMessages);
-      messagesCache.current[chatId] = updatedMessages;
-      lastFetchTimestamp.current[chatId] = now;
-
+      // Initial load, just mark as read
       const chatRef = doc(db, "chats", chatId);
       await updateDoc(chatRef, {
         [`unreadCounts.${currentUserId}`]: 0
-      });
+      }).catch(err => console.error("Failed to clear unread counts", err));
     },
     [currentUserId]
   );
 
+  // Unified listener cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      Object.values(activeListenersRef.current).forEach((listener) => listener.unsubscribe());
+    };
+  }, []);
+
   // Real-time Message Listener
+  useEffect(() => {
+    activeChatIdRef.current = selectedChatId;
+    setMessagesLimit(MESSAGES_PER_PAGE);
+
+    // Instant ZERO-READ UI render if we already have it in cache
+    if (selectedChatId && messagesCache.current[selectedChatId]) {
+      setMessages(messagesCache.current[selectedChatId]);
+    } else {
+      setMessages([]);
+    }
+
+    setActiveChatKey(null);
+    setChatKeyring(null);
+    setDecryptedMessageMap({});
+  }, [selectedChatId]);
+
   useEffect(() => {
     if (!selectedChatId) return;
 
-    loadMessages(selectedChatId);
+    loadMessages(selectedChatId, false);
+
+    // Skip creating a new query if we already have an active listener for THIS chat + THIS limit
+    const existingListener = activeListenersRef.current[selectedChatId];
+    if (existingListener && existingListener.limit === messagesLimit) {
+      return; 
+    }
+
+    // Tear down old query if they clicked "Load Older"
+    if (existingListener) {
+      existingListener.unsubscribe();
+    }
 
     const messagesQuery = query(
       collection(db, "messages"),
       where("chatId", "==", selectedChatId),
-      orderBy("timestamp", "desc")
+      orderBy("timestamp", "desc"),
+      limit(messagesLimit)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const newMessage = {
-            id: change.doc.id,
-            ...change.doc.data()
-          } as Message;
+      const fetchedMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
 
-          setMessages((prevMessages) => {
-            // Skip if message already exists
-            if (prevMessages.some((msg) => msg.id === newMessage.id)) return prevMessages;
-
-            // Since Firestore is ordered by timestamp DESC, new messages come first
-            // Just prepend the new message without re-sorting entire list
-            const updatedMessages = [newMessage, ...prevMessages];
-            messagesCache.current[selectedChatId] = updatedMessages;
-            return updatedMessages;
-          });
-        }
-      });
+      messagesCache.current[selectedChatId] = fetchedMessages;
+      
+      // Update UI only if they haven't rapidly clicked to another chat
+      if (activeChatIdRef.current === selectedChatId) {
+        setMessages(fetchedMessages);
+      }
     });
 
-    return () => unsubscribe();
-  }, [selectedChatId, loadMessages]);
+    activeListenersRef.current[selectedChatId] = { unsubscribe, limit: messagesLimit };
+
+  }, [selectedChatId, messagesLimit, loadMessages]);
 
   useEffect(() => {
     if (!selectedChatId) return;
@@ -451,30 +512,31 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
     let cancelled = false;
     const decryptMessages = async () => {
-      const nextMap: { [messageId: string]: string } = {};
       const hasAnyKeyMaterial = Boolean(chatKeyring?.versions && Object.keys(chatKeyring.versions).length) || Boolean(activeChatKey?.key);
 
-      // Decrypt in small batches to avoid blocking UI
       const BATCH_SIZE = 10;
       for (let i = 0; i < messages.length; i += BATCH_SIZE) {
         if (cancelled) return;
 
         const batch = messages.slice(i, i + BATCH_SIZE);
+        const newMap: { [messageId: string]: string } = {};
+        let needsUpdate = false;
 
         // Allow UI updates between batches
-        await new Promise((resolve) => {
-          if (typeof requestIdleCallback !== "undefined") {
-            requestIdleCallback(resolve, { timeout: 100 });
-          } else {
-            setTimeout(resolve, 0);
-          }
-        });
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         for (const message of batch) {
           if (cancelled) return;
 
+          // Skip if already decrypted
+          if (decryptedMessageMap[message.id] !== undefined) {
+             continue;
+          }
+
+          needsUpdate = true;
+
           if (!message.encrypted) {
-            nextMap[message.id] = message.content;
+            newMap[message.id] = message.content;
             continue;
           }
 
@@ -484,32 +546,31 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           const iv = message.encryptionIv || message.encryption?.iv;
 
           if (!iv) {
-            nextMap[message.id] = "[Encrypted message: key unavailable]";
+            newMap[message.id] = "[Encrypted message: key unavailable]";
             continue;
           }
 
-          // During initial load, avoid flashing failure states before keys arrive.
           if (!keyMaterial) {
             if (hasAnyKeyMaterial) {
-              nextMap[message.id] = "[Encrypted message: key unavailable]";
+              newMap[message.id] = "[Encrypted message: key unavailable]";
             }
             continue;
           }
 
           try {
-            nextMap[message.id] = await decryptWithRawKey(
+            newMap[message.id] = await decryptWithRawKey(
               message.content,
               iv,
               keyMaterial
             );
           } catch {
-            nextMap[message.id] = "[Encrypted message: failed to decrypt]";
+            newMap[message.id] = "[Encrypted message: failed to decrypt]";
           }
         }
-      }
 
-      if (!cancelled) {
-        setDecryptedMessageMap(nextMap);
+        if (needsUpdate && !cancelled) {
+          setDecryptedMessageMap((prev) => ({ ...prev, ...newMap }));
+        }
       }
     };
 
@@ -518,7 +579,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
     return () => {
       cancelled = true;
     };
-  }, [messages, chatKeyring, activeChatKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, chatKeyring, activeChatKey]); // Removed decryptedMessageMap from deps to prevent infinite loops
 
   // Close group management when selected chat changes
   useEffect(() => {
@@ -887,14 +949,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
           <button onClick={() => setIsChatListView(true)} className="btn-secondary w-8 h-8 p-0 flex items-center justify-center">
             <ArrowLeft size={16} />
           </button>
-          <span className="subheading-brutal text-lg truncate w-[80%] text-center">
-            {selectedChatId
-              ? getChatName(chats.find((c) => c.id === selectedChatId)!)
-              : ""}
-          </span>
-          <div className="w-8"></div>
-        </div>
-      )}
+            <span className="subheading-brutal text-lg truncate flex-1 text-center px-2">
+              {getChatName(chats.find((c) => c.id === selectedChatId)!)}
+            </span>
+            <div className="w-8 flex items-center justify-center">
+              {(selectedChat?.type === "community" || selectedChat?.type === "project") &&
+                isCurrentUserAdmin && (
+                <button 
+                  onClick={() => setShowGroupManagement(true)} 
+                  className="btn-secondary h-8 w-8 flex items-center justify-center p-0 transition-transform hover:-translate-y-1 hover:shadow-sm"
+                  title="Manage Group"
+                >
+                  <Settings size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* Sidebar List */}
       <div
@@ -942,7 +1013,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ currentUserId, setIfUnread }) =
 
             {/* Group Management Overlay */}
             {showGroupManagement && selectedChatId && (
-              <div className="absolute top-[75px] right-0 w-[300px] border-l border-b border-gray-200 bg-white shadow-lg p-4 z-50 flex flex-col custom-scrollbar overflow-y-auto max-h-[80%]">
+              <div className={`absolute ${isMobileView ? "top-[60px] w-full" : "top-[75px] w-[300px]"} right-0 border-l border-b border-gray-200 bg-white shadow-lg p-4 z-50 flex flex-col custom-scrollbar overflow-y-auto max-h-[80%]`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="heading-brutal text-md">Manage Admins</h3>
                   <button onClick={() => setShowGroupManagement(false)} className="text-gray-900 border border-gray-200 aspect-square w-8 hover:bg-gray-100 flex items-center justify-center font-bold text-xs shadow-sm bg-white">

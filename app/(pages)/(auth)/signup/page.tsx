@@ -4,28 +4,25 @@ import { useRouter } from "next/navigation";
 import { poppins } from "../../../lib/fonts";
 import { useAuth } from "@/app/hooks/useAuth";
 
-
 function Page() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [conpassword, setConPassword] = useState("");
   const [next, setNext] = useState(false);
-  
-  const { 
-    name, 
-    email, 
-    error, 
-    isValidEmail, 
-    verificationSent, 
-    setEmail, 
-    validateEmail, 
-    signUp 
+
+  const {
+    name,
+    email,
+    error,
+    isValidEmail,
+    verificationSent,
+    setEmail,
+    validateEmail,
+    signUp,
   } = useAuth();
 
   const handleSubmit = () => {
-    if (validateEmail()) {
-      setNext(true);
-    }
+    if (validateEmail()) setNext(true);
   };
 
   const handleSignup = async () => {
@@ -33,19 +30,33 @@ function Page() {
   };
 
   return (
-    <main className="flex h-full min-h-screen w-full flex-col items-center justify-center bg-[#ebebeb] px-10 md:px-4">
+    <main className="flex min-h-screen w-full items-center justify-center bg-[#f0f0f0] px-4 py-12">
+
+      {/* Step 1 — Email */}
       {!next && (
-        <div className="flex w-full max-w-[500px] flex-col justify-between gap-8 rounded-md bg-white p-8 shadow-md sm:p-10">
-          <div className="w-full">
-            <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Sign Up</h1>
-            {error && (
-              <h2 className={`${poppins.className} pt-4 text-lg tracking-tighter text-red-500`}>
-                {error}
-              </h2>
-            )}
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
-              Your email address
-            </h2>
+        <div className="flex w-full max-w-md flex-col gap-6 rounded-2xl bg-white p-8 shadow-[0_2px_16px_rgba(0,0,0,0.08)]">
+          <div>
+            <h1 className={`${poppins.className} text-3xl font-semibold text-gray-900`}>
+              Create account
+            </h1>
+            <p className={`${poppins.className} mt-1 text-sm text-gray-400`}>
+              Join Tuples with your college email
+            </p>
+          </div>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="email-address"
+              className={`${poppins.className} text-sm font-medium text-gray-600`}
+            >
+              Email address
+            </label>
             <input
               id="email-address"
               name="email"
@@ -54,98 +65,134 @@ function Page() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mx-auto w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
+              className="w-full rounded-xl border border-transparent bg-[#f0f6ff] px-4 py-3 text-sm text-gray-900 transition-all focus:border-blue-400 focus:outline-none"
               placeholder="johndoe@mbcet.ac.in"
             />
+          </div>
 
+          <div className="flex flex-col gap-3 pt-1">
             <button
               onClick={handleSubmit}
-              className={`${poppins.className} my-4 w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+              className={`${poppins.className} w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white transition-all hover:bg-blue-700`}
             >
-              Sign Up -&gt;
+              Continue
             </button>
-          </div>
-          <div>
-            By continuing, you agree to our terms and conditions and privacy policy.{" "}
-            <br />
+            <p className={`${poppins.className} text-center text-xs text-gray-400`}>
+              By continuing, you agree to our terms and privacy policy.
+            </p>
             <button
               onClick={() => router.push("/login")}
-              className={`${poppins.className} w-full p-2 text-center text-xl text-gray-600 underline hover:text-primary`}
+              className={`${poppins.className} text-sm text-gray-400 transition-colors hover:text-blue-600`}
             >
-              Sign In Instead
+              Already have an account?{" "}
+              <span className="font-medium text-blue-600">Sign in</span>
             </button>
           </div>
         </div>
       )}
-      {next && !verificationSent && (
-        <div className="flex w-full max-w-[400px] flex-col justify-between rounded-3xl bg-white p-8 shadow-md sm:p-10">
-          <div>
-            <h1 className={`${poppins.className} pt-5 text-4xl sm:text-5xl`}>Hello,</h1>
-            <h1 className={`${poppins.className} pt-5 text-2xl sm:text-3xl`}>{name}</h1>
-            {error && (
-              <h2 className={`${poppins.className} pt-2 text-lg tracking-tighter text-red-500`}>
-                {error}
-              </h2>
-            )}
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
-              Password
-            </h2>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
-            />
-            <h2 className={`${poppins.className} py-4 pt-8 text-xl tracking-tighter`}>
-              Confirm Password
-            </h2>
-            <input
-              id="conpassword"
-              name="conpassword"
-              type="password"
-              autoComplete="conpassword"
-              required
-              value={conpassword}
-              onChange={(e) => setConPassword(e.target.value)}
-              className="w-full rounded-xl border border-transparent bg-[#f0f6ff] p-3 text-xl text-gray-900 transition-all focus:border-primary focus:outline-none"
-            />
 
+      {/* Step 2 — Password */}
+      {next && !verificationSent && (
+        <div className="flex w-full max-w-md flex-col gap-6 rounded-2xl bg-white p-8 shadow-[0_2px_16px_rgba(0,0,0,0.08)]">
+          <div>
+            <p className={`${poppins.className} text-sm text-gray-400`}>
+              Welcome,
+            </p>
+            <h1 className={`${poppins.className} text-3xl font-semibold text-gray-900 break-words`}>
+              {name}
+            </h1>
+          </div>
+
+          {error && (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="password"
+                className={`${poppins.className} text-sm font-medium text-gray-600`}
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-transparent bg-[#f0f6ff] px-4 py-3 text-sm text-gray-900 transition-all focus:border-blue-400 focus:outline-none"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="conpassword"
+                className={`${poppins.className} text-sm font-medium text-gray-600`}
+              >
+                Confirm password
+              </label>
+              <input
+                id="conpassword"
+                name="conpassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={conpassword}
+                onChange={(e) => setConPassword(e.target.value)}
+                className="w-full rounded-xl border border-transparent bg-[#f0f6ff] px-4 py-3 text-sm text-gray-900 transition-all focus:border-blue-400 focus:outline-none"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-1">
             <button
               onClick={handleSignup}
-              className={`${poppins.className} my-2 mt-6 w-fit rounded-3xl bg-[#2727e6] px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+              className={`${poppins.className} w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white transition-all hover:bg-blue-700`}
             >
-              Confirm
+              Create account
+            </button>
+            <button
+              onClick={() => setNext(false)}
+              className={`${poppins.className} text-sm text-gray-400 transition-colors hover:text-blue-600`}
+            >
+              ← Go back
             </button>
           </div>
-          <button
-            onClick={() => setNext(false)}
-            className={`${poppins.className} text-xl text-gray-600 underline hover:text-primary`}
-          >
-            Go Back
-          </button>
         </div>
       )}
+
+      {/* Step 3 — Verification sent */}
       {verificationSent && (
-        <div className="flex w-full max-w-[400px] flex-col items-center justify-center rounded-3xl bg-white p-8 shadow-md sm:p-10">
-          <h1 className={`${poppins.className} mb-4 text-center text-2xl sm:text-3xl`}>
-            Verification Email Sent
-          </h1>
-          <p className={`${poppins.className} mb-6 text-center text-lg sm:text-xl`}>
-            Please check your email and click on the verification link to complete your
-            registration.
-          </p>
+        <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-2xl bg-white p-8 text-center shadow-[0_2px_16px_rgba(0,0,0,0.08)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
+            ✉️
+          </div>
+          <div>
+            <h1 className={`${poppins.className} text-2xl font-semibold text-gray-900`}>
+              Check your inbox
+            </h1>
+            <p className={`${poppins.className} mt-2 text-sm text-gray-400`}>
+              We sent a verification link to{" "}
+              <span className="font-medium text-gray-600">{email}</span>.
+              Click it to complete your registration.
+            </p>
+          </div>
           <button
             onClick={() => router.push("/login")}
-            className={`${poppins.className} w-fit rounded-3xl bg-blue-600 px-4 py-2 text-xl tracking-tighter text-white transition-all hover:bg-[#2727b6] hover:px-5`}
+            className={`${poppins.className} w-full rounded-xl bg-blue-600 py-3 text-sm font-medium text-white transition-all hover:bg-blue-700`}
           >
-            Go to Login
+            Go to sign in
           </button>
         </div>
       )}
+
     </main>
   );
 }

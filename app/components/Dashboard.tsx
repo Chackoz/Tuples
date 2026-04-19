@@ -208,7 +208,7 @@ function Dashboard({
       </div>
 
       {/* Communities Section */}
-      <div className="card-brutal my-8 w-full gap-4 md:flex flex-col hidden relative">
+      <div className="card-brutal my-8 w-full gap-4 lg:flex flex-col hidden relative">
         <div className="mb-4 flex items-center justify-between pb-4 border-b border-gray-200">
           <h1 className="subheading-brutal text-lg">My Communities</h1>
           <button
@@ -228,7 +228,7 @@ function Dashboard({
       </div>
 
       {/* Projects Section */}
-      <div className="card-brutal mt-8 w-full gap-4 md:flex flex-col hidden relative">
+      <div className="card-brutal mt-8 w-full gap-4 lg:flex flex-col hidden relative">
         <div className="mb-4 flex items-center justify-between pb-4 border-b border-gray-200">
           <h1 className="subheading-brutal text-lg">My Projects</h1>
         </div>
