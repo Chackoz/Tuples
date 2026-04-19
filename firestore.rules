@@ -83,8 +83,7 @@ service cloud.firestore {
         request.resource.data.to is string &&
         request.resource.data.status == "pending";
 
-      allow read: if signedIn() &&
-        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid || isPlatformAdmin());
+      allow read: if signedIn();
 
       allow update, delete: if signedIn() &&
         (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid || isPlatformAdmin());

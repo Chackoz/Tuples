@@ -25,7 +25,7 @@ function NavBar() {
   };
 
   return (
-    <div className="relative flex w-full items-center justify-between py-5 border-b border-gray-200 bg-gray-50 flex-wrap md:flex-nowrap">
+    <div className="relative flex flex-col md:flex-row w-full items-center justify-between py-5 border-b border-gray-200 bg-gray-50 flex-wrap md:flex-nowrap">
       <div className="flex w-full items-center justify-between">
         <a href="/" className="z-50 flex items-center justify-center">
           <div className="relative">

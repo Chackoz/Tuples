@@ -12,7 +12,9 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "../../lib/firebaseConfig";
 import { RiUserAddLine, RiUserUnfollowLine } from "react-icons/ri";
@@ -195,6 +197,26 @@ function FriendCard({
 
       // Delete the friend request
       await deleteDoc(requestRef);
+
+      // Create a private chat
+      const newChatRef = await addDoc(collection(db, "chats"), {
+        participants: [currentUserId, friend.id],
+        createdAt: serverTimestamp(),
+        lastMessage: {
+          content: "",
+          senderId: "",
+          timestamp: serverTimestamp()
+        },
+        type: "private"
+      });
+
+      await updateDoc(currentUserRef, {
+        chats: arrayUnion(newChatRef.id)
+      });
+
+      await updateDoc(friendUserRef, {
+        chats: arrayUnion(newChatRef.id)
+      });
 
       setRequestStatus('none');
       toast({

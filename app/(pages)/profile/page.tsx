@@ -158,23 +158,23 @@ const ProfileContent: React.FC = () => {
           <div className="hero-corner-br" />
 
           {/* Profile Header */}
-          <div className="flex items-center mb-8 border-b border-gray-200 pb-6">
+          <div className="flex flex-col sm:flex-row items-center text-center sm:text-left mb-8 border-b border-gray-200 pb-6 w-full overflow-hidden">
             {profileUser.profilePicUrl ? (
               <Image 
                 src={profileUser.profilePicUrl} 
                 alt={`${profileUser.name}'s profile`} 
                 width={100} 
                 height={100} 
-                className="object-cover w-24 h-24 mr-6 border border-gray-200 shadow-sm" 
+                className="object-cover w-24 h-24 mb-4 sm:mb-0 sm:mr-6 border border-gray-200 shadow-sm shrink-0" 
               />
             ) : (
-              <div className="w-24 h-24 bg-[#000] text-white flex items-center justify-center text-3xl font-black mr-6 border border-gray-200 shadow-sm">
+              <div className="w-24 h-24 bg-[#000] shrink-0 text-white flex items-center justify-center text-3xl font-black mb-4 sm:mb-0 sm:mr-6 border border-gray-200 shadow-sm">
                 {profileUser.name[0].toUpperCase()}
               </div>
             )}
-            <div>
-              <h1 className="heading-brutal text-4xl">{profileUser.name}</h1>
-              <p className="label-brutal text-gray-900/50 mt-1">{profileUser.userId}</p>
+            <div className="w-full overflow-hidden">
+              <h1 className="heading-brutal text-3xl sm:text-4xl break-words">{profileUser.name}</h1>
+              <p className="label-brutal text-gray-900/50 mt-1 truncate">{profileUser.userId}</p>
             </div>
           </div>
           {/* Profile Details */}
@@ -205,14 +205,14 @@ const ProfileContent: React.FC = () => {
               <h2 className="heading-brutal text-xl mb-6 flex items-center gap-2">
                 NETWORK
               </h2>
-              <div className="flex items-center gap-4">
-                <div className="text-center p-4 border border-gray-200 bg-white shadow-sm flex-1">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+                <div className="text-center w-full p-4 border border-gray-200 bg-white shadow-sm flex-1">
                   <h3 className="heading-brutal text-4xl mb-1">
                     {profileUser.friends ? profileUser.friends.length - 1 : 0}
                   </h3>
                   <p className="label-brutal text-gray-900/60">CONNECTIONS</p>
                 </div>
-                <div className="text-center p-4 border border-gray-200 bg-white shadow-sm flex-1">
+                <div className="text-center w-full p-4 border border-gray-200 bg-white shadow-sm flex-1">
                   <h3 className="heading-brutal text-4xl mb-1">
                     {mutualFriends.length}
                   </h3>

@@ -262,20 +262,20 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
             accept="image/*"
           />
 
-          <div className="text-center sm:text-left">
-            <h2 className="heading-brutal text-4xl uppercase mb-2">{user.name}</h2>
-            <p className="subheading-brutal text-blue-600">USER ID: {user.userId}</p>
+          <div className="text-center sm:text-left w-full overflow-hidden">
+            <h2 className="heading-brutal text-3xl sm:text-4xl uppercase mb-2 break-all sm:break-words">{user.name}</h2>
+            <p className="subheading-brutal text-blue-600 truncate w-full">USER ID: {user.userId}</p>
           </div>
         </div>
 
         {/* Interests Section */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-6">
+        <div className="mt-8 overflow-hidden w-full">
+          <div className="flex flex-col sm:flex-row sm:justify-between items-center sm:items-start gap-4 mb-6">
             <h3 className="heading-brutal text-2xl uppercase">INTERESTS</h3>
             {!isEditing && (
               <button
                 onClick={handleEditInterests}
-                className="btn-secondary px-6 shrink-0"
+                className="btn-secondary px-6 shrink-0 w-full sm:w-auto"
               >
                 EDIT INTERESTS
               </button>
@@ -322,16 +322,16 @@ const Profile: React.FC<ProfileProps> = ({ userId }) => {
                   </ul>
                 )}
               </div>
-              <div className="flex justify-end gap-4 mt-6">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 mt-6">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="btn-secondary px-8 py-3"
+                  className="btn-secondary px-8 py-3 w-full sm:w-auto"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={handleSaveInterests}
-                  className="btn-primary px-8 py-3"
+                  className="btn-primary px-8 py-3 w-full sm:w-auto"
                 >
                   SAVE CHANGES
                 </button>
